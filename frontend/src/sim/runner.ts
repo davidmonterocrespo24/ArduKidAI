@@ -1,10 +1,12 @@
 import {
   AVRIOPort,
+  AVRUSART,
   CPU,
   avrInstruction,
   portBConfig,
   portCConfig,
   portDConfig,
+  usart0Config,
 } from 'avr8js'
 import { BLINK_PROGRAM } from './blinkProgram'
 import { bytesToProgramWords, parseIntelHex } from '../lib/intelHex'
@@ -12,6 +14,7 @@ import { DIGITAL_PIN_LABELS, type DigitalPinLabel } from './pinState'
 
 const PROGRAM_MEM_WORDS = 0x4000
 const INSTRUCTIONS_PER_FRAME = 50_000
+const F_CPU = 16_000_000
 
 export interface PinSnapshot {
   levels: Record<DigitalPinLabel, boolean>
@@ -22,11 +25,15 @@ export interface SimHandle {
   stop: () => void
 }
 
+export interface SimCallbacks {
+  onPinChange?: (snapshot: PinSnapshot) => void
+  onSerialLine?: (line: string) => void
+  onSerialByte?: (byte: number) => void
+}
+
 export type SimProgram =
   | { kind: 'hex'; hex: string }
   | { kind: 'fallback' }
-
-export type PinChangeListener = (snapshot: PinSnapshot) => void
 
 function loadProgram(input: SimProgram): Uint16Array {
   const mem = new Uint16Array(PROGRAM_MEM_WORDS)
@@ -42,11 +49,6 @@ function loadProgram(input: SimProgram): Uint16Array {
   return mem
 }
 
-// Map each digital pin to (portConfig, bit-index-within-port). These mirror
-// the ATmega328P pinout used by the Arduino UNO.
-//   PORTD (0x0b) -> D0..D7
-//   PORTB (0x05) -> D8..D13 (bits 0..5)
-//   PORTC (0x08) -> A0..A5  (analog inputs; not used for digital out today)
 const PORTD_MAP: Array<[DigitalPinLabel, number]> = [
   ['D0', 0], ['D1', 1], ['D2', 2], ['D3', 3],
   ['D4', 4], ['D5', 5], ['D6', 6], ['D7', 7],
@@ -65,18 +67,30 @@ function emptySnapshot(): PinSnapshot {
   return { levels, activity }
 }
 
-export function startSim(program: SimProgram, onPinChange: PinChangeListener): SimHandle {
+export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandle {
   const cpu = new CPU(loadProgram(program))
   const portB = new AVRIOPort(cpu, portBConfig)
   const portC = new AVRIOPort(cpu, portCConfig)
   const portD = new AVRIOPort(cpu, portDConfig)
+  const usart = new AVRUSART(cpu, usart0Config, F_CPU)
+
+  if (callbacks.onSerialLine) {
+    usart.onLineTransmit = callbacks.onSerialLine
+  }
+  if (callbacks.onSerialByte) {
+    usart.onByteTransmit = callbacks.onSerialByte
+  }
 
   const snapshot = emptySnapshot()
-  // Push an initial snapshot so subscribers reflect the all-LOW boot state.
-  onPinChange({ levels: { ...snapshot.levels }, activity: { ...snapshot.activity } })
+  if (callbacks.onPinChange) {
+    callbacks.onPinChange({ levels: { ...snapshot.levels }, activity: { ...snapshot.activity } })
+  }
 
   function emit() {
-    onPinChange({ levels: { ...snapshot.levels }, activity: { ...snapshot.activity } })
+    callbacks.onPinChange?.({
+      levels: { ...snapshot.levels },
+      activity: { ...snapshot.activity },
+    })
   }
 
   function makeHandler(map: Array<[DigitalPinLabel, number]>) {
@@ -97,8 +111,6 @@ export function startSim(program: SimProgram, onPinChange: PinChangeListener): S
 
   portB.addListener(makeHandler(PORTB_MAP))
   portD.addListener(makeHandler(PORTD_MAP))
-  // PORTC writes are rare in beginner sketches but we still listen so any
-  // future analog-pin-as-digital usage shows up correctly.
   portC.addListener(makeHandler([]))
 
   let stopped = false
@@ -123,10 +135,12 @@ export function startSim(program: SimProgram, onPinChange: PinChangeListener): S
   }
 }
 
-// Backward-compatible wrapper. Kept so existing entry points can be migrated
-// without a flurry of imports.
+// Backward-compatible wrapper kept for the original phase-1 entry point.
 export function startBlinkSim(onLedChange: (on: boolean) => void): SimHandle {
-  return startSim({ kind: 'fallback' }, (snapshot) => {
-    onLedChange(snapshot.levels.D13)
-  })
+  return startSim(
+    { kind: 'fallback' },
+    {
+      onPinChange: (snapshot) => onLedChange(snapshot.levels.D13),
+    },
+  )
 }

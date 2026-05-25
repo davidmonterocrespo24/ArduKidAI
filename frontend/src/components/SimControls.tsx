@@ -24,6 +24,9 @@ export function SimControls() {
   const resetCircuit = useAppStore((s) => s.resetCircuit)
   const setCompileError = useAppStore((s) => s.setCompileError)
   const setRightTab = useAppStore((s) => s.setRightTab)
+  const appendCompileLog = useAppStore((s) => s.appendCompileLog)
+  const appendSerial = useAppStore((s) => s.appendSerial)
+  const setBottomTab = useAppStore((s) => s.setBottomTab)
   const simRef = useRef<SimHandle | null>(null)
   const [saveOpen, setSaveOpen] = useState(false)
 
@@ -38,39 +41,53 @@ export function SimControls() {
     if (simRef.current) return
     simRef.current = startSim(
       hexCode ? { kind: 'hex', hex: hexCode } : { kind: 'fallback' },
-      (snapshot) => setPinSnapshot(snapshot.levels, snapshot.activity),
+      {
+        onPinChange: (snapshot) => setPinSnapshot(snapshot.levels, snapshot.activity),
+        onSerialLine: (line) => appendSerial(line),
+      },
     )
     setSimStatus('running')
   }
 
   async function compileAndRun() {
+    appendCompileLog('info', 'POST /api/compile (arduino:avr:uno)')
+    setBottomTab('compile')
     try {
       const resp = await postJson<CompileResponse>('/api/compile', {
         source: cppCode,
         source_kind: 'cpp',
       })
       if (resp.ok && resp.hex) {
+        const bytes = Math.round(resp.hex.length / 2)
+        appendCompileLog('success', `OK: HEX ready (~${bytes} bytes of program memory)`)
+        if (resp.stderr) appendCompileLog('info', resp.stderr.trim())
         setHexCode(resp.hex)
         setCompileError(null)
         stopSim()
-        simRef.current = startSim({ kind: 'hex', hex: resp.hex }, (snapshot) =>
-          setPinSnapshot(snapshot.levels, snapshot.activity),
+        simRef.current = startSim(
+          { kind: 'hex', hex: resp.hex },
+          {
+            onPinChange: (snapshot) => setPinSnapshot(snapshot.levels, snapshot.activity),
+            onSerialLine: (line) => appendSerial(line),
+          },
         )
         setSimStatus('running')
       } else {
         const detail = resp.stderr || resp.error || 'unknown compile error'
+        appendCompileLog('error', detail)
         setCompileError(detail)
         setRightTab('code')
         appendChatMessage({
           id: crypto.randomUUID(),
           role: 'system',
-          text: 'Compile failed. See the Arduino code tab for the details. Running the fallback blink.',
+          text: 'Compile failed. See the Compile output tab for the details. Running the fallback blink.',
         })
         stopSim()
         startWithCurrent()
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
+      appendCompileLog('error', `Request failed: ${msg}`)
       setCompileError(`Request failed: ${msg}`)
       setRightTab('code')
       appendChatMessage({

@@ -8,6 +8,16 @@ export type SimStatus = 'idle' | 'running' | 'stopped' | 'error'
 export type AgentStatus = 'idle' | 'streaming' | 'error'
 
 export type RightTab = 'blockly' | 'code'
+export type BottomTab = 'compile' | 'serial'
+
+export type CompileLogType = 'info' | 'success' | 'warn' | 'error'
+
+export interface CompileLogEntry {
+  id: string
+  timestamp: string
+  type: CompileLogType
+  message: string
+}
 
 const EMPTY_BLOCKLY_XML =
   '<xml xmlns="https://developers.google.com/blockly/xml"></xml>'
@@ -72,10 +82,25 @@ export interface AppState {
   rightTab: RightTab
   setRightTab: (t: RightTab) => void
 
+  bottomTab: BottomTab
+  setBottomTab: (t: BottomTab) => void
+
+  compileLog: CompileLogEntry[]
+  appendCompileLog: (type: CompileLogType, message: string) => void
+  clearCompileLog: () => void
+
+  serialOutput: string
+  appendSerial: (text: string) => void
+  clearSerial: () => void
+
   currentUser: UserPublic | null
   setCurrentUser: (u: UserPublic | null) => void
 
   resetCircuit: () => void
+}
+
+function ts() {
+  return new Date().toTimeString().slice(0, 8)
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -150,6 +175,28 @@ export const useAppStore = create<AppState>((set) => ({
   rightTab: 'blockly',
   setRightTab: (t) => set({ rightTab: t }),
 
+  bottomTab: 'compile',
+  setBottomTab: (t) => set({ bottomTab: t }),
+
+  compileLog: [],
+  appendCompileLog: (type, message) =>
+    set((state) => ({
+      compileLog: [
+        ...state.compileLog,
+        { id: crypto.randomUUID(), timestamp: ts(), type, message },
+      ].slice(-500),
+    })),
+  clearCompileLog: () => set({ compileLog: [] }),
+
+  serialOutput: '',
+  appendSerial: (text) =>
+    set((state) => {
+      const next = state.serialOutput + text
+      // Keep at most 16 KB so the panel does not balloon.
+      return { serialOutput: next.length > 16_000 ? next.slice(-16_000) : next }
+    }),
+  clearSerial: () => set({ serialOutput: '' }),
+
   currentUser: null,
   setCurrentUser: (u) => set({ currentUser: u }),
 
@@ -162,6 +209,8 @@ export const useAppStore = create<AppState>((set) => ({
       cppCode: PLACEHOLDER_SKETCH,
       hexCode: null,
       compileError: null,
+      compileLog: [],
+      serialOutput: '',
       ledOn: false,
       pinLevels: emptyPinLevels(),
       pinActivity: emptyActivity(),

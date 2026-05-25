@@ -7,9 +7,14 @@ import { useAppStore } from '../store/useAppStore'
 export function BlocklyPanel() {
   const containerRef = useRef<HTMLDivElement>(null)
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null)
-  const lastAppliedXmlRef = useRef<string>('')
+  // Tracks the last XML the panel itself wrote to the store. When the store
+  // changes we only re-hydrate the workspace if the XML did NOT originate
+  // here (e.g. it came from a set_blocks agent tool call). Without this guard
+  // the change-listener -> store -> useEffect cycle would loop forever.
+  const lastWrittenXmlRef = useRef<string>('')
 
   const xml = useAppStore((s) => s.blocklyXml)
+  const setBlocklyXml = useAppStore((s) => s.setBlocklyXml)
   const setCppCode = useAppStore((s) => s.setCppCode)
 
   useEffect(() => {
@@ -18,22 +23,39 @@ export function BlocklyPanel() {
     const workspace = initBlockly(container)
     workspaceRef.current = workspace
 
-    // Blockly measures its SVG once at inject() time. When the host panel is
-    // hidden behind a Suspense fallback or briefly zero-sized, the workspace
-    // boots collapsed. Force a resize on the next frame and watch the
-    // container so user-driven panel resizes keep the workspace in sync.
     requestAnimationFrame(() => Blockly.svgResize(workspace))
     const observer = new ResizeObserver(() => {
       if (workspaceRef.current) Blockly.svgResize(workspaceRef.current)
     })
     observer.observe(container)
 
-    const listener = () => {
+    // Re-hydrate on mount if the store already has XML (e.g. user switched
+    // away to the code tab and back). Without this the workspace would boot
+    // empty even though the kid built blocks earlier.
+    const initialXml = useAppStore.getState().blocklyXml
+    if (initialXml && initialXml.includes('<block')) {
       try {
+        const dom = Blockly.utils.xml.textToDom(initialXml)
+        Blockly.Xml.domToWorkspace(dom, workspace)
+        lastWrittenXmlRef.current = initialXml
+      } catch (err) {
+        console.error('failed to hydrate Blockly from store on mount', err)
+      }
+    }
+
+    const listener = (event: Blockly.Events.Abstract) => {
+      // Ignore UI-only events (selection, viewport pan) to avoid thrashing
+      // serialisation; isUiEvent is true for them.
+      if (event.isUiEvent) return
+      try {
+        const dom = Blockly.Xml.workspaceToDom(workspace)
+        const serialised = Blockly.Xml.domToText(dom)
+        lastWrittenXmlRef.current = serialised
+        setBlocklyXml(serialised)
         const cpp = generateCpp(workspace)
         if (cpp) setCppCode(cpp)
       } catch (err) {
-        console.error('cpp generation failed', err)
+        console.error('failed to serialise workspace', err)
       }
     }
     workspace.addChangeListener(listener)
@@ -44,19 +66,21 @@ export function BlocklyPanel() {
       workspace.dispose()
       workspaceRef.current = null
     }
-  }, [setCppCode])
+  }, [setBlocklyXml, setCppCode])
 
   useEffect(() => {
     const workspace = workspaceRef.current
     if (!workspace || !xml) return
-    if (xml === lastAppliedXmlRef.current) return
+    if (xml === lastWrittenXmlRef.current) return
     try {
       const dom = Blockly.utils.xml.textToDom(xml)
+      Blockly.Events.disable()
       workspace.clear()
       Blockly.Xml.domToWorkspace(dom, workspace)
-      lastAppliedXmlRef.current = xml
+      Blockly.Events.enable()
+      lastWrittenXmlRef.current = xml
     } catch (err) {
-      console.error('failed to apply Blockly XML from agent', err)
+      console.error('failed to apply Blockly XML from store', err)
     }
   }, [xml])
 
