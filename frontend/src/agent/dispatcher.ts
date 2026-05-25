@@ -1,5 +1,6 @@
 import { useAppStore } from '../store/useAppStore'
 import type { ComponentInstance, Wire } from '../types/circuit'
+import { nextSpawnPosition } from '../lib/spawnPosition'
 
 type ToolResult = {
   ok?: boolean
@@ -45,7 +46,17 @@ export function applyToolResult(name: string, result: ToolResult): void {
   switch (name) {
     case 'add_component':
       if (result.component) {
-        store.addComponent(result.component)
+        const c = { ...result.component }
+        // Backend assigns id but x/y default to 0,0; spread agent-added
+        // components on the same grid the manual picker uses so they do
+        // not all stack at the origin.
+        if ((c.x ?? 0) === 0 && (c.y ?? 0) === 0) {
+          const peripherals = store.components.filter((existing) => existing.type !== 'uno')
+          const pos = nextSpawnPosition(peripherals.length)
+          c.x = pos.x
+          c.y = pos.y
+        }
+        store.addComponent(c)
       }
       break
     case 'remove_component':

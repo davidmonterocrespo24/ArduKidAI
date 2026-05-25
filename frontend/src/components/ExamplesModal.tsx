@@ -1,63 +1,72 @@
-import { useEffect, useState } from 'react'
-import { sendChatMessage } from '../agent/chat'
-import { listExamples, type ExampleHit } from '../agent/examples'
+import { useState } from 'react'
+import { useAppStore } from '../store/useAppStore'
+import { EXAMPLE_TEMPLATES, type ExampleTemplate } from '../lib/exampleTemplates'
 
 interface Props {
   open: boolean
   onClose: () => void
 }
 
-export function ExamplesModal({ open, onClose }: Props) {
-  const [examples, setExamples] = useState<ExampleHit[]>([])
-  const [busy, setBusy] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [filter, setFilter] = useState('')
+const DIFFICULTY_DOT: Record<number, string> = {
+  1: 'bg-emerald-500',
+  2: 'bg-amber-500',
+  3: 'bg-rose-500',
+}
+const DIFFICULTY_LABEL: Record<number, string> = {
+  1: 'easy',
+  2: 'medium',
+  3: 'hard',
+}
 
-  useEffect(() => {
-    if (!open) return
-    let cancelled = false
-    void (async () => {
-      try {
-        const list = await listExamples(30)
-        if (!cancelled) {
-          setExamples(list)
-          setError(null)
-        }
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err))
-      } finally {
-        if (!cancelled) setBusy(false)
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [open])
+export function ExamplesModal({ open, onClose }: Props) {
+  const [filter, setFilter] = useState('')
+  const resetCircuit = useAppStore((s) => s.resetCircuit)
+  const addComponent = useAppStore((s) => s.addComponent)
+  const addWire = useAppStore((s) => s.addWire)
+  const setCppCode = useAppStore((s) => s.setCppCode)
+  const appendChatMessage = useAppStore((s) => s.appendChatMessage)
 
   if (!open) return null
 
+  const sorted = [...EXAMPLE_TEMPLATES].sort(
+    (a, b) => a.difficulty - b.difficulty || a.title.localeCompare(b.title),
+  )
   const filtered = filter.trim()
-    ? examples.filter(
-        (e) =>
-          e.title.toLowerCase().includes(filter.toLowerCase()) ||
-          e.intent.toLowerCase().includes(filter.toLowerCase()),
-      )
-    : examples
+    ? sorted.filter((e) => {
+        const q = filter.toLowerCase()
+        return (
+          e.title.toLowerCase().includes(q) ||
+          e.intent_en.toLowerCase().includes(q) ||
+          e.intent_es.toLowerCase().includes(q) ||
+          e.tags.some((t) => t.toLowerCase().includes(q))
+        )
+      })
+    : sorted
 
-  async function pick(ex: ExampleHit) {
+  function pick(ex: ExampleTemplate) {
     onClose()
-    // Send the intent to the agent so it assembles the circuit.
-    await sendChatMessage(`Quiero hacer: ${ex.intent}`)
+    // Wipe whatever was on the canvas first - examples are stand-alone
+    // starter circuits, not additions to the current one.
+    resetCircuit()
+    // Drop the template's components and wires straight into the store.
+    for (const c of ex.components) addComponent(c)
+    for (const wire of ex.wires) addWire(wire)
+    setCppCode(ex.cpp_code)
+    appendChatMessage({
+      id: crypto.randomUUID(),
+      role: 'system',
+      text: `Loaded example: ${ex.title}. Hit "Compile & run" in the top bar to try it.`,
+    })
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-      <div className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
+      <div className="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
         <header className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3">
           <div>
             <h3 className="text-base font-semibold">Example circuits</h3>
             <p className="text-xs text-slate-500">
-              Click one and the agent will build it on the canvas.
+              Click one and the canvas resets to that starter circuit. Then hit Compile &amp; run.
             </p>
           </div>
           <button
@@ -80,24 +89,39 @@ export function ExamplesModal({ open, onClose }: Props) {
         </div>
 
         <div className="min-h-0 flex-1 overflow-auto p-4">
-          {busy && <p className="text-sm text-slate-500">Loading examples...</p>}
-          {error && <p className="text-sm text-rose-600">Could not load: {error}</p>}
-          {!busy && !error && filtered.length === 0 && (
+          {filtered.length === 0 ? (
             <p className="text-sm text-slate-500">No examples match "{filter}".</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((ex) => (
+                <button
+                  key={ex.id}
+                  type="button"
+                  onClick={() => pick(ex)}
+                  className="flex h-full flex-col rounded-md border border-slate-200 bg-white p-3 text-left transition hover:border-emerald-400 hover:bg-emerald-50"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold text-slate-900">{ex.title}</p>
+                    <span
+                      className="flex shrink-0 items-center gap-1 text-[10px] text-slate-500"
+                      title={`difficulty ${ex.difficulty}`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${DIFFICULTY_DOT[ex.difficulty]}`} />
+                      {DIFFICULTY_LABEL[ex.difficulty]}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-600">{ex.intent_es}</p>
+                  <div className="mt-2 flex flex-wrap gap-1 text-[10px] text-slate-500">
+                    {ex.tags.map((t) => (
+                      <span key={t} className="rounded bg-slate-100 px-1.5 py-0.5">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </button>
+              ))}
+            </div>
           )}
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {filtered.map((ex) => (
-              <button
-                key={ex.id}
-                type="button"
-                onClick={() => void pick(ex)}
-                className="rounded-md border border-slate-200 bg-white p-3 text-left transition hover:border-emerald-400 hover:bg-emerald-50"
-              >
-                <p className="text-sm font-semibold text-slate-900">{ex.title}</p>
-                <p className="mt-1 text-xs text-slate-600">{ex.intent}</p>
-              </button>
-            ))}
-          </div>
         </div>
       </div>
     </div>
