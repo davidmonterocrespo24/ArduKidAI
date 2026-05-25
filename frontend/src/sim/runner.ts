@@ -1,8 +1,10 @@
 import {
+  AVRADC,
   AVRIOPort,
   AVRTimer,
   AVRUSART,
   CPU,
+  adcConfig,
   avrInstruction,
   portBConfig,
   portCConfig,
@@ -37,6 +39,9 @@ export interface SimCallbacks {
   onPinChange?: (snapshot: PinSnapshot) => void
   onSerialLine?: (line: string) => void
   onSerialByte?: (byte: number) => void
+  /** Called every frame for each ADC channel 0..5. Return the voltage at
+   * that pin (0..VCC). Feeds analogRead(A0..A5) from the canvas. */
+  getAdcChannel?: (channel: number) => number
 }
 
 export type SimProgram =
@@ -89,6 +94,10 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
   new AVRTimer(cpu, timer0Config)
   new AVRTimer(cpu, timer1Config)
   new AVRTimer(cpu, timer2Config)
+  // ADC: feeds analogRead(A0..A5). channelValues[i] is the voltage at that
+  // pin; we refresh from the caller every frame so dragging the
+  // potentiometer knob is reflected on the next conversion.
+  const adc = new AVRADC(cpu, adcConfig)
 
   if (callbacks.onSerialLine) {
     usart.onLineTransmit = callbacks.onSerialLine
@@ -133,6 +142,11 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
 
   function frame() {
     if (stopped) return
+    if (callbacks.getAdcChannel) {
+      for (let ch = 0; ch < 6; ch++) {
+        adc.channelValues[ch] = callbacks.getAdcChannel(ch)
+      }
+    }
     for (let i = 0; i < INSTRUCTIONS_PER_FRAME; i++) {
       avrInstruction(cpu)
       cpu.tick()

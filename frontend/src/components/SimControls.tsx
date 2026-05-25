@@ -1,9 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { startSim, type SimHandle } from '../sim/runner'
+import { resolveAnalogChannel } from '../sim/wireTrace'
 import { postJson } from '../lib/api'
 import { cn } from '../lib/cn'
 import { SaveProjectDialog } from './SaveProjectDialog'
+
+// Walks the live store on every frame: any potentiometer whose SIG pin is
+// wired to UNO.A<channel> contributes its knob value (0..1023) as a voltage
+// (0..5 V) to that ADC channel. Other components on analog inputs would slot
+// in here too once we add them.
+function getAdcChannelFromStore(channel: number): number {
+  const state = useAppStore.getState()
+  for (const c of state.components) {
+    if (c.type !== 'potentiometer') continue
+    if (resolveAnalogChannel(c.id, state.wires) !== channel) continue
+    const raw = Number(c.props.value ?? 0)
+    return Math.min(5, Math.max(0, (raw / 1023) * 5))
+  }
+  return 0
+}
 
 interface CompileResponse {
   ok: boolean
@@ -44,6 +60,7 @@ export function SimControls() {
       {
         onPinChange: (snapshot) => setPinSnapshot(snapshot.levels, snapshot.activity),
         onSerialLine: (line) => appendSerial(line),
+        getAdcChannel: getAdcChannelFromStore,
       },
     )
     setSimStatus('running')

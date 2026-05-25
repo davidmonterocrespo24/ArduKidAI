@@ -42,6 +42,21 @@ function componentIdOf(reference: string): string | null {
   return reference.slice(0, dot)
 }
 
+const ANALOG_PIN_RE = /^UNO\.A([0-5])$/
+
+/** Return the analog input channel (0..5) the component is wired into, or
+ * null if it is not connected to A0-A5. Used so the simulator can route a
+ * potentiometer / sensor on the canvas into `analogRead(A?)`. */
+export function resolveAnalogChannel(componentId: string, wires: Wire[]): number | null {
+  for (const w of wires) {
+    const other = otherEnd(w, componentId)
+    if (!other) continue
+    const m = ANALOG_PIN_RE.exec(other)
+    if (m) return parseInt(m[1], 10)
+  }
+  return null
+}
+
 export function resolveDrivePin(
   componentId: string,
   wires: Wire[],

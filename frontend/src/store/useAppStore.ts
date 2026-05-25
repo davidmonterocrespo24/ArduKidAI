@@ -58,6 +58,7 @@ export interface AppState {
   addComponent: (c: ComponentInstance) => void
   removeComponent: (id: string) => void
   updateComponentPosition: (id: string, x: number, y: number) => void
+  updateComponentProps: (id: string, partial: Record<string, unknown>) => void
 
   wires: Wire[]
   addWire: (w: Wire) => void
@@ -137,6 +138,12 @@ export const useAppStore = create<AppState>((set) => ({
   updateComponentPosition: (id, x, y) =>
     set((state) => ({
       components: state.components.map((c) => (c.id === id ? { ...c, x, y } : c)),
+    })),
+  updateComponentProps: (id, partial) =>
+    set((state) => ({
+      components: state.components.map((c) =>
+        c.id === id ? { ...c, props: { ...c.props, ...partial } } : c,
+      ),
     })),
 
   wires: [],

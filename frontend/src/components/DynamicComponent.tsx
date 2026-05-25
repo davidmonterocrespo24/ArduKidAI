@@ -45,6 +45,21 @@ function Servo({ instance }: { instance: ComponentInstance }) {
 function Potentiometer({ instance }: { instance: ComponentInstance }) {
   const value = (instance.props.value as number | undefined) ?? 0
   const ref = useLiveProperty('value', value)
+  const updateComponentProps = useAppStore((s) => s.updateComponentProps)
+
+  // Bridge the wokwi-potentiometer's "input" event (fires when the kid
+  // drags the knob) back into the store so analogRead picks it up.
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const handler = () => {
+      const next = (el as unknown as { value: number }).value
+      updateComponentProps(instance.id, { value: next })
+    }
+    el.addEventListener('input', handler)
+    return () => el.removeEventListener('input', handler)
+  }, [instance.id, updateComponentProps, ref])
+
   return <wokwi-potentiometer ref={ref} id={instance.id} />
 }
 
