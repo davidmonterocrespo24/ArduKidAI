@@ -64,7 +64,7 @@ class ProjectDetail(ProjectSummary):
 
 
 class SaveProjectRequest(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, max_length=80)
     circuit: CircuitState
 
 

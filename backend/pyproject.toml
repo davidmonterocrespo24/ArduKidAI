@@ -12,6 +12,7 @@ dependencies = [
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.1",
     "pymongo>=4.17.0",
+    "slowapi>=0.1.9",
     "sse-starlette>=3.4.4",
     "uvicorn[standard]>=0.48.0",
 ]

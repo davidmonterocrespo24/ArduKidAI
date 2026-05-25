@@ -49,6 +49,9 @@ export interface AppState {
   hexCode: string | null
   setHexCode: (h: string | null) => void
 
+  compileError: string | null
+  setCompileError: (msg: string | null) => void
+
   chatMessages: ChatMessage[]
   appendChatMessage: (m: ChatMessage) => void
   appendAgentText: (text: string) => void
@@ -94,6 +97,9 @@ export const useAppStore = create<AppState>((set) => ({
   hexCode: null,
   setHexCode: (h) => set({ hexCode: h }),
 
+  compileError: null,
+  setCompileError: (msg) => set({ compileError: msg }),
+
   chatMessages: [],
   appendChatMessage: (m) => set((state) => ({ chatMessages: [...state.chatMessages, m] })),
   appendAgentText: (text) =>
@@ -124,6 +130,7 @@ export const useAppStore = create<AppState>((set) => ({
       blocklyXml: EMPTY_BLOCKLY_XML,
       cppCode: PLACEHOLDER_SKETCH,
       hexCode: null,
+      compileError: null,
       ledOn: false,
       simStatus: 'idle',
     }),

@@ -1,12 +1,26 @@
+import { Suspense, lazy } from 'react'
 import { useAppStore, type RightTab } from '../store/useAppStore'
-import { BlocklyPanel } from './BlocklyPanel'
-import { CodePanel } from './CodePanel'
 import { cn } from '../lib/cn'
+
+const BlocklyPanel = lazy(() =>
+  import('./BlocklyPanel').then((mod) => ({ default: mod.BlocklyPanel })),
+)
+const CodePanel = lazy(() =>
+  import('./CodePanel').then((mod) => ({ default: mod.CodePanel })),
+)
 
 const TABS: { id: RightTab; label: string }[] = [
   { id: 'blockly', label: 'Blocks' },
   { id: 'code', label: 'Arduino code' },
 ]
+
+function PanelFallback() {
+  return (
+    <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">
+      Loading editor...
+    </div>
+  )
+}
 
 export function RightTabs() {
   const tab = useAppStore((s) => s.rightTab)
@@ -32,7 +46,9 @@ export function RightTabs() {
         ))}
       </header>
       <div className="flex-1 overflow-hidden">
-        {tab === 'blockly' ? <BlocklyPanel /> : <CodePanel />}
+        <Suspense fallback={<PanelFallback />}>
+          {tab === 'blockly' ? <BlocklyPanel /> : <CodePanel />}
+        </Suspense>
       </div>
     </section>
   )

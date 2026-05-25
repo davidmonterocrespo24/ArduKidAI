@@ -7,11 +7,14 @@ phase 4 may persist them alongside saved projects."""
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import ClassVar
 
 from ..schemas import CircuitState, ComponentInstance, Wire
+
+_ID_RE = re.compile(r"^([A-Za-z]+)(\d+)$")
 
 _PREFIX: dict[str, str] = {
     "uno": "UNO",
@@ -47,13 +50,16 @@ class SessionState:
         self.wires = list(state.wires)
         self.blockly_xml = state.blockly_xml
         self.cpp_code = state.cpp_code
-        # Reset counters so we do not reuse IDs already in the frontend.
+        # Reset counters so we do not reuse IDs already in the frontend. We
+        # require IDs to match the canonical "PREFIX + NUMBER" form (e.g. L1,
+        # BZ3) so an exotic id like "LED12V2" cannot poison the counter.
         self._counters = defaultdict(int)
         for cid in self.components:
-            prefix = "".join(ch for ch in cid if ch.isalpha())
-            number = "".join(ch for ch in cid if ch.isdigit())
-            if prefix and number.isdigit():
-                self._counters[prefix] = max(self._counters[prefix], int(number))
+            match = _ID_RE.match(cid)
+            if match is None:
+                continue
+            prefix, number = match.group(1), int(match.group(2))
+            self._counters[prefix] = max(self._counters[prefix], number)
 
     def to_circuit(self) -> CircuitState:
         return CircuitState(

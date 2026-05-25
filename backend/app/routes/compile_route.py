@@ -1,5 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
+from ..rate_limit import COMPILE_LIMIT, limiter
 from ..schemas import CompileResponse, CompileSource
 from ..services.blockly_to_cpp import blockly_xml_to_cpp
 from ..services.compiler import compile_cpp
@@ -8,7 +9,9 @@ router = APIRouter()
 
 
 @router.post("/compile", response_model=CompileResponse)
-async def compile_source(payload: CompileSource) -> CompileResponse:
+@limiter.limit(COMPILE_LIMIT)
+async def compile_source(request: Request, payload: CompileSource) -> CompileResponse:
+    _ = request
     if payload.source_kind == "blockly_xml":
         cpp = blockly_xml_to_cpp(payload.source)
     else:

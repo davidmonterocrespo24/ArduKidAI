@@ -21,6 +21,8 @@ export function FooterBar() {
   const cppCode = useAppStore((s) => s.cppCode)
   const appendChatMessage = useAppStore((s) => s.appendChatMessage)
   const resetCircuit = useAppStore((s) => s.resetCircuit)
+  const setCompileError = useAppStore((s) => s.setCompileError)
+  const setRightTab = useAppStore((s) => s.setRightTab)
   const simRef = useRef<SimHandle | null>(null)
   const [saveOpen, setSaveOpen] = useState(false)
 
@@ -48,20 +50,26 @@ export function FooterBar() {
       })
       if (resp.ok && resp.hex) {
         setHexCode(resp.hex)
+        setCompileError(null)
         stopSim()
         simRef.current = startSim({ kind: 'hex', hex: resp.hex }, (on) => setLedOn(on))
         setSimStatus('running')
       } else {
+        const detail = resp.stderr || resp.error || 'unknown compile error'
+        setCompileError(detail)
+        setRightTab('code')
         appendChatMessage({
           id: crypto.randomUUID(),
           role: 'system',
-          text: `compile failed: ${resp.error ?? resp.stderr ?? 'unknown'}. Running fallback blink.`,
+          text: 'Compile failed. See the Arduino code tab for the details. Running the fallback blink.',
         })
         stopSim()
         startWithCurrent()
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
+      setCompileError(`Request failed: ${msg}`)
+      setRightTab('code')
       appendChatMessage({
         id: crypto.randomUUID(),
         role: 'system',

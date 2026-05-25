@@ -5,12 +5,14 @@ from sse_starlette.sse import EventSourceResponse
 
 from ..agent.runner import run_chat
 from ..agent.session import get_or_create_session
+from ..rate_limit import CHAT_LIMIT, limiter
 from ..schemas import ChatRequest
 
 router = APIRouter()
 
 
 @router.post("/chat")
+@limiter.limit(CHAT_LIMIT)
 async def chat(request: Request, payload: ChatRequest) -> EventSourceResponse:
     session = get_or_create_session(payload.session_id)
     if payload.circuit_state is not None:
