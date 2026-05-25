@@ -72,7 +72,7 @@ export function SimControls() {
       hexCode ? { kind: 'hex', hex: hexCode } : { kind: 'fallback' },
       {
         onPinChange: (snapshot) => setPinSnapshot(snapshot.levels, snapshot.activity),
-        onSerialLine: (line) => appendSerial(line),
+        onSerialLine: (line) => appendSerial(line + '\n'),
         getAdcChannel: getAdcChannelFromStore,
         onLcdText: pushLcdText,
         onPwmChange: (snap) => setPwmSnapshot(snap),
@@ -100,7 +100,7 @@ export function SimControls() {
           { kind: 'hex', hex: resp.hex },
           {
             onPinChange: (snapshot) => setPinSnapshot(snapshot.levels, snapshot.activity),
-            onSerialLine: (line) => appendSerial(line),
+            onSerialLine: (line) => appendSerial(line + '\n'),
             getAdcChannel: getAdcChannelFromStore,
             onLcdText: pushLcdText,
             onPwmChange: (snap) => setPwmSnapshot(snap),

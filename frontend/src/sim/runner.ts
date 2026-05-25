@@ -131,11 +131,28 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
     i2cBus.register(0x27, new PCF8574(lcd.onPort))
   }
 
-  if (callbacks.onSerialLine) {
-    usart.onLineTransmit = callbacks.onSerialLine
-  }
-  if (callbacks.onSerialByte) {
-    usart.onByteTransmit = callbacks.onSerialByte
+  // We buffer bytes ourselves instead of using usart.onLineTransmit so
+  // a sketch that prints "ready" with no newline still surfaces in the
+  // panel when the kid hits stop. avr8js' built-in line callback drops
+  // the trailing partial line on shutdown.
+  let lineBuffer = ''
+  if (callbacks.onSerialLine || callbacks.onSerialByte) {
+    usart.onByteTransmit = (value: number) => {
+      callbacks.onSerialByte?.(value)
+      if (!callbacks.onSerialLine) return
+      if (value === 0x0a) {
+        callbacks.onSerialLine(lineBuffer)
+        lineBuffer = ''
+      } else if (value !== 0x0d) {
+        lineBuffer += String.fromCharCode(value)
+        // Hard cap so a runaway Serial.write(0xff) loop cannot grow
+        // memory unbounded between newlines.
+        if (lineBuffer.length > 4096) {
+          callbacks.onSerialLine(lineBuffer)
+          lineBuffer = ''
+        }
+      }
+    }
   }
 
   const snapshot = emptySnapshot()
@@ -225,6 +242,10 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
       stopped = true
       window.clearInterval(intervalHandle)
       clearInputBridge(setter)
+      if (lineBuffer.length > 0 && callbacks.onSerialLine) {
+        callbacks.onSerialLine(lineBuffer)
+        lineBuffer = ''
+      }
     },
   }
 }
