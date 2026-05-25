@@ -1,5 +1,6 @@
 import { AVRIOPort, CPU, avrInstruction, portBConfig } from 'avr8js'
 import { BLINK_PROGRAM } from './blinkProgram'
+import { bytesToProgramWords, parseIntelHex } from '../lib/intelHex'
 
 const PROGRAM_MEM_WORDS = 0x4000
 const PIN13_MASK = 1 << 5
@@ -9,11 +10,29 @@ export interface SimHandle {
   stop: () => void
 }
 
-export function startBlinkSim(onLedChange: (on: boolean) => void): SimHandle {
-  const progMem = new Uint16Array(PROGRAM_MEM_WORDS)
-  progMem.set(BLINK_PROGRAM)
+export type SimProgram =
+  | { kind: 'hex'; hex: string }
+  | { kind: 'fallback' }
 
-  const cpu = new CPU(progMem)
+function loadProgram(input: SimProgram): Uint16Array {
+  const mem = new Uint16Array(PROGRAM_MEM_WORDS)
+  if (input.kind === 'hex') {
+    const bytes = parseIntelHex(input.hex)
+    if (bytes.length > 0) {
+      const words = bytesToProgramWords(bytes, PROGRAM_MEM_WORDS)
+      mem.set(words)
+      return mem
+    }
+  }
+  mem.set(BLINK_PROGRAM)
+  return mem
+}
+
+export function startSim(
+  program: SimProgram,
+  onLedChange: (on: boolean) => void,
+): SimHandle {
+  const cpu = new CPU(loadProgram(program))
   const portB = new AVRIOPort(cpu, portBConfig)
 
   let prevLed = false
@@ -45,4 +64,9 @@ export function startBlinkSim(onLedChange: (on: boolean) => void): SimHandle {
       cancelAnimationFrame(rafHandle)
     },
   }
+}
+
+// Backward-compatible export used by phase 1 footer wiring.
+export function startBlinkSim(onLedChange: (on: boolean) => void): SimHandle {
+  return startSim({ kind: 'fallback' }, onLedChange)
 }

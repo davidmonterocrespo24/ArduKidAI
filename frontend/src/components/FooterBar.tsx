@@ -1,12 +1,25 @@
 import { useEffect, useRef } from 'react'
 import { useAppStore } from '../store/useAppStore'
-import { startBlinkSim, type SimHandle } from '../sim/runner'
+import { startSim, type SimHandle } from '../sim/runner'
+import { postJson } from '../lib/api'
 import { cn } from '../lib/cn'
+
+interface CompileResponse {
+  ok: boolean
+  hex?: string
+  stderr?: string
+  error?: string
+}
 
 export function FooterBar() {
   const setLedOn = useAppStore((s) => s.setLedOn)
   const simStatus = useAppStore((s) => s.simStatus)
   const setSimStatus = useAppStore((s) => s.setSimStatus)
+  const hexCode = useAppStore((s) => s.hexCode)
+  const setHexCode = useAppStore((s) => s.setHexCode)
+  const cppCode = useAppStore((s) => s.cppCode)
+  const appendChatMessage = useAppStore((s) => s.appendChatMessage)
+  const resetCircuit = useAppStore((s) => s.resetCircuit)
   const simRef = useRef<SimHandle | null>(null)
 
   useEffect(() => {
@@ -16,13 +29,48 @@ export function FooterBar() {
     }
   }, [])
 
-  function run() {
+  function startWithCurrent() {
     if (simRef.current) return
-    simRef.current = startBlinkSim((on) => setLedOn(on))
+    simRef.current = startSim(
+      hexCode ? { kind: 'hex', hex: hexCode } : { kind: 'fallback' },
+      (on) => setLedOn(on),
+    )
     setSimStatus('running')
   }
 
-  function stop() {
+  async function compileAndRun() {
+    try {
+      const resp = await postJson<CompileResponse>('/api/compile', {
+        source: cppCode,
+        source_kind: 'cpp',
+      })
+      if (resp.ok && resp.hex) {
+        setHexCode(resp.hex)
+        stopSim()
+        simRef.current = startSim({ kind: 'hex', hex: resp.hex }, (on) => setLedOn(on))
+        setSimStatus('running')
+      } else {
+        appendChatMessage({
+          id: crypto.randomUUID(),
+          role: 'system',
+          text: `compile failed: ${resp.error ?? resp.stderr ?? 'unknown'}. Running fallback blink.`,
+        })
+        stopSim()
+        startWithCurrent()
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      appendChatMessage({
+        id: crypto.randomUUID(),
+        role: 'system',
+        text: `compile request failed: ${msg}. Running fallback blink.`,
+      })
+      stopSim()
+      startWithCurrent()
+    }
+  }
+
+  function stopSim() {
     simRef.current?.stop()
     simRef.current = null
     setSimStatus('stopped')
@@ -30,8 +78,9 @@ export function FooterBar() {
   }
 
   function reset() {
-    stop()
+    stopSim()
     setSimStatus('idle')
+    resetCircuit()
   }
 
   const isRunning = simStatus === 'running'
@@ -41,13 +90,13 @@ export function FooterBar() {
       <div className="text-xs text-slate-500">
         Simulator: <span className="font-mono">{simStatus}</span>
         <span className="mx-2 text-slate-300">|</span>
-        Program: <span className="font-mono">hardcoded blink (PB5 toggle)</span>
+        Program: <span className="font-mono">{hexCode ? 'compiled HEX' : 'fallback blink'}</span>
       </div>
 
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={run}
+          onClick={() => (hexCode ? startWithCurrent() : compileAndRun())}
           disabled={isRunning}
           className={cn(
             'rounded-md px-3 py-1.5 text-sm font-medium text-white',
@@ -60,7 +109,15 @@ export function FooterBar() {
         </button>
         <button
           type="button"
-          onClick={stop}
+          onClick={() => void compileAndRun()}
+          disabled={isRunning}
+          className="rounded-md border border-emerald-200 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-800 dark:text-emerald-200 dark:hover:bg-emerald-950/30"
+        >
+          Compile & run
+        </button>
+        <button
+          type="button"
+          onClick={stopSim}
           disabled={!isRunning}
           className={cn(
             'rounded-md px-3 py-1.5 text-sm font-medium',

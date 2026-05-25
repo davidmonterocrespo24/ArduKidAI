@@ -1,8 +1,10 @@
 import * as Blockly from 'blockly'
+import { ARDUINO_TOOLBOX_CATEGORIES, registerArduinoBlocks } from './arduinoBlocks'
 
 const TOOLBOX = {
   kind: 'categoryToolbox',
   contents: [
+    ...ARDUINO_TOOLBOX_CATEGORIES,
     {
       kind: 'category',
       name: 'Logic',
@@ -19,7 +21,11 @@ const TOOLBOX = {
       name: 'Loops',
       colour: '120',
       contents: [
-        { kind: 'block', type: 'controls_repeat_ext' },
+        {
+          kind: 'block',
+          type: 'controls_repeat_ext',
+          inputs: { TIMES: { shadow: { type: 'math_number', fields: { NUM: 10 } } } },
+        },
         { kind: 'block', type: 'controls_whileUntil' },
       ],
     },
@@ -34,12 +40,6 @@ const TOOLBOX = {
     },
     {
       kind: 'category',
-      name: 'Text',
-      colour: '160',
-      contents: [{ kind: 'block', type: 'text' }],
-    },
-    {
-      kind: 'category',
       name: 'Variables',
       colour: '330',
       custom: 'VARIABLE',
@@ -48,6 +48,7 @@ const TOOLBOX = {
 }
 
 export function initBlockly(container: HTMLElement): Blockly.WorkspaceSvg {
+  registerArduinoBlocks()
   return Blockly.inject(container, {
     toolbox: TOOLBOX,
     grid: { spacing: 20, length: 3, colour: '#e2e8f0', snap: true },
