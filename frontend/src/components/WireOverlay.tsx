@@ -174,6 +174,43 @@ export function WireOverlay({ hostRef }: Props) {
     return map
   }, [pins, typeById])
 
+  // Hover detection by distance, not by SVG hit area. The old wide
+  // invisible stroke would absorb mousedown on top of pushbuttons and
+  // pots, making the components unclickable wherever a wire ran over
+  // them. Sampling the curve in mousemove keeps the visible wire fully
+  // pointer-events: none so clicks always reach the part below.
+  useEffect(() => {
+    const host = hostRef.current
+    const overlay = overlayRef.current
+    if (!host || !overlay) return
+    const onMove = (e: MouseEvent) => {
+      const rect = overlay.getBoundingClientRect()
+      const mx = e.clientX - rect.left
+      const my = e.clientY - rect.top
+      let best = -1
+      let bestDist = Infinity
+      for (let i = 0; i < wires.length; i++) {
+        const w = wires[i]
+        const a = pinIndex.get(w.from_pin)
+        const b = pinIndex.get(w.to_pin)
+        if (!a || !b) continue
+        const ctrl = midPointSagged(a.x, a.y, b.x, b.y)
+        const d = distanceToQuadratic(mx, my, a.x, a.y, ctrl.x, ctrl.y, b.x, b.y)
+        if (d < bestDist) {
+          bestDist = d
+          best = i
+        }
+      }
+      if (bestDist <= 10) {
+        if (hoveredWire !== best) holdWireHover(best)
+      } else if (hoveredWire !== null) {
+        releaseWireHover(hoveredWire)
+      }
+    }
+    host.addEventListener('mousemove', onMove)
+    return () => host.removeEventListener('mousemove', onMove)
+  }, [hostRef, wires, pinIndex, hoveredWire])
+
   function handlePinClick(componentId: string, pinName: string) {
     const ref = `${componentId}.${pinName}`
     if (!wireInProgress) {
@@ -212,17 +249,6 @@ export function WireOverlay({ hostRef }: Props) {
         const mid = midPointSagged(a.x, a.y, b.x, b.y)
         return (
           <g key={`${w.from_pin}-${w.to_pin}-${i}`}>
-            {/* Wide invisible hit area so the kid does not need to land on the 2.5 px line. */}
-            <path
-              d={curvedPath(a.x, a.y, b.x, b.y)}
-              fill="none"
-              stroke="transparent"
-              strokeWidth={14}
-              strokeLinecap="round"
-              className="pointer-events-auto cursor-pointer"
-              onMouseEnter={() => holdWireHover(i)}
-              onMouseLeave={() => releaseWireHover(i)}
-            />
             <path
               d={curvedPath(a.x, a.y, b.x, b.y)}
               fill="none"
@@ -234,8 +260,8 @@ export function WireOverlay({ hostRef }: Props) {
             {isHover && (
               <g
                 className="pointer-events-auto cursor-pointer"
-                onMouseEnter={() => setHoveredWire(i)}
-                onMouseLeave={() => setHoveredWire((prev) => (prev === i ? null : prev))}
+                onMouseEnter={() => holdWireHover(i)}
+                onMouseLeave={() => releaseWireHover(i)}
                 onClick={(e) => {
                   e.stopPropagation()
                   if (wireHoverTimerRef.current !== null) {
@@ -360,4 +386,30 @@ function midPointSagged(x1: number, y1: number, x2: number, y2: number): { x: nu
   const dist = Math.hypot(dx, dy)
   const sag = Math.min(40, dist * 0.18)
   return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 + sag }
+}
+
+// Min distance from (mx, my) to the quadratic Bezier defined by P0=(x0,y0),
+// P1=(cx,cy), P2=(x2,y2), approximated by sampling. 16 samples keeps the
+// per-mousemove cost negligible even with dozens of wires.
+function distanceToQuadratic(
+  mx: number,
+  my: number,
+  x0: number,
+  y0: number,
+  cx: number,
+  cy: number,
+  x2: number,
+  y2: number,
+): number {
+  let best = Infinity
+  const STEPS = 16
+  for (let i = 0; i <= STEPS; i++) {
+    const t = i / STEPS
+    const u = 1 - t
+    const px = u * u * x0 + 2 * u * t * cx + t * t * x2
+    const py = u * u * y0 + 2 * u * t * cy + t * t * y2
+    const d = Math.hypot(mx - px, my - py)
+    if (d < best) best = d
+  }
+  return best
 }
