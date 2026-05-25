@@ -47,6 +47,7 @@ export interface AppState {
 
   wires: Wire[]
   addWire: (w: Wire) => void
+  removeWire: (index: number) => void
 
   blocklyXml: string
   setBlocklyXml: (xml: string) => void
@@ -103,6 +104,8 @@ export const useAppStore = create<AppState>((set) => ({
 
   wires: [],
   addWire: (w) => set((state) => ({ wires: [...state.wires, w] })),
+  removeWire: (index) =>
+    set((state) => ({ wires: state.wires.filter((_, i) => i !== index) })),
 
   blocklyXml: EMPTY_BLOCKLY_XML,
   setBlocklyXml: (xml) => set({ blocklyXml: xml }),
