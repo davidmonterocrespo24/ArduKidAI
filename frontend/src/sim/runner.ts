@@ -118,7 +118,6 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
   portC.addListener(makeHandler([]))
 
   let stopped = false
-  let rafHandle = 0
 
   function frame() {
     if (stopped) return
@@ -126,15 +125,19 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
       avrInstruction(cpu)
       cpu.tick()
     }
-    rafHandle = requestAnimationFrame(frame)
   }
 
-  rafHandle = requestAnimationFrame(frame)
+  // setInterval keeps ticking regardless of tab visibility, headless mode,
+  // or rAF throttling. ~16 ms gives a 60 Hz target. requestAnimationFrame
+  // would sync to the display but stalls when the tab is hidden or the
+  // browser throttles background timers (which is exactly what made the
+  // LED look frozen during QA).
+  const intervalHandle = window.setInterval(frame, 16)
 
   return {
     stop: () => {
       stopped = true
-      cancelAnimationFrame(rafHandle)
+      window.clearInterval(intervalHandle)
     },
   }
 }
