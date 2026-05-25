@@ -107,10 +107,16 @@ export function DraggablePart({ instance }: Props) {
         userSelect: 'none',
         touchAction: 'none',
       }}
-      className="group flex flex-col items-center gap-1"
+      className="group inline-block"
     >
       <DynamicComponent instance={instance} />
-      <div className="flex items-center gap-2">
+      {/* Absolutely positioned so widening it (e.g. mounting the
+          SensorControl popover when sim starts) cannot shift the
+          wokwi element above. Without this the part jumps sideways
+          on Run and the wires no longer meet its pins. */}
+      <div
+        className="absolute left-1/2 top-full flex -translate-x-1/2 items-center gap-2 pt-1"
+      >
         <span
           onMouseDown={onHandleMouseDown}
           title="Drag to move"
