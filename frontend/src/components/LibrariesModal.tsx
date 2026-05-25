@@ -49,6 +49,15 @@ export function LibrariesModal({ open, onClose }: Props) {
     void refresh()
   }, [open, refresh])
 
+  useEffect(() => {
+    if (!open) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   async function install(name: string) {
     setBusyName(name)
     setError(null)
