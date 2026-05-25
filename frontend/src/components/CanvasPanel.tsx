@@ -9,14 +9,13 @@ export function CanvasPanel() {
   const wires = useAppStore((s) => s.wires)
   const removeComponent = useAppStore((s) => s.removeComponent)
   const removeWire = useAppStore((s) => s.removeWire)
-  const simStatus = useAppStore((s) => s.simStatus)
   const [wireOpen, setWireOpen] = useState(false)
 
   const periphs = components.filter((c) => c.type !== 'uno')
 
   return (
-    <section className="relative flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-3 py-2 dark:border-slate-800">
+    <section className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-3 py-2">
         <div className="flex items-center gap-3">
           <h2 className="text-sm font-semibold">Circuit</h2>
           <span className="text-[11px] text-slate-500">
@@ -27,17 +26,17 @@ export function CanvasPanel() {
         <button
           type="button"
           onClick={() => setWireOpen(true)}
-          className="rounded-md border border-emerald-200 px-2 py-1 text-[11px] font-medium text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-200 dark:hover:bg-emerald-950/30"
+          className="rounded-md border border-emerald-200 px-2 py-1 text-[11px] font-medium text-emerald-700 hover:bg-emerald-50"
         >
-          + Wire
+          + Wire (dropdown)
         </button>
       </header>
 
-      <div className="border-b border-slate-200 px-3 py-2 dark:border-slate-800">
+      <div className="shrink-0 border-b border-slate-200 px-3 py-2">
         <ComponentPicker />
       </div>
 
-      <div className="flex flex-1 overflow-auto p-6">
+      <div className="min-h-0 flex-1 overflow-auto p-6">
         <div className="flex w-full flex-col items-center gap-8">
           <div className="self-center">
             <wokwi-arduino-uno />
@@ -54,7 +53,7 @@ export function CanvasPanel() {
                       type="button"
                       onClick={() => removeComponent(instance.id)}
                       title={`Remove ${instance.id}`}
-                      className="rounded border border-rose-200 px-1.5 text-[10px] font-medium text-rose-600 opacity-0 transition group-hover:opacity-100 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-300 dark:hover:bg-rose-950/40"
+                      className="rounded border border-rose-200 px-1.5 text-[10px] font-medium text-rose-600 opacity-0 transition group-hover:opacity-100 hover:bg-rose-50"
                     >
                       remove
                     </button>
@@ -65,7 +64,7 @@ export function CanvasPanel() {
           )}
 
           {components.length === 0 && (
-            <div className="rounded border border-dashed border-slate-300 px-6 py-4 text-center text-sm text-slate-500 dark:border-slate-700">
+            <div className="rounded border border-dashed border-slate-300 px-6 py-4 text-center text-sm text-slate-500">
               Ask the agent to build something, or use the Add buttons above to drop parts yourself.
             </div>
           )}
@@ -73,11 +72,11 @@ export function CanvasPanel() {
           {wires.length > 0 && (
             <div className="w-full max-w-2xl">
               <p className="mb-1 text-xs font-medium text-slate-500">Wires</p>
-              <ul className="space-y-1 rounded border border-slate-200 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-900/50">
+              <ul className="space-y-1 rounded border border-slate-200 bg-slate-50 p-2">
                 {wires.map((w, i) => (
                   <li
                     key={`${w.from_pin}-${w.to_pin}-${i}`}
-                    className="flex items-center justify-between gap-2 rounded px-2 py-1 font-mono text-[11px] text-slate-700 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+                    className="flex items-center justify-between gap-2 rounded px-2 py-1 font-mono text-[11px] text-slate-700 hover:bg-white"
                   >
                     <span>
                       {w.from_pin} <span className="text-slate-400">to</span> {w.to_pin}
@@ -85,7 +84,7 @@ export function CanvasPanel() {
                     <button
                       type="button"
                       onClick={() => removeWire(i)}
-                      className="rounded border border-rose-200 px-1.5 text-[10px] font-medium text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-300 dark:hover:bg-rose-950/40"
+                      className="rounded border border-rose-200 px-1.5 text-[10px] font-medium text-rose-600 hover:bg-rose-50"
                     >
                       remove
                     </button>
@@ -96,10 +95,6 @@ export function CanvasPanel() {
           )}
         </div>
       </div>
-
-      <footer className="border-t border-slate-200 px-3 py-2 text-xs text-slate-500 dark:border-slate-800">
-        sim: <span className="font-mono">{simStatus}</span>
-      </footer>
 
       <WireDialog open={wireOpen} onClose={() => setWireOpen(false)} />
     </section>

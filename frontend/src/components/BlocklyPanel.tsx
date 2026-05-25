@@ -13,9 +13,20 @@ export function BlocklyPanel() {
   const setCppCode = useAppStore((s) => s.setCppCode)
 
   useEffect(() => {
-    if (!containerRef.current) return
-    const workspace = initBlockly(containerRef.current)
+    const container = containerRef.current
+    if (!container) return
+    const workspace = initBlockly(container)
     workspaceRef.current = workspace
+
+    // Blockly measures its SVG once at inject() time. When the host panel is
+    // hidden behind a Suspense fallback or briefly zero-sized, the workspace
+    // boots collapsed. Force a resize on the next frame and watch the
+    // container so user-driven panel resizes keep the workspace in sync.
+    requestAnimationFrame(() => Blockly.svgResize(workspace))
+    const observer = new ResizeObserver(() => {
+      if (workspaceRef.current) Blockly.svgResize(workspaceRef.current)
+    })
+    observer.observe(container)
 
     const listener = () => {
       try {
@@ -28,6 +39,7 @@ export function BlocklyPanel() {
     workspace.addChangeListener(listener)
 
     return () => {
+      observer.disconnect()
       workspace.removeChangeListener(listener)
       workspace.dispose()
       workspaceRef.current = null

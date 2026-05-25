@@ -12,7 +12,7 @@ interface CompileResponse {
   error?: string
 }
 
-export function FooterBar() {
+export function SimControls() {
   const setPinSnapshot = useAppStore((s) => s.setPinSnapshot)
   const setLedOn = useAppStore((s) => s.setLedOn)
   const simStatus = useAppStore((s) => s.simStatus)
@@ -97,65 +97,72 @@ export function FooterBar() {
   }
 
   const isRunning = simStatus === 'running'
+  const statusDot =
+    simStatus === 'running'
+      ? 'bg-emerald-500'
+      : simStatus === 'error'
+      ? 'bg-rose-500'
+      : 'bg-slate-300'
 
   return (
-    <footer className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-2 text-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="text-xs text-slate-500">
-        Simulator: <span className="font-mono">{simStatus}</span>
-        <span className="mx-2 text-slate-300">|</span>
-        Program: <span className="font-mono">{hexCode ? 'compiled HEX' : 'fallback blink'}</span>
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => (hexCode ? startWithCurrent() : compileAndRun())}
-          disabled={isRunning}
-          className={cn(
-            'rounded-md px-3 py-1.5 text-sm font-medium text-white',
-            isRunning
-              ? 'cursor-not-allowed bg-emerald-500/50'
-              : 'bg-emerald-500 hover:bg-emerald-600',
-          )}
-        >
-          Run
-        </button>
-        <button
-          type="button"
-          onClick={() => void compileAndRun()}
-          disabled={isRunning}
-          className="rounded-md border border-emerald-200 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-800 dark:text-emerald-200 dark:hover:bg-emerald-950/30"
-        >
-          Compile & run
-        </button>
-        <button
-          type="button"
-          onClick={stopSim}
-          disabled={!isRunning}
-          className={cn(
-            'rounded-md px-3 py-1.5 text-sm font-medium',
-            isRunning
-              ? 'bg-slate-200 text-slate-900 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700'
-              : 'cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-900 dark:text-slate-600',
-          )}
-        >
-          Stop
-        </button>
-        <button
-          type="button"
-          onClick={reset}
-          className="rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-        >
-          Reset
-        </button>
-        <button
-          type="button"
-          onClick={() => setSaveOpen(true)}
-          className="rounded-md border border-emerald-200 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-200 dark:hover:bg-emerald-950/30"
-        >
-          Save
-        </button>
-      </div>
+    <div className="flex items-center gap-2">
+      <span
+        aria-hidden="true"
+        className={cn('h-2 w-2 rounded-full', statusDot)}
+        title={`sim ${simStatus}`}
+      />
+      <button
+        type="button"
+        onClick={() => (hexCode ? startWithCurrent() : compileAndRun())}
+        disabled={isRunning}
+        title="Run the loaded program (or compile first if needed)"
+        className={cn(
+          'rounded-md px-2.5 py-1 text-xs font-medium text-white',
+          isRunning
+            ? 'cursor-not-allowed bg-emerald-500/50'
+            : 'bg-emerald-500 hover:bg-emerald-600',
+        )}
+      >
+        Run
+      </button>
+      <button
+        type="button"
+        onClick={() => void compileAndRun()}
+        disabled={isRunning}
+        title="POST current C++ to /api/compile and load the returned HEX"
+        className="rounded-md border border-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+      >
+        Compile &amp; run
+      </button>
+      <button
+        type="button"
+        onClick={stopSim}
+        disabled={!isRunning}
+        className={cn(
+          'rounded-md px-2.5 py-1 text-xs font-medium',
+          isRunning
+            ? 'bg-slate-200 text-slate-900 hover:bg-slate-300'
+            : 'cursor-not-allowed bg-slate-100 text-slate-400',
+        )}
+      >
+        Stop
+      </button>
+      <button
+        type="button"
+        onClick={reset}
+        title="Clear circuit, blocks, code, sim state"
+        className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Reset
+      </button>
+      <button
+        type="button"
+        onClick={() => setSaveOpen(true)}
+        title="Save the current circuit as a named project"
+        className="rounded-md border border-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+      >
+        Save
+      </button>
 
       <SaveProjectDialog
         open={saveOpen}
@@ -168,6 +175,6 @@ export function FooterBar() {
           })
         }
       />
-    </footer>
+    </div>
   )
 }

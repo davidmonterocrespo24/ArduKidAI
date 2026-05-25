@@ -1,8 +1,9 @@
+import { SimControls } from './SimControls'
 import { UserMenu } from './UserMenu'
 
 export function TopBar() {
   return (
-    <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2 dark:border-slate-800 dark:bg-slate-900">
+    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2">
       <div className="flex items-center gap-3">
         <span
           aria-hidden="true"
@@ -15,7 +16,11 @@ export function TopBar() {
           <p className="text-xs text-slate-500">An AI Arduino IDE for kids</p>
         </div>
       </div>
-      <UserMenu />
+      <div className="flex flex-wrap items-center gap-4">
+        <SimControls />
+        <div className="h-6 w-px bg-slate-200" aria-hidden="true" />
+        <UserMenu />
+      </div>
     </header>
   )
 }

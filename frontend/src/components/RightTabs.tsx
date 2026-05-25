@@ -27,8 +27,8 @@ export function RightTabs() {
   const setTab = useAppStore((s) => s.setRightTab)
 
   return (
-    <section className="flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <header className="flex border-b border-slate-200 dark:border-slate-800">
+    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <header className="flex shrink-0 border-b border-slate-200">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -38,14 +38,14 @@ export function RightTabs() {
               'flex-1 px-3 py-2 text-sm font-semibold',
               tab === t.id
                 ? 'border-b-2 border-emerald-500 text-emerald-600'
-                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300',
+                : 'text-slate-500 hover:text-slate-700',
             )}
           >
             {t.label}
           </button>
         ))}
       </header>
-      <div className="flex-1 overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-hidden">
         <Suspense fallback={<PanelFallback />}>
           {tab === 'blockly' ? <BlocklyPanel /> : <CodePanel />}
         </Suspense>
