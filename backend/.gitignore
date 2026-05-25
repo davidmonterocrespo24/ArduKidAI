@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.env
+.env.local
+
+# Service-account keys must never be committed.
+service-account*.json
+gcp-key*.json
+
+# arduino-cli local state when run outside the container.
+.arduino-cli/
+arduino-build/

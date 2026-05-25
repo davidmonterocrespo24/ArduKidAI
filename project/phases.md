@@ -15,7 +15,7 @@ Master tracker. Each phase has its own checklist file under `project/phase-N-*.m
 | --- | --- | --- | --- | --- |
 | 0 | Project bootstrap | May 25, 2026 | done | [phase-0-bootstrap.md](./phase-0-bootstrap.md) |
 | 1 | Frontend base | May 27-29, 2026 | done (May 25, 2026 - ahead) | [phase-1-frontend-base.md](./phase-1-frontend-base.md) |
-| 2 | Backend agent | May 30 - Jun 1, 2026 | pending | [phase-2-backend-agent.md](./phase-2-backend-agent.md) |
+| 2 | Backend agent | May 30 - Jun 1, 2026 | done (May 25, 2026 - ahead) | [phase-2-backend-agent.md](./phase-2-backend-agent.md) |
 | 3 | Frontend + agent integration | Jun 2-4, 2026 | pending | [phase-3-integration.md](./phase-3-integration.md) |
 | 4 | MongoDB MCP + vector search | Jun 5-6, 2026 | pending | [phase-4-mongodb-mcp.md](./phase-4-mongodb-mcp.md) |
 | 5 | Production deploy | Jun 7, 2026 | pending | [phase-5-deploy.md](./phase-5-deploy.md) |
