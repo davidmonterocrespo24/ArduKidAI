@@ -1,7 +1,7 @@
 # Phase 5 - Production deploy
 
 Target: June 7, 2026
-Status: pending
+Status: dev-deploy scaffolded (May 25, 2026); Cloud Run still pending
 
 ## Goal
 

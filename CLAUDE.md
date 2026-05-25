@@ -122,3 +122,13 @@ Do not start a new phase before the previous one's exit criteria are met. Do not
 
 - **`project/manual-setup.md`** is the canonical checklist of things only the user can do (create accounts, request credits, generate keys, fill the Devpost form, upload the video). Append to it whenever a phase needs an action you cannot take. Each entry records why, the URL, the deadline, and what artifact the user must paste back.
 - **`project/velxio-reference-index.md`** maps the paths in the user's prior Arduino-emulator project at `/home/dave/velxio` that solve similar problems (avr8js wiring, wokwi rendering, arduino-cli pipeline). **Read for patterns only - never copy code, strings, comments, or file structure.** Every line shipped here must be newly created within the contest period.
+
+## Dev deploy
+
+The app runs on the user's own Docker host (currently `ArduKidAI.moontero.com`). The full recipe is in `deploy/README.md`. Briefly:
+
+- `docker-compose.yml` at the repo root brings up backend (8080) + frontend (8081) + an optional `mongodb-mcp-server` sidecar (compose profile `mcp`).
+- The host's nginx (TLS via Certbot) reverse-proxies `/api/*` to the backend and `/` to the frontend. Sample config at `deploy/nginx-ardukidai.conf.sample`.
+- The frontend is built with `VITE_API_BASE=""` so all SPA requests are same-origin - no CORS dance needed in dev.
+
+Local `npm run dev` + `uv run uvicorn` still works for fast iteration; the Docker stack is purely for the deployed demo.

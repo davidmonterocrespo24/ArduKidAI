@@ -1,0 +1,9 @@
+node_modules
+dist
+.vite
+.env
+.env.local
+.eslintcache
+coverage
+.DS_Store
+Thumbs.db

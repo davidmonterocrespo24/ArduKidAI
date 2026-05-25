@@ -1,0 +1,68 @@
+# Dev deploy stack for ArduKidAI on a single Docker host.
+#
+# The host runs an nginx (or other) reverse proxy that terminates TLS for
+# ArduKidAI.<your-domain> and forwards:
+#   /api/*  -> backend (127.0.0.1:8080)
+#   /       -> frontend (127.0.0.1:8081)
+#
+# A sample server-side nginx config lives at deploy/nginx-ardukidai.conf.sample.
+#
+# Bring up:
+#   docker compose up -d --build
+#
+# Tear down:
+#   docker compose down
+
+services:
+  backend:
+    build:
+      context: ./backend
+    image: ardukid-backend:dev
+    container_name: ardukid-backend
+    restart: unless-stopped
+    environment:
+      ARDUKID_AGENT_MODE: ${ARDUKID_AGENT_MODE:-mock}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
+      GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-us-central1}
+      ARDUKID_GEMINI_MODEL: ${ARDUKID_GEMINI_MODEL:-gemini-3-pro}
+      ARDUKID_FQBN: ${ARDUKID_FQBN:-arduino:avr:uno}
+      ARDUKID_ARDUINO_CLI: /usr/local/bin/arduino-cli
+      ARDUKID_CORS_ORIGINS: ${ARDUKID_CORS_ORIGINS:-https://ArduKidAI.moontero.com,http://localhost:5173}
+      MONGODB_URI: ${MONGODB_URI:-}
+      MONGODB_DB: ${MONGODB_DB:-ardukid}
+      MCP_ENABLED: ${MCP_ENABLED:-false}
+      MCP_SERVER_URL: ${MCP_SERVER_URL:-http://mongo-mcp:3030}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in production}
+      JWT_TTL_HOURS: ${JWT_TTL_HOURS:-336}
+      PORT: "8080"
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    image: ardukid-frontend:dev
+    container_name: ardukid-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:80"
+    depends_on:
+      - backend
+
+  # MongoDB MCP server sidecar. Exposes the official MongoDB Model Context
+  # Protocol surface (find, aggregate, vectorSearch, insertOne) at HTTP/SSE.
+  # The backend reaches it through MCP_SERVER_URL when MCP_ENABLED=true.
+  # Profile "mcp" keeps it optional: `docker compose --profile mcp up -d`.
+  mongo-mcp:
+    image: node:24-alpine
+    container_name: ardukid-mongo-mcp
+    restart: unless-stopped
+    profiles: ["mcp"]
+    environment:
+      MDB_MCP_CONNECTION_STRING: ${MONGODB_URI:-}
+    command:
+      - sh
+      - -c
+      - "npx -y mongodb-mcp-server --transport http --httpPort 3030 --httpHost 0.0.0.0"
+    expose:
+      - "3030"

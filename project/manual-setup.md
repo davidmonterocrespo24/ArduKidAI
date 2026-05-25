@@ -17,8 +17,20 @@ Update the status column as items complete. When a step produces an artifact Cla
 | M7 | Configure Atlas network access (allow Cloud Run egress, or 0.0.0.0/0 for dev) | Atlas console | before Phase 4 | - | [ ] |
 | M8 | Create the Atlas Vector Search index on `examples.intent_embedding` (768 dims, cosine) | Atlas console (or skip - the seeder creates it) | before Phase 4 | - | [ ] |
 | M8b | Run the seeder once after Atlas is up: `cd backend && MONGODB_URI=... uv run python -m scripts.seed_db` | local shell | before Phase 5 | confirmation log "seeded 9 components and 30 examples" | [ ] |
+| M8c | (optional) Index a PDF into the RAG store: `cd backend && MONGODB_URI=... uv run python -m scripts.index_pdf path/to/file.pdf --source "Arduino UNO Guide"` | local shell | any time | confirmation log "indexed N chunks" | [ ] |
 
-## Deploy-time (Phase 5)
+## Dev deploy (moontero.com)
+
+| # | Task | URL | Deadline | Output Claude needs | Status |
+| --- | --- | --- | --- | --- | --- |
+| D1 | Clone repo on the host into a working directory | host shell | any time | path | [ ] |
+| D2 | `cp .env.example .env` and set `JWT_SECRET` to a long random string (also `MONGODB_URI` if Atlas is up) | host shell | any time | - | [ ] |
+| D3 | `sudo cp deploy/nginx-ardukidai.conf.sample /etc/nginx/sites-available/ardukidai && sudo ln -s /etc/nginx/sites-available/ardukidai /etc/nginx/sites-enabled/ && sudo nginx -t && sudo systemctl reload nginx` | host shell | any time | - | [ ] |
+| D4 | `sudo certbot --nginx -d ArduKidAI.moontero.com` | host shell | any time | - | [ ] |
+| D5 | `docker compose up -d --build` (add `--profile mcp` once Atlas + MCP_ENABLED are wanted) | host shell | any time | - | [ ] |
+| D6 | Visit https://ArduKidAI.moontero.com and click a suggestion chip; the mock agent should assemble a circuit | browser | any time | screenshot for the demo video | [ ] |
+
+## Cloud Run deploy (final, Phase 5)
 
 | # | Task | URL | Deadline | Output Claude needs | Status |
 | --- | --- | --- | --- | --- | --- |
