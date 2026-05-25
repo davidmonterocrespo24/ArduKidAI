@@ -23,6 +23,11 @@ Master tracker. Each phase has its own checklist file under `project/phase-N-*.m
 
 Margin day: **Jun 11, 2026** - submit on Devpost before 14:00 PT.
 
+## Side trackers
+
+- [`manual-setup.md`](./manual-setup.md) - things only the user can do (GCP project, $100 credit form by **June 4**, MongoDB Atlas signup, Devpost form, video upload).
+- [`velxio-reference-index.md`](./velxio-reference-index.md) - paths in `/home/dave/velxio` to read for patterns. Reference only, never copy.
+
 ## Commit rules
 
 - One commit per phase completion (minimum). Multiple incremental commits within a phase are fine.
