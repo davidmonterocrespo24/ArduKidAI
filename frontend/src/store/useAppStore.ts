@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { ChatMessage, ComponentInstance, Wire } from '../types/circuit'
 import type { UserPublic } from '../auth/api'
 import { emptyActivity, emptyPinLevels, type DigitalPinLabel } from '../sim/pinState'
+import { emptyPwmSnapshot, type PwmSnapshot } from '../sim/pwm'
 import { BLINK_BLOCKS } from '../lib/exampleTemplates'
 
 export type SimStatus = 'idle' | 'running' | 'stopped' | 'error'
@@ -42,6 +43,9 @@ export interface AppState {
   pinLevels: Record<DigitalPinLabel, boolean>
   pinActivity: Record<DigitalPinLabel, number>
   setPinSnapshot: (levels: Record<DigitalPinLabel, boolean>, activity: Record<DigitalPinLabel, number>) => void
+
+  pwm: PwmSnapshot
+  setPwmSnapshot: (snap: PwmSnapshot) => void
 
   // Kept for back-compat: legacy LED indicator wired to D13. New components
   // should read pinLevels[pinLabel] directly.
@@ -113,6 +117,9 @@ export const useAppStore = create<AppState>((set) => ({
   pinActivity: emptyActivity(),
   setPinSnapshot: (levels, activity) =>
     set({ pinLevels: levels, pinActivity: activity, ledOn: levels.D13 }),
+
+  pwm: emptyPwmSnapshot(),
+  setPwmSnapshot: (snap) => set({ pwm: snap }),
 
   ledOn: false,
   setLedOn: (v) => set({ ledOn: v }),
@@ -229,6 +236,7 @@ export const useAppStore = create<AppState>((set) => ({
       ledOn: false,
       pinLevels: emptyPinLevels(),
       pinActivity: emptyActivity(),
+      pwm: emptyPwmSnapshot(),
       simStatus: 'idle',
     }),
 }))

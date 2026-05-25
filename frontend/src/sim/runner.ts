@@ -22,6 +22,14 @@ import { DIGITAL_PIN_LABELS, type DigitalPinLabel } from './pinState'
 import { I2CBus } from './i2cBus'
 import { PCF8574 } from './pcf8574'
 import { HD44780Backpack } from './hd44780'
+import {
+  emptyPwmSnapshot,
+  pwmSnapshotEquals,
+  sampleScale,
+  type PwmSnapshot,
+} from './pwm'
+
+export type { PwmSnapshot } from './pwm'
 
 const PROGRAM_MEM_WORDS = 0x4000
 // 250k instructions per ~16 ms frame keeps the simulator close to a real
@@ -50,6 +58,9 @@ export interface SimCallbacks {
   /** Called when a virtual I2C LCD updates its visible text. Two lines
    * joined by "\n", trailing blanks trimmed. */
   onLcdText?: (text: string) => void
+  /** Called once per frame if the PWM register snapshot changed.
+   * Consumers (LED brightness, servo angle) project the relevant fields. */
+  onPwmChange?: (snapshot: PwmSnapshot) => void
 }
 
 export type SimProgram =
@@ -159,6 +170,7 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
   portC.addListener(makeHandler([]))
 
   let stopped = false
+  let lastPwm: PwmSnapshot = emptyPwmSnapshot()
 
   function frame() {
     if (stopped) return
@@ -170,6 +182,13 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
     for (let i = 0; i < INSTRUCTIONS_PER_FRAME; i++) {
       avrInstruction(cpu)
       cpu.tick()
+    }
+    if (callbacks.onPwmChange) {
+      const snap = sampleScale(cpu)
+      if (!pwmSnapshotEquals(snap, lastPwm)) {
+        lastPwm = snap
+        callbacks.onPwmChange(snap)
+      }
     }
   }
 

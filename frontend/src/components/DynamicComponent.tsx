@@ -3,6 +3,7 @@ import type { ComponentInstance } from '../types/circuit'
 import { useAppStore } from '../store/useAppStore'
 import { resolveDrivePin } from '../sim/wireTrace'
 import { isActive } from '../sim/pinState'
+import { servoMicrosToAngle } from '../sim/pwm'
 
 function useLiveProperty<K extends string>(propName: K, value: unknown) {
   const ref = useRef<HTMLElement>(null)
@@ -10,6 +11,18 @@ function useLiveProperty<K extends string>(propName: K, value: unknown) {
     if (!ref.current) return
     ;(ref.current as unknown as Record<string, unknown>)[propName] = value
   }, [propName, value])
+  return ref
+}
+
+function useLiveProperties(props: Record<string, unknown>) {
+  const ref = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (!ref.current) return
+    const el = ref.current as unknown as Record<string, unknown>
+    for (const [k, v] of Object.entries(props)) {
+      el[k] = v
+    }
+  }, [props])
   return ref
 }
 
@@ -22,8 +35,19 @@ function Led({ instance }: { instance: ComponentInstance }) {
   const drivePin = useDrivePin(instance.id)
   const pinLevels = useAppStore((s) => s.pinLevels)
   const legacyLedOn = useAppStore((s) => s.ledOn)
+  const duty = useAppStore((s) => (drivePin ? s.pwm.duty[drivePin] : undefined))
   const isOn = drivePin ? pinLevels[drivePin] : legacyLedOn
-  const ref = useLiveProperty('value', isOn)
+  // When analogWrite was called on this pin, we treat the LED as
+  // continuously on with a brightness proportional to duty. Pure
+  // digitalWrite() keeps brightness at 1 and just toggles value.
+  const props = useMemo(
+    () =>
+      duty !== undefined
+        ? { value: duty > 0, brightness: duty }
+        : { value: isOn, brightness: 1 },
+    [duty, isOn],
+  )
+  const ref = useLiveProperties(props)
   const color = (instance.props.color as string | undefined) ?? 'red'
   return <wokwi-led ref={ref} id={instance.id} color={color} />
 }
@@ -37,7 +61,22 @@ function Buzzer({ instance }: { instance: ComponentInstance }) {
 }
 
 function Servo({ instance }: { instance: ComponentInstance }) {
-  const angle = (instance.props.angle as number | undefined) ?? 0
+  const drivePin = useDrivePin(instance.id)
+  const pwm = useAppStore((s) => s.pwm)
+  // The Arduino Servo library puts Timer1 in /8 prescaler and writes
+  // the pulse width (in 0.5 us ticks) to OCR1A (D9) or OCR1B (D10).
+  // When that pin is wired to the servo, the OCR value supersedes the
+  // static angle the agent set with set_component_props.
+  const liveAngle = (() => {
+    if (drivePin === 'D9' && pwm.com1a && pwm.ocr1a > 255) {
+      return servoMicrosToAngle(pwm.ocr1a)
+    }
+    if (drivePin === 'D10' && pwm.com1b && pwm.ocr1b > 255) {
+      return servoMicrosToAngle(pwm.ocr1b)
+    }
+    return undefined
+  })()
+  const angle = liveAngle ?? ((instance.props.angle as number | undefined) ?? 0)
   const ref = useLiveProperty('angle', angle)
   return <wokwi-servo ref={ref} id={instance.id} />
 }

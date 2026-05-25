@@ -42,6 +42,7 @@ interface CompileResponse {
 
 export function SimControls() {
   const setPinSnapshot = useAppStore((s) => s.setPinSnapshot)
+  const setPwmSnapshot = useAppStore((s) => s.setPwmSnapshot)
   const setLedOn = useAppStore((s) => s.setLedOn)
   const simStatus = useAppStore((s) => s.simStatus)
   const setSimStatus = useAppStore((s) => s.setSimStatus)
@@ -74,6 +75,7 @@ export function SimControls() {
         onSerialLine: (line) => appendSerial(line),
         getAdcChannel: getAdcChannelFromStore,
         onLcdText: pushLcdText,
+        onPwmChange: (snap) => setPwmSnapshot(snap),
       },
     )
     setSimStatus('running')
@@ -101,6 +103,7 @@ export function SimControls() {
             onSerialLine: (line) => appendSerial(line),
             getAdcChannel: getAdcChannelFromStore,
             onLcdText: pushLcdText,
+            onPwmChange: (snap) => setPwmSnapshot(snap),
           },
         )
         setSimStatus('running')
