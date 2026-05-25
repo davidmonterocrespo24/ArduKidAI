@@ -1,15 +1,19 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { DynamicComponent } from './DynamicComponent'
 import { ComponentPicker } from './ComponentPicker'
 import { WireDialog } from './WireDialog'
+import { WireOverlay } from './WireOverlay'
 
 export function CanvasPanel() {
   const components = useAppStore((s) => s.components)
   const wires = useAppStore((s) => s.wires)
+  const wireInProgress = useAppStore((s) => s.wireInProgress)
+  const cancelWire = useAppStore((s) => s.cancelWire)
   const removeComponent = useAppStore((s) => s.removeComponent)
   const removeWire = useAppStore((s) => s.removeWire)
   const [wireOpen, setWireOpen] = useState(false)
+  const canvasRef = useRef<HTMLDivElement>(null)
 
   const periphs = components.filter((c) => c.type !== 'uno')
 
@@ -22,13 +26,19 @@ export function CanvasPanel() {
             {components.length} part{components.length === 1 ? '' : 's'} &middot; {wires.length} wire
             {wires.length === 1 ? '' : 's'}
           </span>
+          {wireInProgress && (
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+              Wiring from <code className="font-mono">{wireInProgress.from_pin}</code> - click a second pin or press Esc
+            </span>
+          )}
         </div>
         <button
           type="button"
           onClick={() => setWireOpen(true)}
-          className="rounded-md border border-emerald-200 px-2 py-1 text-[11px] font-medium text-emerald-700 hover:bg-emerald-50"
+          className="rounded-md border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+          title="Pick pins from dropdowns instead of clicking"
         >
-          + Wire (dropdown)
+          dropdown wire
         </button>
       </header>
 
@@ -36,14 +46,28 @@ export function CanvasPanel() {
         <ComponentPicker />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto p-6">
-        <div className="flex w-full flex-col items-center gap-8">
+      <p className="shrink-0 border-b border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] text-slate-600">
+        Click any blue pin to start a wire. Click a second pin to finish it. Press
+        <kbd className="mx-1 rounded bg-white px-1 py-0.5 font-mono text-[10px] text-slate-500 shadow-sm">Esc</kbd>
+        to cancel.
+      </p>
+
+      <div
+        ref={canvasRef}
+        className="relative min-h-0 flex-1 overflow-auto p-6"
+        onClick={(e) => {
+          if (wireInProgress && e.target === e.currentTarget) {
+            cancelWire()
+          }
+        }}
+      >
+        <div className="relative flex w-full flex-col items-center gap-8">
           <div className="self-center">
-            <wokwi-arduino-uno />
+            <wokwi-arduino-uno id="UNO" />
           </div>
 
           {periphs.length > 0 && (
-            <div className="flex flex-wrap items-end justify-center gap-x-10 gap-y-6">
+            <div className="flex flex-wrap items-end justify-center gap-x-10 gap-y-8">
               {periphs.map((instance) => (
                 <div key={instance.id} className="group relative flex flex-col items-center gap-1">
                   <DynamicComponent instance={instance} />
@@ -78,7 +102,12 @@ export function CanvasPanel() {
                     key={`${w.from_pin}-${w.to_pin}-${i}`}
                     className="flex items-center justify-between gap-2 rounded px-2 py-1 font-mono text-[11px] text-slate-700 hover:bg-white"
                   >
-                    <span>
+                    <span className="flex items-center gap-2">
+                      <span
+                        aria-hidden="true"
+                        className="inline-block h-2 w-4 rounded"
+                        style={{ background: w.color ?? '#1f2937' }}
+                      />
                       {w.from_pin} <span className="text-slate-400">to</span> {w.to_pin}
                     </span>
                     <button
@@ -94,6 +123,8 @@ export function CanvasPanel() {
             </div>
           )}
         </div>
+
+        <WireOverlay hostRef={canvasRef} />
       </div>
 
       <WireDialog open={wireOpen} onClose={() => setWireOpen(false)} />

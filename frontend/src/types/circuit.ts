@@ -20,6 +20,7 @@ export interface ComponentInstance {
 export interface Wire {
   from_pin: string
   to_pin: string
+  color?: string
 }
 
 export interface CircuitState {

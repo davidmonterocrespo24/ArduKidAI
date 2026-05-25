@@ -49,6 +49,10 @@ export interface AppState {
   addWire: (w: Wire) => void
   removeWire: (index: number) => void
 
+  wireInProgress: { from_pin: string } | null
+  startWire: (from_pin: string) => void
+  cancelWire: () => void
+
   blocklyXml: string
   setBlocklyXml: (xml: string) => void
 
@@ -103,9 +107,13 @@ export const useAppStore = create<AppState>((set) => ({
     })),
 
   wires: [],
-  addWire: (w) => set((state) => ({ wires: [...state.wires, w] })),
+  addWire: (w) => set((state) => ({ wires: [...state.wires, w], wireInProgress: null })),
   removeWire: (index) =>
     set((state) => ({ wires: state.wires.filter((_, i) => i !== index) })),
+
+  wireInProgress: null,
+  startWire: (from_pin) => set({ wireInProgress: { from_pin } }),
+  cancelWire: () => set({ wireInProgress: null }),
 
   blocklyXml: EMPTY_BLOCKLY_XML,
   setBlocklyXml: (xml) => set({ blocklyXml: xml }),
@@ -149,6 +157,7 @@ export const useAppStore = create<AppState>((set) => ({
     set({
       components: [],
       wires: [],
+      wireInProgress: null,
       blocklyXml: EMPTY_BLOCKLY_XML,
       cppCode: PLACEHOLDER_SKETCH,
       hexCode: null,
