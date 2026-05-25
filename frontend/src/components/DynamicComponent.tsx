@@ -4,6 +4,7 @@ import { useAppStore } from '../store/useAppStore'
 import { resolveDrivePin } from '../sim/wireTrace'
 import { isActive } from '../sim/pinState'
 import { servoMicrosToAngle } from '../sim/pwm'
+import { driveInputPin } from '../sim/inputBridge'
 
 function useLiveProperty<K extends string>(propName: K, value: unknown) {
   const ref = useRef<HTMLElement>(null)
@@ -104,7 +105,32 @@ function Potentiometer({ instance }: { instance: ComponentInstance }) {
 
 function Pushbutton({ instance }: { instance: ComponentInstance }) {
   const color = (instance.props.color as string | undefined) ?? 'blue'
-  return <wokwi-pushbutton id={instance.id} color={color} />
+  const drivePin = useDrivePin(instance.id)
+  const ref = useRef<HTMLElement>(null)
+
+  // Seed the connected pin HIGH while the button is idle (the kid's
+  // sketch will use pinMode(INPUT_PULLUP) to read it). avr8js' IOPort
+  // does not auto-pull on its own, so without this the input would
+  // float and `digitalRead` would think the button is forever pressed.
+  useEffect(() => {
+    if (!drivePin) return
+    driveInputPin(drivePin, true)
+  }, [drivePin])
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !drivePin) return
+    const onPress = () => driveInputPin(drivePin, false)
+    const onRelease = () => driveInputPin(drivePin, true)
+    el.addEventListener('button-press', onPress)
+    el.addEventListener('button-release', onRelease)
+    return () => {
+      el.removeEventListener('button-press', onPress)
+      el.removeEventListener('button-release', onRelease)
+    }
+  }, [drivePin])
+
+  return <wokwi-pushbutton ref={ref} id={instance.id} color={color} />
 }
 
 function Resistor({ instance }: { instance: ComponentInstance }) {

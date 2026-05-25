@@ -28,6 +28,7 @@ import {
   sampleScale,
   type PwmSnapshot,
 } from './pwm'
+import { clearInputBridge, registerInputBridge } from './inputBridge'
 
 export type { PwmSnapshot } from './pwm'
 
@@ -169,6 +170,26 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
   portD.addListener(makeHandler(PORTD_MAP))
   portC.addListener(makeHandler([]))
 
+  // External input bridge: pushbuttons / switches on the canvas pull
+  // a pin LOW or release it back HIGH. We translate the label to the
+  // right port+bit and call setPin, which inside avr8js also fires
+  // INT0/INT1/PCINT vectors so attachInterrupt() works for free.
+  const setter = (label: DigitalPinLabel, value: boolean) => {
+    for (const [l, bit] of PORTD_MAP) {
+      if (l === label) {
+        portD.setPin(bit, value)
+        return
+      }
+    }
+    for (const [l, bit] of PORTB_MAP) {
+      if (l === label) {
+        portB.setPin(bit, value)
+        return
+      }
+    }
+  }
+  registerInputBridge(setter)
+
   let stopped = false
   let lastPwm: PwmSnapshot = emptyPwmSnapshot()
 
@@ -203,6 +224,7 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
     stop: () => {
       stopped = true
       window.clearInterval(intervalHandle)
+      clearInputBridge(setter)
     },
   }
 }
