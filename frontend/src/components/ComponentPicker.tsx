@@ -2,17 +2,28 @@ import { useAppStore } from '../store/useAppStore'
 import { PERIPHERAL_COMPONENTS } from '../lib/componentCatalog'
 import { nextComponentId } from '../lib/nextComponentId'
 
+const SPAWN_GRID_X = 150
+const SPAWN_GRID_Y = 160
+const SPAWN_ORIGIN_X = 40
+const SPAWN_ORIGIN_Y = 360
+const SPAWN_COLS = 5
+
 export function ComponentPicker() {
   const components = useAppStore((s) => s.components)
   const addComponent = useAppStore((s) => s.addComponent)
 
   function add(meta: (typeof PERIPHERAL_COMPONENTS)[number]) {
     const id = nextComponentId(meta.type, components)
+    // Spread new parts in a grid below the UNO so they do not all stack at
+    // the origin. The kid can drag them around freely afterwards.
+    const peripheralCount = components.filter((c) => c.type !== 'uno').length
+    const col = peripheralCount % SPAWN_COLS
+    const row = Math.floor(peripheralCount / SPAWN_COLS)
     addComponent({
       id,
       type: meta.type,
-      x: 0,
-      y: 0,
+      x: SPAWN_ORIGIN_X + col * SPAWN_GRID_X,
+      y: SPAWN_ORIGIN_Y + row * SPAWN_GRID_Y,
       props: { ...meta.defaultProps },
     })
   }

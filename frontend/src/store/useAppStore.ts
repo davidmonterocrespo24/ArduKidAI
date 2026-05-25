@@ -54,6 +54,7 @@ export interface AppState {
   components: ComponentInstance[]
   addComponent: (c: ComponentInstance) => void
   removeComponent: (id: string) => void
+  updateComponentPosition: (id: string, x: number, y: number) => void
 
   wires: Wire[]
   addWire: (w: Wire) => void
@@ -129,6 +130,10 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({
       components: state.components.filter((c) => c.id !== id),
       wires: state.wires.filter((w) => !w.from_pin.startsWith(`${id}.`) && !w.to_pin.startsWith(`${id}.`)),
+    })),
+  updateComponentPosition: (id, x, y) =>
+    set((state) => ({
+      components: state.components.map((c) => (c.id === id ? { ...c, x, y } : c)),
     })),
 
   wires: [],
