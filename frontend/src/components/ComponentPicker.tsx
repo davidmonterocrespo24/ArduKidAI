@@ -2,11 +2,15 @@ import { useAppStore } from '../store/useAppStore'
 import { PERIPHERAL_COMPONENTS } from '../lib/componentCatalog'
 import { nextComponentId } from '../lib/nextComponentId'
 
-const SPAWN_GRID_X = 150
-const SPAWN_GRID_Y = 160
-const SPAWN_ORIGIN_X = 40
-const SPAWN_ORIGIN_Y = 360
-const SPAWN_COLS = 5
+// Spawn near the top-left corner of the stage so newly added parts are
+// always visible no matter how small the canvas panel is. The UNO sits at
+// (240, 60), so we lay parts out from the top-left where they cannot
+// overlap it. The kid can drag them anywhere afterwards.
+const SPAWN_GRID_X = 130
+const SPAWN_GRID_Y = 140
+const SPAWN_ORIGIN_X = 20
+const SPAWN_ORIGIN_Y = 20
+const SPAWN_COLS = 2
 
 export function ComponentPicker() {
   const components = useAppStore((s) => s.components)

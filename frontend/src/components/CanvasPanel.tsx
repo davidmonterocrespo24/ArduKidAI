@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { ComponentPicker } from './ComponentPicker'
 import { DraggablePart } from './DraggablePart'
@@ -20,6 +20,16 @@ export function CanvasPanel() {
   const removeWire = useAppStore((s) => s.removeWire)
   const [wireOpen, setWireOpen] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
+  const prevCountRef = useRef(components.length)
+
+  // When a new part is added, scroll the canvas back to the top-left so the
+  // kid actually sees it (the spawn position is up there).
+  useEffect(() => {
+    if (components.length > prevCountRef.current && canvasRef.current) {
+      canvasRef.current.scrollTo({ left: 0, top: 0, behavior: 'smooth' })
+    }
+    prevCountRef.current = components.length
+  }, [components.length])
 
   const periphs = components.filter((c) => c.type !== 'uno')
 

@@ -45,22 +45,34 @@ export function DraggablePart({ instance }: Props) {
     }
   }, [dragging, instance.id, updatePosition])
 
-  function onPointerDown(e: React.PointerEvent) {
-    // Skip drag when the click hits the remove button or any descendant
-    // that opts out (the button below stops propagation).
-    if (e.button !== 0) return
+  function startDrag(clientX: number, clientY: number) {
     dragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
+      startX: clientX,
+      startY: clientY,
       originX: instance.x,
       originY: instance.y,
     }
     setDragging(true)
   }
 
+  function onPointerDown(e: React.PointerEvent) {
+    if (e.button !== 0) return
+    startDrag(e.clientX, e.clientY)
+  }
+
+  // Some automation tools and a few odd input devices only emit mouse
+  // events, not pointer events. Listening to both keeps drag working
+  // everywhere.
+  function onMouseDown(e: React.MouseEvent) {
+    if (e.button !== 0) return
+    if (dragRef.current) return
+    startDrag(e.clientX, e.clientY)
+  }
+
   return (
     <div
       onPointerDown={onPointerDown}
+      onMouseDown={onMouseDown}
       style={{
         position: 'absolute',
         left: instance.x,
