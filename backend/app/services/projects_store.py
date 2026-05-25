@@ -1,5 +1,9 @@
 """Project persistence. Async API. Uses MongoDB when `MONGODB_URI` is set,
-otherwise an in-memory dict keyed by project id."""
+otherwise an in-memory dict keyed by project id.
+
+Projects can be saved anonymously (no user_id, scoped to a browser tab) or
+attached to an authenticated user. The list/get APIs filter accordingly so
+one account's projects never leak into another's first-run screen."""
 
 from __future__ import annotations
 
@@ -9,7 +13,16 @@ from datetime import UTC, datetime
 from ..db.client import COLLECTION_PROJECTS, get_db
 from ..schemas import CircuitState, ProjectDetail, ProjectSummary
 
-_MEMORY: dict[str, ProjectDetail] = {}
+
+class _MemoryEntry:
+    __slots__ = ("detail", "user_id")
+
+    def __init__(self, detail: ProjectDetail, user_id: str | None):
+        self.detail = detail
+        self.user_id = user_id
+
+
+_MEMORY: dict[str, _MemoryEntry] = {}
 
 
 def _project_id() -> str:
@@ -20,14 +33,26 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
-async def list_all() -> list[ProjectSummary]:
+def _matches_user(entry_user: str | None, query_user: str | None) -> bool:
+    return entry_user == query_user
+
+
+async def list_all(user_id: str | None = None) -> list[ProjectSummary]:
     db = get_db()
     if db is None:
-        return [
-            ProjectSummary(id=p.id, name=p.name, created_at=p.created_at)
-            for p in sorted(_MEMORY.values(), key=lambda x: x.created_at, reverse=True)
+        entries = [
+            e for e in _MEMORY.values() if _matches_user(e.user_id, user_id)
         ]
-    cursor = db[COLLECTION_PROJECTS].find({}, {"circuit": 0}).sort("created_at", -1)
+        entries.sort(key=lambda e: e.detail.created_at, reverse=True)
+        return [
+            ProjectSummary(id=e.detail.id, name=e.detail.name, created_at=e.detail.created_at)
+            for e in entries
+        ]
+    cursor = (
+        db[COLLECTION_PROJECTS]
+        .find({"user_id": user_id}, {"circuit": 0})
+        .sort("created_at", -1)
+    )
     out: list[ProjectSummary] = []
     async for doc in cursor:
         out.append(
@@ -40,11 +65,14 @@ async def list_all() -> list[ProjectSummary]:
     return out
 
 
-async def get(project_id: str) -> ProjectDetail | None:
+async def get(project_id: str, user_id: str | None = None) -> ProjectDetail | None:
     db = get_db()
     if db is None:
-        return _MEMORY.get(project_id)
-    doc = await db[COLLECTION_PROJECTS].find_one({"_id": project_id})
+        entry = _MEMORY.get(project_id)
+        if entry is None or not _matches_user(entry.user_id, user_id):
+            return None
+        return entry.detail
+    doc = await db[COLLECTION_PROJECTS].find_one({"_id": project_id, "user_id": user_id})
     if doc is None:
         return None
     return ProjectDetail(
@@ -55,14 +83,19 @@ async def get(project_id: str) -> ProjectDetail | None:
     )
 
 
-async def save(*, name: str, circuit: CircuitState) -> ProjectDetail:
+async def save(
+    *,
+    name: str,
+    circuit: CircuitState,
+    user_id: str | None = None,
+) -> ProjectDetail:
     project_id = _project_id()
     created_at = _now()
     detail = ProjectDetail(id=project_id, name=name, created_at=created_at, circuit=circuit)
 
     db = get_db()
     if db is None:
-        _MEMORY[project_id] = detail
+        _MEMORY[project_id] = _MemoryEntry(detail=detail, user_id=user_id)
         return detail
 
     await db[COLLECTION_PROJECTS].insert_one(
@@ -71,6 +104,7 @@ async def save(*, name: str, circuit: CircuitState) -> ProjectDetail:
             "name": name,
             "created_at": created_at,
             "circuit": circuit.model_dump(),
+            "user_id": user_id,
         }
     )
     return detail

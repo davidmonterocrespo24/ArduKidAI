@@ -1,4 +1,5 @@
 import { apiUrl, postJson } from '../lib/api'
+import { authHeader } from '../auth/token'
 import type { CircuitState } from '../types/circuit'
 
 export interface ProjectSummary {
@@ -12,13 +13,15 @@ export interface ProjectDetail extends ProjectSummary {
 }
 
 export async function listProjects(): Promise<ProjectSummary[]> {
-  const res = await fetch(apiUrl('/api/projects'))
+  const res = await fetch(apiUrl('/api/projects'), { headers: { ...authHeader() } })
   if (!res.ok) throw new Error(`list projects failed: ${res.status}`)
   return (await res.json()) as ProjectSummary[]
 }
 
 export async function getProject(id: string): Promise<ProjectDetail> {
-  const res = await fetch(apiUrl(`/api/projects/${encodeURIComponent(id)}`))
+  const res = await fetch(apiUrl(`/api/projects/${encodeURIComponent(id)}`), {
+    headers: { ...authHeader() },
+  })
   if (!res.ok) throw new Error(`get project failed: ${res.status}`)
   return (await res.json()) as ProjectDetail
 }

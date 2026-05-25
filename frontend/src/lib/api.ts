@@ -7,10 +7,12 @@ export function apiUrl(path: string): string {
   return `${API_BASE}${suffix}`
 }
 
+import { authHeader } from '../auth/token'
+
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(apiUrl(path), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
     body: JSON.stringify(body),
   })
   if (!res.ok) {

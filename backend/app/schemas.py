@@ -73,3 +73,19 @@ class ExampleHit(BaseModel):
     title: str
     intent: str
     score: float = 0.0
+
+
+class AuthRequest(BaseModel):
+    email: str = Field(..., min_length=3, max_length=200)
+    password: str = Field(..., min_length=8, max_length=200)
+
+
+class UserPublic(BaseModel):
+    id: str
+    email: str
+    created_at: str
+
+
+class AuthResponse(BaseModel):
+    token: str
+    user: UserPublic

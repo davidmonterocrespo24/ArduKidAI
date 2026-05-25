@@ -45,6 +45,7 @@ COLLECTION_COMPONENTS = "components_catalog"
 COLLECTION_EXAMPLES = "examples"
 COLLECTION_PROJECTS = "projects"
 COLLECTION_KNOWLEDGE = "knowledge_chunks"
+COLLECTION_USERS = "users"
 
 
 def reset() -> None:

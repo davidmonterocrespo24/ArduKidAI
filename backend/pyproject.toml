@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "ArduKid backend: FastAPI agent service that drives Gemini 3 via Google Cloud Agent Builder, with arduino-cli for C++ to HEX compilation."
 requires-python = ">=3.12"
 dependencies = [
+    "bcrypt>=5.0.0",
     "fastapi>=0.136.3",
     "google-genai>=2.6.0",
     "httpx>=0.28.1",
@@ -11,6 +12,7 @@ dependencies = [
     "numpy>=2.4.6",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.1",
+    "pyjwt>=2.13.0",
     "pymongo>=4.17.0",
     "pypdf>=6.12.1",
     "slowapi>=0.1.9",

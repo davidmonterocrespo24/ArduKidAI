@@ -1,6 +1,7 @@
 import { apiUrl } from '../lib/api'
 import { sseStream } from '../lib/sse'
 import { getSessionId } from '../lib/sessionId'
+import { authHeader } from '../auth/token'
 import { useAppStore } from '../store/useAppStore'
 import { handleAgentEvent } from './dispatcher'
 
@@ -19,7 +20,7 @@ export async function sendChatMessage(message: string): Promise<void> {
   try {
     const res = await fetch(apiUrl('/api/agent/chat'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
       body: JSON.stringify({
         session_id: getSessionId(),
         message: trimmed,

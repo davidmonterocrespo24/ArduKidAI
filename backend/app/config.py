@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     mcp_enabled: bool = False
     mcp_server_url: str = "http://localhost:3030"
 
+    # Auth. JWT secret must be set in production; the default below is fine
+    # for local development with the in-memory user store.
+    jwt_secret: str = "ardukid-local-dev-only-change-me"
+    jwt_ttl_hours: int = 24 * 14  # 14 days
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.ardukid_cors_origins.split(",") if origin.strip()]

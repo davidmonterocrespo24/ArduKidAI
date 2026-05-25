@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { ChatMessage, ComponentInstance, Wire } from '../types/circuit'
+import type { UserPublic } from '../auth/api'
 import { emptyActivity, emptyPinLevels, type DigitalPinLabel } from '../sim/pinState'
 
 export type SimStatus = 'idle' | 'running' | 'stopped' | 'error'
@@ -65,6 +66,9 @@ export interface AppState {
 
   rightTab: RightTab
   setRightTab: (t: RightTab) => void
+
+  currentUser: UserPublic | null
+  setCurrentUser: (u: UserPublic | null) => void
 
   resetCircuit: () => void
 }
@@ -134,6 +138,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   rightTab: 'blockly',
   setRightTab: (t) => set({ rightTab: t }),
+
+  currentUser: null,
+  setCurrentUser: (u) => set({ currentUser: u }),
 
   resetCircuit: () =>
     set({

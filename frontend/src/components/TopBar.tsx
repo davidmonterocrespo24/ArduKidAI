@@ -1,3 +1,5 @@
+import { UserMenu } from './UserMenu'
+
 export function TopBar() {
   return (
     <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2 dark:border-slate-800 dark:bg-slate-900">
@@ -13,7 +15,7 @@ export function TopBar() {
           <p className="text-xs text-slate-500">An AI Arduino IDE for kids</p>
         </div>
       </div>
-      <div className="text-xs text-slate-500">Phase 1 preview - frontend base</div>
+      <UserMenu />
     </header>
   )
 }
