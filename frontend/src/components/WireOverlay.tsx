@@ -105,10 +105,23 @@ export function WireOverlay({ hostRef }: Props) {
     }
   }, [wireInProgress, hostRef])
 
+  // Build the pin lookup. The agent / backend speaks Arduino-IDE pin names
+  // ("UNO.D13", "UNO.GND", "UNO.5V") while wokwi-arduino-uno exposes them as
+  // "13", "GND.1", etc. Register both forms so wires resolve regardless of
+  // which side authored them.
   const pinIndex = useMemo(() => {
     const map = new Map<string, PositionedPin>()
     for (const p of pins) {
       map.set(`${p.componentId}.${p.name}`, p)
+      if (p.componentId !== 'UNO') continue
+      if (/^\d+$/.test(p.name)) {
+        map.set(`UNO.D${p.name}`, p)
+      }
+      if (/^GND(\.\d+)?$/.test(p.name) && !map.has('UNO.GND')) {
+        map.set('UNO.GND', p)
+      }
+      if (p.name === '3.3V') map.set('UNO.3V3', p)
+      if (p.name === '5V') map.set('UNO.5V', p)
     }
     return map
   }, [pins])
