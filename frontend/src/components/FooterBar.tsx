@@ -13,6 +13,7 @@ interface CompileResponse {
 }
 
 export function FooterBar() {
+  const setPinSnapshot = useAppStore((s) => s.setPinSnapshot)
   const setLedOn = useAppStore((s) => s.setLedOn)
   const simStatus = useAppStore((s) => s.simStatus)
   const setSimStatus = useAppStore((s) => s.setSimStatus)
@@ -37,7 +38,7 @@ export function FooterBar() {
     if (simRef.current) return
     simRef.current = startSim(
       hexCode ? { kind: 'hex', hex: hexCode } : { kind: 'fallback' },
-      (on) => setLedOn(on),
+      (snapshot) => setPinSnapshot(snapshot.levels, snapshot.activity),
     )
     setSimStatus('running')
   }
@@ -52,7 +53,9 @@ export function FooterBar() {
         setHexCode(resp.hex)
         setCompileError(null)
         stopSim()
-        simRef.current = startSim({ kind: 'hex', hex: resp.hex }, (on) => setLedOn(on))
+        simRef.current = startSim({ kind: 'hex', hex: resp.hex }, (snapshot) =>
+          setPinSnapshot(snapshot.levels, snapshot.activity),
+        )
         setSimStatus('running')
       } else {
         const detail = resp.stderr || resp.error || 'unknown compile error'

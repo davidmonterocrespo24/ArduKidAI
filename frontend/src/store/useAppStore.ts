@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { ChatMessage, ComponentInstance, Wire } from '../types/circuit'
+import { emptyActivity, emptyPinLevels, type DigitalPinLabel } from '../sim/pinState'
 
 export type SimStatus = 'idle' | 'running' | 'stopped' | 'error'
 
@@ -24,6 +25,12 @@ void loop() {
 `
 
 export interface AppState {
+  pinLevels: Record<DigitalPinLabel, boolean>
+  pinActivity: Record<DigitalPinLabel, number>
+  setPinSnapshot: (levels: Record<DigitalPinLabel, boolean>, activity: Record<DigitalPinLabel, number>) => void
+
+  // Kept for back-compat: legacy LED indicator wired to D13. New components
+  // should read pinLevels[pinLabel] directly.
   ledOn: boolean
   setLedOn: (v: boolean) => void
 
@@ -63,6 +70,11 @@ export interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
+  pinLevels: emptyPinLevels(),
+  pinActivity: emptyActivity(),
+  setPinSnapshot: (levels, activity) =>
+    set({ pinLevels: levels, pinActivity: activity, ledOn: levels.D13 }),
+
   ledOn: false,
   setLedOn: (v) => set({ ledOn: v }),
 
@@ -132,6 +144,8 @@ export const useAppStore = create<AppState>((set) => ({
       hexCode: null,
       compileError: null,
       ledOn: false,
+      pinLevels: emptyPinLevels(),
+      pinActivity: emptyActivity(),
       simStatus: 'idle',
     }),
 }))

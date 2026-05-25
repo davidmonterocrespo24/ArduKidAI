@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { ComponentInstance } from '../types/circuit'
 import { useAppStore } from '../store/useAppStore'
+import { resolveDrivePin } from '../sim/wireTrace'
+import { isActive } from '../sim/pinState'
 
 function useLiveProperty<K extends string>(propName: K, value: unknown) {
   const ref = useRef<HTMLElement>(null)
@@ -11,21 +13,26 @@ function useLiveProperty<K extends string>(propName: K, value: unknown) {
   return ref
 }
 
+function useDrivePin(componentId: string) {
+  const wires = useAppStore((s) => s.wires)
+  return useMemo(() => resolveDrivePin(componentId, wires), [componentId, wires])
+}
+
 function Led({ instance }: { instance: ComponentInstance }) {
-  // The first LED in the circuit follows the simulator state. Additional LEDs
-  // display in their default color but stay dark until the simulator drives
-  // their pin (which arrives in phase 5 once we wire per-pin port listeners).
-  const ledOn = useAppStore((s) => s.ledOn)
-  const components = useAppStore((s) => s.components)
-  const firstLedId = components.find((c) => c.type === 'led')?.id
-  const isOn = instance.id === firstLedId ? ledOn : false
+  const drivePin = useDrivePin(instance.id)
+  const pinLevels = useAppStore((s) => s.pinLevels)
+  const legacyLedOn = useAppStore((s) => s.ledOn)
+  const isOn = drivePin ? pinLevels[drivePin] : legacyLedOn
   const ref = useLiveProperty('value', isOn)
   const color = (instance.props.color as string | undefined) ?? 'red'
   return <wokwi-led ref={ref} color={color} />
 }
 
-function Buzzer() {
-  const ref = useLiveProperty('hasSignal', false)
+function Buzzer({ instance }: { instance: ComponentInstance }) {
+  const drivePin = useDrivePin(instance.id)
+  const pinActivity = useAppStore((s) => s.pinActivity)
+  const hasSignal = drivePin ? isActive(drivePin, pinActivity, 250) : false
+  const ref = useLiveProperty('hasSignal', hasSignal)
   return <wokwi-buzzer ref={ref} />
 }
 
@@ -75,7 +82,7 @@ export function DynamicComponent({ instance }: { instance: ComponentInstance }) 
     case 'pushbutton':
       return <Pushbutton instance={instance} />
     case 'buzzer':
-      return <Buzzer />
+      return <Buzzer instance={instance} />
     case 'servo':
       return <Servo instance={instance} />
     case 'potentiometer':
