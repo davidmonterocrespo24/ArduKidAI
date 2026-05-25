@@ -29,6 +29,15 @@ import {
   type PwmSnapshot,
 } from './pwm'
 import { clearInputBridge, registerInputBridge } from './inputBridge'
+import { emitPinToggle } from './audioBridge'
+
+export type SerialSender = (bytes: Uint8Array) => void
+
+let activeSerialSender: SerialSender | null = null
+
+export function sendSerialToActiveSim(bytes: Uint8Array): void {
+  activeSerialSender?.(bytes)
+}
 
 export type { PwmSnapshot } from './pwm'
 
@@ -177,6 +186,10 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
           snapshot.levels[label] = level
           snapshot.activity[label] = now
           changed = true
+          // Audible-rate events for the buzzer's frequency tracker.
+          // Stays out of Zustand because tone(1000) fires 2 000 of
+          // these per second.
+          emitPinToggle(label)
         }
       }
       if (changed) emit()
@@ -186,6 +199,14 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
   portB.addListener(makeHandler(PORTB_MAP))
   portD.addListener(makeHandler(PORTD_MAP))
   portC.addListener(makeHandler([]))
+
+  // Serial RX bridge: the SerialMonitor "Send" button feeds bytes
+  // into the USART so the sketch can read them with Serial.read().
+  // writeByte(b, true) bypasses the baud-rate delay so we don't have
+  // to wait O(milliseconds) per character.
+  activeSerialSender = (bytes: Uint8Array) => {
+    for (const b of bytes) usart.writeByte(b, true)
+  }
 
   // External input bridge: pushbuttons / switches on the canvas pull
   // a pin LOW or release it back HIGH. We translate the label to the
@@ -242,6 +263,7 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
       stopped = true
       window.clearInterval(intervalHandle)
       clearInputBridge(setter)
+      activeSerialSender = null
       if (lineBuffer.length > 0 && callbacks.onSerialLine) {
         callbacks.onSerialLine(lineBuffer)
         lineBuffer = ''

@@ -1,16 +1,34 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
+import { sendSerialToActiveSim } from '../sim/runner'
+
+type LineEnding = 'none' | 'lf' | 'crlf'
 
 export function SerialMonitor() {
   const serial = useAppStore((s) => s.serialOutput)
   const clear = useAppStore((s) => s.clearSerial)
+  const simStatus = useAppStore((s) => s.simStatus)
   const ref = useRef<HTMLPreElement>(null)
+  const [draft, setDraft] = useState('')
+  const [ending, setEnding] = useState<LineEnding>('lf')
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
     el.scrollTop = el.scrollHeight
   }, [serial])
+
+  function send() {
+    if (!draft) return
+    let payload = draft
+    if (ending === 'lf') payload += '\n'
+    else if (ending === 'crlf') payload += '\r\n'
+    const bytes = new TextEncoder().encode(payload)
+    sendSerialToActiveSim(bytes)
+    setDraft('')
+  }
+
+  const canSend = simStatus === 'running' && draft.length > 0
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -40,6 +58,43 @@ export function SerialMonitor() {
           serial
         )}
       </pre>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          send()
+        }}
+        className="flex shrink-0 items-center gap-1.5 border-t border-slate-200 bg-slate-50 px-2 py-1.5"
+      >
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={
+            simStatus === 'running'
+              ? 'Type a line and press Send'
+              : 'Start the sim to send data'
+          }
+          disabled={simStatus !== 'running'}
+          className="min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none disabled:bg-slate-100"
+        />
+        <select
+          value={ending}
+          onChange={(e) => setEnding(e.target.value as LineEnding)}
+          title="Line ending appended before sending"
+          className="rounded border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-700"
+        >
+          <option value="none">No ending</option>
+          <option value="lf">\n</option>
+          <option value="crlf">\r\n</option>
+        </select>
+        <button
+          type="submit"
+          disabled={!canSend}
+          className="rounded border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+        >
+          Send
+        </button>
+      </form>
     </div>
   )
 }

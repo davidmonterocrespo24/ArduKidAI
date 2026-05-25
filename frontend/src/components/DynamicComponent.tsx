@@ -5,6 +5,7 @@ import { resolveDrivePin } from '../sim/wireTrace'
 import { isActive } from '../sim/pinState'
 import { servoMicrosToAngle } from '../sim/pwm'
 import { driveInputPin } from '../sim/inputBridge'
+import { getAudioContext, onPinToggle } from '../sim/audioBridge'
 
 function useLiveProperty<K extends string>(propName: K, value: unknown) {
   const ref = useRef<HTMLElement>(null)
@@ -56,8 +57,67 @@ function Led({ instance }: { instance: ComponentInstance }) {
 function Buzzer({ instance }: { instance: ComponentInstance }) {
   const drivePin = useDrivePin(instance.id)
   const pinActivity = useAppStore((s) => s.pinActivity)
+  const simStatus = useAppStore((s) => s.simStatus)
   const hasSignal = drivePin ? isActive(drivePin, pinActivity, 250) : false
   const ref = useLiveProperty('hasSignal', hasSignal)
+
+  // Live audio: time each pin toggle on the wired pin and feed the
+  // measured frequency to a square-wave oscillator. tone(8, 440) toggles
+  // D8 at 880 Hz; we want the speaker to hum at ~440. Silence the gain
+  // when no toggles arrive for 120 ms so digitalWrite-only sketches do
+  // not produce a permanent hum.
+  useEffect(() => {
+    if (!drivePin || simStatus !== 'running') return
+    const ctx = getAudioContext()
+    if (!ctx) return
+    const osc = ctx.createOscillator()
+    osc.type = 'square'
+    osc.frequency.value = 440
+    const gain = ctx.createGain()
+    gain.gain.value = 0
+    osc.connect(gain).connect(ctx.destination)
+    osc.start()
+
+    const timestamps: number[] = []
+    let lastUpdate = 0
+    const TARGET_VOL = 0.05
+    const unsub = onPinToggle((pin) => {
+      if (pin !== drivePin) return
+      const now = performance.now()
+      timestamps.push(now)
+      while (timestamps.length > 0 && now - timestamps[0] > 120) timestamps.shift()
+      if (timestamps.length < 4) return
+      const span = timestamps[timestamps.length - 1] - timestamps[0]
+      if (span <= 0) return
+      // (n - 1) half-periods in `span` ms -> n-1 transitions
+      // freq = (n-1) / (2 * span / 1000)
+      const freq = ((timestamps.length - 1) * 1000) / (2 * span)
+      if (freq < 30 || freq > 8000) return
+      osc.frequency.setTargetAtTime(freq, ctx.currentTime, 0.005)
+      gain.gain.setTargetAtTime(TARGET_VOL, ctx.currentTime, 0.005)
+      lastUpdate = now
+    })
+
+    const mute = window.setInterval(() => {
+      if (performance.now() - lastUpdate > 120) {
+        gain.gain.setTargetAtTime(0, ctx.currentTime, 0.02)
+      }
+    }, 80)
+
+    return () => {
+      unsub()
+      window.clearInterval(mute)
+      gain.gain.setTargetAtTime(0, ctx.currentTime, 0.01)
+      try { osc.stop(ctx.currentTime + 0.05) } catch {
+        // already stopped
+      }
+      window.setTimeout(() => {
+        try { osc.disconnect() } catch { /* noop */ }
+        try { gain.disconnect() } catch { /* noop */ }
+      }, 100)
+    }
+  }, [drivePin, simStatus])
+
   return <wokwi-buzzer ref={ref} id={instance.id} />
 }
 

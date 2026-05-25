@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
-import { ComponentPicker } from './ComponentPicker'
+import { AddComponentModal } from './AddComponentModal'
 import { DraggablePart } from './DraggablePart'
 import { WireDialog } from './WireDialog'
 import { WireOverlay } from './WireOverlay'
@@ -14,10 +14,10 @@ const UNO_TOP = 60
 
 export function CanvasPanel() {
   const components = useAppStore((s) => s.components)
-  const wires = useAppStore((s) => s.wires)
   const wireInProgress = useAppStore((s) => s.wireInProgress)
   const cancelWire = useAppStore((s) => s.cancelWire)
   const [wireOpen, setWireOpen] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
   const prevCountRef = useRef(components.length)
 
@@ -34,13 +34,15 @@ export function CanvasPanel() {
 
   return (
     <section className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-3 py-2">
-        <div className="flex items-center gap-3">
-          <h2 className="text-sm font-semibold">Circuit</h2>
-          <span className="text-[11px] text-slate-500">
-            {components.length} part{components.length === 1 ? '' : 's'} &middot; {wires.length} wire
-            {wires.length === 1 ? '' : 's'}
-          </span>
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-1.5">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="rounded-md border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-emerald-600"
+          >
+            Add component
+          </button>
           {wireInProgress && (
             <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
               Wiring from <code className="font-mono">{wireInProgress.from_pin}</code> - click a second pin or press Esc
@@ -50,22 +52,12 @@ export function CanvasPanel() {
         <button
           type="button"
           onClick={() => setWireOpen(true)}
-          className="rounded-md border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+          className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100"
           title="Pick pins from dropdowns instead of clicking"
         >
           dropdown wire
         </button>
-      </header>
-
-      <div className="shrink-0 border-b border-slate-200 px-3 py-2">
-        <ComponentPicker />
       </div>
-
-      <p className="shrink-0 border-b border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] text-slate-600">
-        Drag any part to move it. Click a blue pin to start a wire, click a second pin to finish.
-        <kbd className="mx-1 rounded bg-white px-1 py-0.5 font-mono text-[10px] text-slate-500 shadow-sm">Esc</kbd>
-        cancels.
-      </p>
 
       <div
         ref={canvasRef}
@@ -106,6 +98,7 @@ export function CanvasPanel() {
       </div>
 
       <WireDialog open={wireOpen} onClose={() => setWireOpen(false)} />
+      <AddComponentModal open={addOpen} onClose={() => setAddOpen(false)} />
     </section>
   )
 }
