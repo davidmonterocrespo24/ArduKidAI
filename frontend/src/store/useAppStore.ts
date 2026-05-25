@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { ChatMessage, ComponentInstance, Wire } from '../types/circuit'
 import type { UserPublic } from '../auth/api'
 import { emptyActivity, emptyPinLevels, type DigitalPinLabel } from '../sim/pinState'
+import { BLINK_BLOCKS } from '../lib/exampleTemplates'
 
 export type SimStatus = 'idle' | 'running' | 'stopped' | 'error'
 
@@ -19,10 +20,12 @@ export interface CompileLogEntry {
   message: string
 }
 
-const EMPTY_BLOCKLY_XML =
-  '<xml xmlns="https://developers.google.com/blockly/xml"></xml>'
+// Hello-world default: the canvas starts with the standard "blink pin 13"
+// program in both tabs so the kid sees something concrete instead of an
+// empty workspace. ResetCircuit and the first load both restore this.
+const DEFAULT_BLOCKLY_XML = BLINK_BLOCKS
 
-const PLACEHOLDER_SKETCH = `// The agent will overwrite this when it generates a program from your blocks.
+const PLACEHOLDER_SKETCH = `// Hello world for Arduino: blink the LED on pin 13.
 void setup() {
   pinMode(13, OUTPUT);
 }
@@ -145,7 +148,7 @@ export const useAppStore = create<AppState>((set) => ({
   startWire: (from_pin) => set({ wireInProgress: { from_pin } }),
   cancelWire: () => set({ wireInProgress: null }),
 
-  blocklyXml: EMPTY_BLOCKLY_XML,
+  blocklyXml: DEFAULT_BLOCKLY_XML,
   setBlocklyXml: (xml) => set({ blocklyXml: xml }),
 
   cppCode: PLACEHOLDER_SKETCH,
@@ -210,7 +213,7 @@ export const useAppStore = create<AppState>((set) => ({
       components: [],
       wires: [],
       wireInProgress: null,
-      blocklyXml: EMPTY_BLOCKLY_XML,
+      blocklyXml: DEFAULT_BLOCKLY_XML,
       cppCode: PLACEHOLDER_SKETCH,
       hexCode: null,
       compileError: null,

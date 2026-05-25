@@ -24,6 +24,7 @@ export function ExamplesModal({ open, onClose }: Props) {
   const addComponent = useAppStore((s) => s.addComponent)
   const addWire = useAppStore((s) => s.addWire)
   const setCppCode = useAppStore((s) => s.setCppCode)
+  const setBlocklyXml = useAppStore((s) => s.setBlocklyXml)
   const appendChatMessage = useAppStore((s) => s.appendChatMessage)
 
   if (!open) return null
@@ -52,6 +53,11 @@ export function ExamplesModal({ open, onClose }: Props) {
     for (const c of ex.components) addComponent(c)
     for (const wire of ex.wires) addWire(wire)
     setCppCode(ex.cpp_code)
+    if (ex.blockly_xml) {
+      setBlocklyXml(ex.blockly_xml)
+    } else {
+      setBlocklyXml('<xml xmlns="https://developers.google.com/blockly/xml"></xml>')
+    }
     appendChatMessage({
       id: crypto.randomUUID(),
       role: 'system',

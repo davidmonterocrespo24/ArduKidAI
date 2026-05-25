@@ -12,6 +12,16 @@
 
 import type { ComponentInstance, ComponentType, Wire } from '../types/circuit'
 import { nextSpawnPosition } from './spawnPosition'
+import {
+  chain,
+  digitalWrite,
+  ifThen,
+  loop,
+  pinMode,
+  setup,
+  toXml,
+  wait,
+} from './blocklyXml'
 
 export type Difficulty = 1 | 2 | 3
 
@@ -25,7 +35,151 @@ export interface ExampleTemplate {
   components: ComponentInstance[]
   wires: Wire[]
   cpp_code: string
+  /** Optional starter Blockly program. Examples whose C++ uses libraries or
+   * patterns we do not have block coverage for leave this blank and the kid
+   * sees the program in the Arduino code tab only. */
+  blockly_xml?: string
 }
+
+// ---------------------------------------------------------------------------
+// Reusable Blockly fragments. Helpers from blocklyXml.ts compose the trees.
+// ---------------------------------------------------------------------------
+
+export const BLINK_BLOCKS = toXml(
+  setup(pinMode(13, 'OUTPUT')),
+  loop(
+    chain(
+      digitalWrite(13, 'HIGH'),
+      wait(500),
+      digitalWrite(13, 'LOW'),
+      wait(500),
+    ),
+  ),
+)
+
+const TWO_LEDS_BLOCKS = toXml(
+  setup(chain(pinMode(12, 'OUTPUT'), pinMode(13, 'OUTPUT'))),
+  loop(
+    chain(
+      digitalWrite(13, 'HIGH'),
+      digitalWrite(12, 'LOW'),
+      wait(400),
+      digitalWrite(13, 'LOW'),
+      digitalWrite(12, 'HIGH'),
+      wait(400),
+    ),
+  ),
+)
+
+const TRAFFIC_BLOCKS = toXml(
+  setup(chain(pinMode(11, 'OUTPUT'), pinMode(12, 'OUTPUT'), pinMode(13, 'OUTPUT'))),
+  loop(
+    chain(
+      digitalWrite(13, 'HIGH'),
+      digitalWrite(12, 'LOW'),
+      digitalWrite(11, 'LOW'),
+      wait(3000),
+      digitalWrite(13, 'LOW'),
+      digitalWrite(12, 'HIGH'),
+      wait(1000),
+      digitalWrite(12, 'LOW'),
+      digitalWrite(11, 'HIGH'),
+      wait(3000),
+      digitalWrite(11, 'LOW'),
+    ),
+  ),
+)
+
+const CHRISTMAS_BLOCKS = toXml(
+  setup(chain(pinMode(11, 'OUTPUT'), pinMode(12, 'OUTPUT'), pinMode(13, 'OUTPUT'))),
+  loop(
+    chain(
+      digitalWrite(13, 'HIGH'),
+      wait(200),
+      digitalWrite(13, 'LOW'),
+      digitalWrite(12, 'HIGH'),
+      wait(200),
+      digitalWrite(12, 'LOW'),
+      digitalWrite(11, 'HIGH'),
+      wait(200),
+      digitalWrite(11, 'LOW'),
+    ),
+  ),
+)
+
+const POLICE_BLOCKS = toXml(
+  setup(chain(pinMode(12, 'OUTPUT'), pinMode(13, 'OUTPUT'))),
+  loop(
+    chain(
+      digitalWrite(13, 'HIGH'),
+      digitalWrite(12, 'LOW'),
+      wait(80),
+      digitalWrite(13, 'LOW'),
+      digitalWrite(12, 'HIGH'),
+      wait(80),
+    ),
+  ),
+)
+
+const BUTTON_PRESS_BLOCKS = toXml(
+  setup(chain(pinMode(2, 'INPUT_PULLUP'), pinMode(13, 'OUTPUT'))),
+  loop(
+    chain(
+      ifThen(
+        // digitalRead block already returns boolean (true == HIGH)
+        { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+        digitalWrite(13, 'LOW'),
+      ),
+      ifThen(
+        {
+          type: 'logic_compare',
+          fields: { OP: 'EQ' },
+          values: {
+            A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+            B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+          },
+        },
+        digitalWrite(13, 'HIGH'),
+      ),
+    ),
+  ),
+)
+
+const DOORBELL_BLOCKS = toXml(
+  setup(pinMode(2, 'INPUT_PULLUP')),
+  loop(
+    ifThen(
+      {
+        type: 'logic_compare',
+        fields: { OP: 'EQ' },
+        values: {
+          A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+          B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+        },
+      },
+      chain(
+        { type: 'ardukid_tone', fields: { PIN: '8' }, values: { FREQ: { type: 'math_number', fields: { NUM: 880 } }, DURATION: { type: 'math_number', fields: { NUM: 200 } } } },
+        wait(220),
+        { type: 'ardukid_tone', fields: { PIN: '8' }, values: { FREQ: { type: 'math_number', fields: { NUM: 660 } }, DURATION: { type: 'math_number', fields: { NUM: 220 } } } },
+        wait(260),
+      ),
+    ),
+  ),
+)
+
+const BUZZER_TONE_BLOCKS = toXml(
+  setup(
+    {
+      type: 'ardukid_tone',
+      fields: { PIN: '8' },
+      values: {
+        FREQ: { type: 'math_number', fields: { NUM: 440 } },
+        DURATION: { type: 'math_number', fields: { NUM: 500 } },
+      },
+    },
+  ),
+  loop({ type: 'ardukid_pin_mode', fields: { PIN: '13', MODE: 'OUTPUT' } }),
+)
 
 const PREFIX: Record<ComponentType, string> = {
   uno: 'UNO',
@@ -597,6 +751,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     components: layout([{ type: 'led', props: { color: 'red' } }, { type: 'resistor', props: { value: '220' } }]),
     wires: ledOnPin(1, 1, '13'),
     cpp_code: BLINK_CPP,
+    blockly_xml: BLINK_BLOCKS,
   },
   {
     id: 'ex-002',
@@ -613,6 +768,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     ]),
     wires: [...ledOnPin(1, 1, '13'), ...ledOnPin(2, 2, '12')],
     cpp_code: TWO_LEDS_CPP,
+    blockly_xml: TWO_LEDS_BLOCKS,
   },
   {
     id: 'ex-003',
@@ -631,6 +787,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     ]),
     wires: [...ledOnPin(1, 1, '13'), ...ledOnPin(2, 2, '12'), ...ledOnPin(3, 3, '11')],
     cpp_code: TRAFFIC_CPP,
+    blockly_xml: TRAFFIC_BLOCKS,
   },
   {
     id: 'ex-004',
@@ -646,6 +803,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     ]),
     wires: [...buttonOnPin(1, '2'), ...ledOnPin(1, 1, '13')],
     cpp_code: BUTTON_LED_PRESS_CPP,
+    blockly_xml: BUTTON_PRESS_BLOCKS,
   },
   {
     id: 'ex-005',
@@ -706,6 +864,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     components: layout([{ type: 'buzzer' }]),
     wires: [w('BZ1.1', 'UNO.D8'), w('BZ1.2', 'UNO.GND')],
     cpp_code: BUZZER_TONE_CPP,
+    blockly_xml: BUZZER_TONE_BLOCKS,
   },
   {
     id: 'ex-009',
@@ -761,6 +920,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('BZ1.2', 'UNO.GND'),
     ],
     cpp_code: DOORBELL_CPP,
+    blockly_xml: DOORBELL_BLOCKS,
   },
   {
     id: 'ex-013',
@@ -860,6 +1020,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     ]),
     wires: [...ledOnPin(1, 1, '13'), ...ledOnPin(2, 2, '12'), ...ledOnPin(3, 3, '11')],
     cpp_code: CHRISTMAS_CPP,
+    blockly_xml: CHRISTMAS_BLOCKS,
   },
   {
     id: 'ex-019',
@@ -916,6 +1077,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     ]),
     wires: [...ledOnPin(1, 1, '13'), ...ledOnPin(2, 2, '12')],
     cpp_code: POLICE_CPP,
+    blockly_xml: POLICE_BLOCKS,
   },
   {
     id: 'ex-023',
