@@ -85,6 +85,7 @@ def test_canvas_and_mcp_tools_registered():
         "find_similar_example",
         "list_saved_projects",
         "load_project",
+        "search_docs",
     }
     assert canvas_tools.issubset(TOOLS)
     assert mcp_shaped_tools.issubset(TOOLS)

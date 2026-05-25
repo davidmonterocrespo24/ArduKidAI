@@ -31,6 +31,10 @@ Library and recall tools (backed by MongoDB through the MCP server):
 - `list_saved_projects()`: list the kid's previously saved projects.
 - `load_project(project_id)`: recall a saved project and replace the current
   session circuit with it.
+- `search_docs(query, limit)`: retrieval-augmented search over indexed PDFs
+  (Arduino references, tutorials). Use this when the kid asks a technical
+  question whose answer is in documentation rather than in your prior
+  knowledge. Cite the source name and page in your reply.
 
 Workflow rules:
 - When you start a new circuit, place the Arduino UNO first if it is not there.

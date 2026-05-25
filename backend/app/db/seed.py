@@ -15,7 +15,8 @@ from __future__ import annotations
 import asyncio
 
 from ..services.embeddings import EMBEDDING_DIMS, embed_text
-from .client import COLLECTION_COMPONENTS, COLLECTION_EXAMPLES, get_db
+from ..services.knowledge import KNOWLEDGE_VECTOR_INDEX
+from .client import COLLECTION_COMPONENTS, COLLECTION_EXAMPLES, COLLECTION_KNOWLEDGE, get_db
 from .seed_data import COMPONENTS_CATALOG, EXAMPLES_SEED
 
 VECTOR_INDEX_NAME = "intent_embedding_vector"
@@ -68,19 +69,35 @@ async def ensure_vector_index() -> None:
     db = get_db()
     if db is None:
         raise RuntimeError("MONGODB_URI not set; cannot create vector index")
+    await _create_index(
+        collection=COLLECTION_EXAMPLES,
+        name=VECTOR_INDEX_NAME,
+        path="intent_embedding",
+    )
+    await _create_index(
+        collection=COLLECTION_KNOWLEDGE,
+        name=KNOWLEDGE_VECTOR_INDEX,
+        path="embedding",
+    )
+
+
+async def _create_index(*, collection: str, name: str, path: str) -> None:
+    db = get_db()
+    if db is None:
+        return
     try:
         await db.command(
             {
-                "createSearchIndexes": COLLECTION_EXAMPLES,
+                "createSearchIndexes": collection,
                 "indexes": [
                     {
-                        "name": VECTOR_INDEX_NAME,
+                        "name": name,
                         "type": "vectorSearch",
                         "definition": {
                             "fields": [
                                 {
                                     "type": "vector",
-                                    "path": "intent_embedding",
+                                    "path": path,
                                     "numDimensions": EMBEDDING_DIMS,
                                     "similarity": "cosine",
                                 }
@@ -93,7 +110,7 @@ async def ensure_vector_index() -> None:
     except Exception as exc:
         # Atlas Search index creation returns an error when an index of the
         # same name already exists. We log and continue.
-        print(f"vector index create skipped: {exc}")
+        print(f"vector index {name} create skipped: {exc}")
 
 
 async def run() -> None:

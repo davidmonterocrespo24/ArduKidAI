@@ -44,6 +44,7 @@ def get_collection(name: str) -> AsyncIOMotorCollection | None:
 COLLECTION_COMPONENTS = "components_catalog"
 COLLECTION_EXAMPLES = "examples"
 COLLECTION_PROJECTS = "projects"
+COLLECTION_KNOWLEDGE = "knowledge_chunks"
 
 
 def reset() -> None:

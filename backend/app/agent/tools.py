@@ -25,6 +25,7 @@ from ..schemas import ComponentInstance, Wire
 from ..services import catalog, projects_store
 from ..services.compiler import compile_cpp
 from ..services.examples import search_similar
+from ..services.knowledge import search_docs
 from .session import SessionState
 
 ToolHandler = Callable[..., Awaitable[dict[str, Any]]]
@@ -150,6 +151,29 @@ async def load_project_handler(session: SessionState, project_id: str) -> dict[s
     return {"ok": True, "project": project.model_dump()}
 
 
+async def search_docs_handler(
+    session: SessionState,
+    query: str,
+    limit: int = 4,
+) -> dict[str, Any]:
+    _ = session
+    hits = await search_docs(query, limit)
+    return {
+        "ok": True,
+        "query": query,
+        "hits": [
+            {
+                "id": h.id,
+                "source": h.source,
+                "page": h.page,
+                "text": h.text,
+                "score": h.score,
+            }
+            for h in hits
+        ],
+    }
+
+
 # ---------- declarations ----------
 
 
@@ -264,6 +288,26 @@ TOOLS: dict[str, ToolSpec] = {
             "required": ["project_id"],
         },
         handler=load_project_handler,
+    ),
+    "search_docs": ToolSpec(
+        name="search_docs",
+        description=(
+            "Retrieval-augmented search over indexed PDFs (Arduino references, "
+            "tutorials, datasheets). Use this when the kid asks a technical "
+            "question whose answer is documented but not in your common knowledge. "
+            "Returns chunks with the source name and page number; quote them "
+            "verbatim and cite the source briefly. Backed by MongoDB Atlas Vector "
+            "Search on the knowledge_chunks collection."
+        ),
+        parameters_schema={
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 8, "default": 4},
+            },
+            "required": ["query"],
+        },
+        handler=search_docs_handler,
     ),
 }
 

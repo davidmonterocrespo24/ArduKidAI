@@ -71,6 +71,20 @@ class MockAgentClient:
                 yield event
             return
 
+        if any(
+            word in msg
+            for word in ("documentacion", "documentación", "documentation", "manual", "docs", "doc:")
+        ):
+            yield SSEEvent(
+                type="agent_text",
+                data={"content": "Voy a buscar en los PDFs indexados."},
+            )
+            async for event in self._call_tool(
+                "search_docs", {"query": user_message, "limit": 4}, session
+            ):
+                yield event
+            return
+
         yield SSEEvent(
             type="agent_text",
             data={
