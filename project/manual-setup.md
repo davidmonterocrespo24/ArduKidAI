@@ -15,7 +15,8 @@ Update the status column as items complete. When a step produces an artifact Cla
 | M5 | Enable APIs in the GCP project: Vertex AI, Cloud Run, Cloud Build, Artifact Registry, Secret Manager | https://console.cloud.google.com/apis/library | before Phase 2 | - | [ ] |
 | M6 | Sign up for MongoDB Atlas, create an M0 cluster, create a database user | https://www.mongodb.com/cloud/atlas/register | before Phase 4 | connection string -> Secret Manager | [ ] |
 | M7 | Configure Atlas network access (allow Cloud Run egress, or 0.0.0.0/0 for dev) | Atlas console | before Phase 4 | - | [ ] |
-| M8 | Create the Atlas Vector Search index on `examples.intent_embedding` (768 dims, cosine) | Atlas console | before Phase 4 | - | [ ] |
+| M8 | Create the Atlas Vector Search index on `examples.intent_embedding` (768 dims, cosine) | Atlas console (or skip - the seeder creates it) | before Phase 4 | - | [ ] |
+| M8b | Run the seeder once after Atlas is up: `cd backend && MONGODB_URI=... uv run python -m scripts.seed_db` | local shell | before Phase 5 | confirmation log "seeded 9 components and 30 examples" | [ ] |
 
 ## Deploy-time (Phase 5)
 

@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     ardukid_cors_origins: str = "http://localhost:5173"
 
     mongodb_uri: str = ""
+    mongodb_db: str = "ardukid"
+
+    mcp_enabled: bool = False
+    mcp_server_url: str = "http://localhost:3030"
 
     @property
     def cors_origins_list(self) -> list[str]:

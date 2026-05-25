@@ -1,84 +1,35 @@
-"""Static component catalog. Phase 4 moves this into MongoDB so the agent
-calls it through the MongoDB MCP server, but the schema stays identical."""
+"""Component catalog. Reads from MongoDB when available, otherwise returns
+the static seed list. The list of supported types is exposed as a sync
+constant so it can feed agent tool JSON-schema enums at import time."""
+
+from __future__ import annotations
 
 from typing import Any
 
-CATALOG: list[dict[str, Any]] = [
-    {
-        "type": "uno",
-        "label": "Arduino UNO",
-        "always_present": True,
-        "pins": [
-            *(f"D{i}" for i in range(2, 14)),
-            "A0", "A1", "A2", "A3", "A4", "A5",
-            "5V", "3V3", "GND",
-        ],
-        "default_props": {},
-    },
-    {
-        "type": "led",
-        "label": "LED",
-        "pins": ["anode", "cathode"],
-        "props_schema": {"color": ["red", "green", "blue", "yellow"]},
-        "default_props": {"color": "red"},
-        "auto_companions": ["resistor"],
-        "wiring_hint": "anode goes through a 220 ohm resistor to a digital pin; cathode to GND.",
-    },
-    {
-        "type": "resistor",
-        "label": "Resistor",
-        "pins": ["a", "b"],
-        "props_schema": {"value": ["220", "330", "1k", "10k"]},
-        "default_props": {"value": "220"},
-    },
-    {
-        "type": "pushbutton",
-        "label": "Pushbutton",
-        "pins": ["1a", "1b", "2a", "2b"],
-        "props_schema": {"color": ["red", "green", "blue", "yellow", "black"]},
-        "default_props": {"color": "blue"},
-        "wiring_hint": "use INPUT_PULLUP and read LOW when pressed.",
-    },
-    {
-        "type": "buzzer",
-        "label": "Passive buzzer",
-        "pins": ["1", "2"],
-        "default_props": {},
-        "wiring_hint": "drive with tone() on a digital pin; other leg to GND.",
-    },
-    {
-        "type": "servo",
-        "label": "Servo SG90",
-        "pins": ["PWM", "VCC", "GND"],
-        "default_props": {"angle": 0},
-        "wiring_hint": "PWM on any digital pin; VCC to 5V, GND to GND.",
-    },
-    {
-        "type": "potentiometer",
-        "label": "Potentiometer",
-        "pins": ["GND", "SIG", "VCC"],
-        "default_props": {"value": 0},
-        "wiring_hint": "SIG to an analog pin (default A0).",
-    },
-    {
-        "type": "lcd1602",
-        "label": "LCD 16x2 (I2C)",
-        "pins": ["GND", "VCC", "SDA", "SCL"],
-        "default_props": {},
-        "wiring_hint": "SDA -> A4, SCL -> A5 on Arduino UNO.",
-    },
-    {
-        "type": "seg7",
-        "label": "7-segment display",
-        "pins": ["A", "B", "C", "D", "E", "F", "G", "DP", "COM"],
-        "default_props": {"color": "red"},
-    },
-]
+from ..db.client import COLLECTION_COMPONENTS, get_db
+from ..db.seed_data import COMPONENTS_CATALOG
+
+CATALOG_TYPES: list[str] = [c["type"] for c in COMPONENTS_CATALOG]
 
 
-def list_components() -> list[dict[str, Any]]:
-    return list(CATALOG)
+async def list_components() -> list[dict[str, Any]]:
+    db = get_db()
+    if db is None:
+        return [dict(c) for c in COMPONENTS_CATALOG]
+    docs = []
+    async for doc in db[COLLECTION_COMPONENTS].find({}):
+        doc.pop("_id", None)
+        docs.append(doc)
+    if docs:
+        return docs
+    return [dict(c) for c in COMPONENTS_CATALOG]
 
 
-def get_component(component_type: str) -> dict[str, Any] | None:
-    return next((c for c in CATALOG if c["type"] == component_type), None)
+async def get_component(component_type: str) -> dict[str, Any] | None:
+    db = get_db()
+    if db is not None:
+        doc = await db[COLLECTION_COMPONENTS].find_one({"_id": component_type})
+        if doc is not None:
+            doc.pop("_id", None)
+            return doc
+    return next((dict(c) for c in COMPONENTS_CATALOG if c["type"] == component_type), None)

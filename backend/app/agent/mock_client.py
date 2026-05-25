@@ -51,12 +51,32 @@ class MockAgentClient:
                 yield event
             return
 
+        if any(word in msg for word in ("parecido", "similar", "find me", "buscame")):
+            yield SSEEvent(
+                type="agent_text",
+                data={"content": "Voy a buscar algo parecido en la biblioteca de ejemplos."},
+            )
+            async for event in self._call_tool(
+                "find_similar_example", {"query": user_message, "limit": 3}, session
+            ):
+                yield event
+            return
+
+        if any(word in msg for word in ("mis proyectos", "saved projects", "guardados")):
+            yield SSEEvent(
+                type="agent_text",
+                data={"content": "Te muestro tus proyectos guardados."},
+            )
+            async for event in self._call_tool("list_saved_projects", {}, session):
+                yield event
+            return
+
         yield SSEEvent(
             type="agent_text",
             data={
                 "content": (
                     "[mock] Decime que querés armar: prueba con 'quiero un LED', "
-                    "'un botón que encienda una luz', o 'un semáforo'."
+                    "'un botón que encienda una luz', un 'semáforo', o 'buscame algo parecido'."
                 ),
             },
         )

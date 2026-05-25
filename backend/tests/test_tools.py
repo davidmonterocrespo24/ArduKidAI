@@ -71,8 +71,8 @@ async def test_unknown_tool_is_rejected(session):
     assert result["error"].startswith("unknown tool")
 
 
-def test_all_seven_tools_registered():
-    expected = {
+def test_canvas_and_mcp_tools_registered():
+    canvas_tools = {
         "list_available_components",
         "add_component",
         "remove_component",
@@ -81,4 +81,11 @@ def test_all_seven_tools_registered():
         "compile_and_run",
         "save_project",
     }
-    assert set(TOOLS) == expected
+    mcp_shaped_tools = {
+        "find_similar_example",
+        "list_saved_projects",
+        "load_project",
+    }
+    assert canvas_tools.issubset(TOOLS)
+    assert mcp_shaped_tools.issubset(TOOLS)
+    assert set(TOOLS) == canvas_tools | mcp_shaped_tools

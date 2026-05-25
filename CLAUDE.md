@@ -99,9 +99,12 @@ The detailed reference is [`doc/product-spec.md`](./doc/product-spec.md) section
 
 ### Backend architecture cues (Phase 2+)
 
-The agent's seven custom tools (`list_available_components`, `add_component`, `remove_component`, `wire`, `set_blocks`, `compile_and_run`, `save_project`) must each return structured JSON that the frontend's tool-call dispatcher can apply to the Zustand store. The shape of these payloads is the contract between phases 2 and 3 - design them with the frontend handler in mind.
+The agent's seven canvas tools (`list_available_components`, `add_component`, `remove_component`, `wire`, `set_blocks`, `compile_and_run`, `save_project`) and three MongoDB-MCP-shaped tools (`find_similar_example`, `list_saved_projects`, `load_project`) must each return structured JSON that the frontend's tool-call dispatcher can apply to the Zustand store. The shape of these payloads is the contract between phases 2 and 3 - design them with the frontend handler in mind.
 
-The MongoDB MCP server runs as a sidecar to the backend container, not as a library import. The agent reaches MongoDB *through* the MCP protocol, not via `pymongo` directly. `pymongo`/`motor` are only for the FastAPI routes (e.g., seeding scripts) - never bypass MCP from inside an agent tool.
+- **Services are dual-mode.** `services/catalog.py`, `services/projects_store.py`, `services/examples.py` each call Motor when `MONGODB_URI` is set and fall back to in-memory / seed-data otherwise. Always preserve this fallback so unit tests and local dev keep working without an Atlas cluster.
+- **Embeddings are dual-mode.** `services/embeddings.py` uses Gemini `text-embedding-005` when GCP creds are present, else a deterministic L2-normalised hashed bag-of-words. Both return 768-dim vectors so downstream code never branches.
+- **MongoDB MCP server.** In phase 4 the MCP-shaped tools call our Motor services directly. Phase 5 deploy adds the `mongodb-mcp-server` sidecar container and flips `MCP_ENABLED=true`; the same tool surface routes through MCP at that point. Do not duplicate query logic - any new MCP-style tool should also work with the local fallback.
+- **The seeder is idempotent.** `scripts/seed_db.py` upserts by `_id` and silently no-ops if the vector-search index already exists. Re-run safely after schema changes.
 
 ## Phase tracker workflow
 

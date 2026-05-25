@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { startSim, type SimHandle } from '../sim/runner'
 import { postJson } from '../lib/api'
 import { cn } from '../lib/cn'
+import { SaveProjectDialog } from './SaveProjectDialog'
 
 interface CompileResponse {
   ok: boolean
@@ -21,6 +22,7 @@ export function FooterBar() {
   const appendChatMessage = useAppStore((s) => s.appendChatMessage)
   const resetCircuit = useAppStore((s) => s.resetCircuit)
   const simRef = useRef<SimHandle | null>(null)
+  const [saveOpen, setSaveOpen] = useState(false)
 
   useEffect(() => {
     return () => {
@@ -137,13 +139,24 @@ export function FooterBar() {
         </button>
         <button
           type="button"
-          disabled
-          className="cursor-not-allowed rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-400 dark:border-slate-700"
-          title="Save lands in phase 4 (MongoDB)"
+          onClick={() => setSaveOpen(true)}
+          className="rounded-md border border-emerald-200 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-200 dark:hover:bg-emerald-950/30"
         >
           Save
         </button>
       </div>
+
+      <SaveProjectDialog
+        open={saveOpen}
+        onClose={() => setSaveOpen(false)}
+        onSaved={(_, name) =>
+          appendChatMessage({
+            id: crypto.randomUUID(),
+            role: 'system',
+            text: `Saved project "${name}".`,
+          })
+        }
+      />
     </footer>
   )
 }

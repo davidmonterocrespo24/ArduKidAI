@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { sendChatMessage } from '../agent/chat'
 import { useAppStore } from '../store/useAppStore'
 import { cn } from '../lib/cn'
+import { SavedProjectsList } from './SavedProjectsList'
 
 const SUGGESTIONS = [
   'Quiero encender un LED',
@@ -39,23 +40,26 @@ export function ChatPanel() {
         </p>
       </header>
 
-      <div ref={listRef} className="flex-1 space-y-2 overflow-y-auto p-3 text-sm">
+      <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto p-3 text-sm">
         {messages.length === 0 && (
-          <div className="space-y-2">
-            <p className="text-xs text-slate-500">Try one of these:</p>
-            <div className="grid gap-2">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => submit(s)}
-                  disabled={isStreaming}
-                  className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm text-slate-700 transition hover:border-emerald-400 hover:bg-emerald-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/30"
-                >
-                  {s}
-                </button>
-              ))}
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500">Try one of these:</p>
+              <div className="grid gap-2">
+                {SUGGESTIONS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => submit(s)}
+                    disabled={isStreaming}
+                    className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm text-slate-700 transition hover:border-emerald-400 hover:bg-emerald-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/30"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
+            <SavedProjectsList refreshKey={0} />
           </div>
         )}
 

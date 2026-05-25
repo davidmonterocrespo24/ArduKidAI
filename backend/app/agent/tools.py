@@ -1,10 +1,19 @@
-"""The seven custom agent tools.
+"""The agent's tool catalog.
 
-Each entry in `TOOLS` carries both the JSON-schema declaration that we pass to
-Gemini's function-calling API and the async Python handler that executes the
-side effect. The handler returns a JSON-serialisable dict that is sent back to
-the model as the function response, and also surfaced to the frontend as a
-`tool_result` SSE event."""
+Two groups of tools are exposed to Gemini via FunctionDeclarations:
+
+1. **Canvas / sketch tools** (the "seven" from the original spec):
+   list_available_components, add_component, remove_component, wire,
+   set_blocks, compile_and_run, save_project.
+2. **MongoDB-MCP-shaped tools** that the agent uses to ground its plan in
+   pre-seeded inspiration and recall the kid's own saved work:
+   find_similar_example, list_saved_projects, load_project.
+
+The MongoDB-MCP-shaped tools have the same call contract as the operations
+the official MongoDB MCP server exposes (find / vectorSearch / insert). When
+`MCP_ENABLED=true` they route through `mcp_client` (sidecar process); off,
+they call our local Motor service layer directly, which talks to the same
+Atlas database. Either way the tool surface the agent sees is identical."""
 
 from __future__ import annotations
 
@@ -15,6 +24,7 @@ from typing import Any
 from ..schemas import ComponentInstance, Wire
 from ..services import catalog, projects_store
 from ..services.compiler import compile_cpp
+from ..services.examples import search_similar
 from .session import SessionState
 
 ToolHandler = Callable[..., Awaitable[dict[str, Any]]]
@@ -28,12 +38,13 @@ class ToolSpec:
     handler: ToolHandler
 
 
-# ---------- handlers ----------
+# ---------- canvas / sketch tool handlers ----------
 
 
 async def list_available_components_handler(session: SessionState) -> dict[str, Any]:
     _ = session
-    return {"ok": True, "components": catalog.list_components()}
+    components = await catalog.list_components()
+    return {"ok": True, "components": components}
 
 
 async def add_component_handler(
@@ -43,7 +54,7 @@ async def add_component_handler(
     y: float = 0.0,
     props: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    component = catalog.get_component(type)
+    component = await catalog.get_component(type)
     if component is None:
         return {"ok": False, "error": f"unknown component type: {type}"}
     cid = session.next_component_id(type)
@@ -57,7 +68,10 @@ async def remove_component_handler(session: SessionState, id: str) -> dict[str, 
     if id not in session.components:
         return {"ok": False, "error": f"no component with id {id}"}
     del session.components[id]
-    session.wires = [w for w in session.wires if not (w.from_pin.startswith(f"{id}.") or w.to_pin.startswith(f"{id}."))]
+    session.wires = [
+        w for w in session.wires
+        if not (w.from_pin.startswith(f"{id}.") or w.to_pin.startswith(f"{id}."))
+    ]
     return {"ok": True, "removed_id": id}
 
 
@@ -88,7 +102,7 @@ async def compile_and_run_handler(session: SessionState) -> dict[str, Any]:
     if not session.cpp_code.strip():
         return {
             "ok": False,
-            "error": "no C++ source on the session yet. The frontend should send `circuit_state.cpp_code` along with the chat request once Blockly codegen is wired (phase 3).",
+            "error": "no C++ source on the session yet. The frontend should send `circuit_state.cpp_code` along with the chat request.",
         }
     result = await compile_cpp(session.cpp_code)
     return {
@@ -101,8 +115,39 @@ async def compile_and_run_handler(session: SessionState) -> dict[str, Any]:
 
 async def save_project_handler(session: SessionState, name: str) -> dict[str, Any]:
     circuit = session.to_circuit()
-    detail = projects_store.save(name=name, circuit=circuit)
+    detail = await projects_store.save(name=name, circuit=circuit)
     return {"ok": True, "project": detail.model_dump()}
+
+
+# ---------- MongoDB-MCP-shaped tool handlers ----------
+
+
+async def find_similar_example_handler(
+    session: SessionState,
+    query: str,
+    limit: int = 3,
+) -> dict[str, Any]:
+    _ = session
+    hits = await search_similar(query, limit)
+    return {
+        "ok": True,
+        "query": query,
+        "hits": [h.model_dump() for h in hits],
+    }
+
+
+async def list_saved_projects_handler(session: SessionState) -> dict[str, Any]:
+    _ = session
+    projects = await projects_store.list_all()
+    return {"ok": True, "projects": [p.model_dump() for p in projects]}
+
+
+async def load_project_handler(session: SessionState, project_id: str) -> dict[str, Any]:
+    project = await projects_store.get(project_id)
+    if project is None:
+        return {"ok": False, "error": f"no saved project with id {project_id}"}
+    session.replace_circuit(project.circuit)
+    return {"ok": True, "project": project.model_dump()}
 
 
 # ---------- declarations ----------
@@ -124,7 +169,7 @@ TOOLS: dict[str, ToolSpec] = {
                 "type": {
                     "type": "string",
                     "description": "Component type from the catalog.",
-                    "enum": [c["type"] for c in catalog.list_components()],
+                    "enum": catalog.CATALOG_TYPES,
                 },
                 "x": {"type": "number", "default": 0},
                 "y": {"type": "number", "default": 0},
@@ -185,6 +230,40 @@ TOOLS: dict[str, ToolSpec] = {
             "required": ["name"],
         },
         handler=save_project_handler,
+    ),
+    "find_similar_example": ToolSpec(
+        name="find_similar_example",
+        description=(
+            "Semantic search over the seeded example circuits. Use this when the kid asks "
+            "for inspiration ('find me something with a motor') or when you need a "
+            "reference for an unfamiliar project. Backed by MongoDB Atlas Vector Search "
+            "through the MongoDB MCP server."
+        ),
+        parameters_schema={
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Natural-language description of what the kid wants."},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 10, "default": 3},
+            },
+            "required": ["query"],
+        },
+        handler=find_similar_example_handler,
+    ),
+    "list_saved_projects": ToolSpec(
+        name="list_saved_projects",
+        description="List the projects the kid has saved before. Backed by MongoDB through the MCP server.",
+        parameters_schema={"type": "object", "properties": {}},
+        handler=list_saved_projects_handler,
+    ),
+    "load_project": ToolSpec(
+        name="load_project",
+        description="Recall a previously saved project by id and load its circuit and program into the session.",
+        parameters_schema={
+            "type": "object",
+            "properties": {"project_id": {"type": "string"}},
+            "required": ["project_id"],
+        },
+        handler=load_project_handler,
     ),
 }
 
