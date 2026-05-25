@@ -39,6 +39,27 @@ export function WireOverlay({ hostRef }: Props) {
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null)
   const [hoveredPin, setHoveredPin] = useState<string | null>(null)
   const [hoveredWire, setHoveredWire] = useState<number | null>(null)
+  const wireHoverTimerRef = useRef<number | null>(null)
+
+  function holdWireHover(i: number) {
+    if (wireHoverTimerRef.current !== null) {
+      window.clearTimeout(wireHoverTimerRef.current)
+      wireHoverTimerRef.current = null
+    }
+    setHoveredWire(i)
+  }
+
+  function releaseWireHover(i: number) {
+    if (wireHoverTimerRef.current !== null) {
+      window.clearTimeout(wireHoverTimerRef.current)
+    }
+    // 250 ms grace so the kid can drift from the wire to the red x without
+    // the badge vanishing under the cursor.
+    wireHoverTimerRef.current = window.setTimeout(() => {
+      setHoveredWire((prev) => (prev === i ? null : prev))
+      wireHoverTimerRef.current = null
+    }, 250)
+  }
 
   const recompute = useCallback(() => {
     const overlay = overlayRef.current
@@ -199,8 +220,8 @@ export function WireOverlay({ hostRef }: Props) {
               strokeWidth={14}
               strokeLinecap="round"
               className="pointer-events-auto cursor-pointer"
-              onMouseEnter={() => setHoveredWire(i)}
-              onMouseLeave={() => setHoveredWire((prev) => (prev === i ? null : prev))}
+              onMouseEnter={() => holdWireHover(i)}
+              onMouseLeave={() => releaseWireHover(i)}
             />
             <path
               d={curvedPath(a.x, a.y, b.x, b.y)}
@@ -217,6 +238,10 @@ export function WireOverlay({ hostRef }: Props) {
                 onMouseLeave={() => setHoveredWire((prev) => (prev === i ? null : prev))}
                 onClick={(e) => {
                   e.stopPropagation()
+                  if (wireHoverTimerRef.current !== null) {
+                    window.clearTimeout(wireHoverTimerRef.current)
+                    wireHoverTimerRef.current = null
+                  }
                   setHoveredWire(null)
                   removeWire(i)
                 }}
