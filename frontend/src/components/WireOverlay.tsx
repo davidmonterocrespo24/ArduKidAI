@@ -20,11 +20,14 @@ export function WireOverlay({ hostRef }: Props) {
   const cancelWire = useAppStore((s) => s.cancelWire)
   const addWire = useAppStore((s) => s.addWire)
 
+  const removeWire = useAppStore((s) => s.removeWire)
+
   const overlayRef = useRef<SVGSVGElement>(null)
   const [pins, setPins] = useState<PositionedPin[]>([])
   const [size, setSize] = useState({ width: 0, height: 0 })
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null)
   const [hoveredPin, setHoveredPin] = useState<string | null>(null)
+  const [hoveredWire, setHoveredWire] = useState<number | null>(null)
 
   const recompute = useCallback(() => {
     const overlay = overlayRef.current
@@ -144,15 +147,71 @@ export function WireOverlay({ hostRef }: Props) {
         const b = pinIndex.get(w.to_pin)
         if (!a || !b) return null
         const colour = w.color ?? pickWireColor(w.from_pin, w.to_pin, i)
+        const isHover = hoveredWire === i
+        const mid = midPointSagged(a.x, a.y, b.x, b.y)
         return (
           <g key={`${w.from_pin}-${w.to_pin}-${i}`}>
+            {/* Wide invisible hit area so the kid does not need to land on the 2.5 px line. */}
+            <path
+              d={curvedPath(a.x, a.y, b.x, b.y)}
+              fill="none"
+              stroke="transparent"
+              strokeWidth={14}
+              strokeLinecap="round"
+              className="pointer-events-auto cursor-pointer"
+              onMouseEnter={() => setHoveredWire(i)}
+              onMouseLeave={() => setHoveredWire((prev) => (prev === i ? null : prev))}
+            />
             <path
               d={curvedPath(a.x, a.y, b.x, b.y)}
               fill="none"
               stroke={colour}
-              strokeWidth={2.5}
+              strokeWidth={isHover ? 3.5 : 2.5}
               strokeLinecap="round"
+              pointerEvents="none"
             />
+            {isHover && (
+              <g
+                className="pointer-events-auto cursor-pointer"
+                onMouseEnter={() => setHoveredWire(i)}
+                onMouseLeave={() => setHoveredWire((prev) => (prev === i ? null : prev))}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setHoveredWire(null)
+                  removeWire(i)
+                }}
+              >
+                <circle cx={mid.x} cy={mid.y} r={10} fill="#fee2e2" stroke="#dc2626" strokeWidth={1.5} />
+                <text
+                  x={mid.x}
+                  y={mid.y + 4}
+                  textAnchor="middle"
+                  fontSize={13}
+                  fontWeight={700}
+                  fill="#dc2626"
+                >
+                  &times;
+                </text>
+                <rect
+                  x={mid.x + 14}
+                  y={mid.y - 10}
+                  width={Math.max(110, (w.from_pin.length + w.to_pin.length) * 5.5)}
+                  height={20}
+                  rx={4}
+                  fill="#0f172a"
+                  fillOpacity={0.9}
+                />
+                <text
+                  x={mid.x + 20}
+                  y={mid.y + 4}
+                  fontSize={10}
+                  fontFamily="ui-monospace, Menlo, monospace"
+                  fill="#f8fafc"
+                >
+                  {w.from_pin} {'→'} {w.to_pin}
+                </text>
+              </g>
+            )}
           </g>
         )
       })}
@@ -226,13 +285,14 @@ export function WireOverlay({ hostRef }: Props) {
 }
 
 function curvedPath(x1: number, y1: number, x2: number, y2: number): string {
+  const { x: midX, y: midY } = midPointSagged(x1, y1, x2, y2)
+  return `M ${x1} ${y1} Q ${midX} ${midY} ${x2} ${y2}`
+}
+
+function midPointSagged(x1: number, y1: number, x2: number, y2: number): { x: number; y: number } {
   const dx = x2 - x1
   const dy = y2 - y1
   const dist = Math.hypot(dx, dy)
-  // Sag the curve downward proportional to wire length so short wires stay
-  // straight-ish and long wires look like real jumpers.
   const sag = Math.min(40, dist * 0.18)
-  const midX = (x1 + x2) / 2
-  const midY = (y1 + y2) / 2 + sag
-  return `M ${x1} ${y1} Q ${midX} ${midY} ${x2} ${y2}`
+  return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 + sag }
 }

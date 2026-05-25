@@ -17,7 +17,6 @@ export function CanvasPanel() {
   const wires = useAppStore((s) => s.wires)
   const wireInProgress = useAppStore((s) => s.wireInProgress)
   const cancelWire = useAppStore((s) => s.cancelWire)
-  const removeWire = useAppStore((s) => s.removeWire)
   const [wireOpen, setWireOpen] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
   const prevCountRef = useRef(components.length)
@@ -105,36 +104,6 @@ export function CanvasPanel() {
           <WireOverlay hostRef={canvasRef} />
         </div>
       </div>
-
-      {wires.length > 0 && (
-        <div className="shrink-0 max-h-32 overflow-auto border-t border-slate-200 bg-slate-50 px-3 py-2">
-          <p className="mb-1 text-[11px] font-medium text-slate-500">Wires</p>
-          <ul className="space-y-0.5">
-            {wires.map((w, i) => (
-              <li
-                key={`${w.from_pin}-${w.to_pin}-${i}`}
-                className="flex items-center justify-between gap-2 rounded px-2 py-0.5 font-mono text-[11px] text-slate-700 hover:bg-white"
-              >
-                <span className="flex items-center gap-2">
-                  <span
-                    aria-hidden="true"
-                    className="inline-block h-2 w-4 rounded"
-                    style={{ background: w.color ?? '#1f2937' }}
-                  />
-                  {w.from_pin} <span className="text-slate-400">to</span> {w.to_pin}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => removeWire(i)}
-                  className="rounded border border-rose-200 px-1.5 text-[10px] font-medium text-rose-600 hover:bg-rose-50"
-                >
-                  remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       <WireDialog open={wireOpen} onClose={() => setWireOpen(false)} />
     </section>

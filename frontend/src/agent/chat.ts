@@ -37,9 +37,18 @@ export async function sendChatMessage(message: string): Promise<void> {
       throw new Error(`agent chat returned ${res.status}`)
     }
 
+     
+    console.log('[chat] sse open, body=', !!res.body, 'ct=', res.headers.get('content-type'))
+
+    let yieldedCount = 0
     for await (const msg of sseStream(res)) {
+      yieldedCount += 1
+       
+      console.log('[chat] event', yieldedCount, msg.event, msg.data.slice(0, 80))
       handleAgentEvent(msg.event, msg.data)
     }
+     
+    console.log('[chat] sse loop ended, total events=', yieldedCount)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     store.appendChatMessage({
