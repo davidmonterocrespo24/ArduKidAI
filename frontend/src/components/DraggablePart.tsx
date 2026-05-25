@@ -2,20 +2,22 @@ import { useEffect, useRef, useState } from 'react'
 import type { ComponentInstance } from '../types/circuit'
 import { useAppStore } from '../store/useAppStore'
 import { DynamicComponent } from './DynamicComponent'
+import { SensorControl } from './SensorControl'
 
 interface Props {
   instance: ComponentInstance
 }
 
 /**
- * Wraps a wokwi component so the kid can drag it around the canvas with
- * the mouse. Uses pointer events on the wrapper, listens on the window for
- * move/up so the drag survives the cursor leaving the wrapper's bounds.
- * The Arduino UNO is NOT rendered through this wrapper (it stays pinned).
+ * Wraps a wokwi component so the kid can drag it around the canvas.
+ * Drag is initiated only from the label row underneath - clicks on the
+ * wokwi element itself reach its own handlers (pushbutton press, pot
+ * rotate, ...). The Arduino UNO is NOT rendered through this wrapper.
  */
 export function DraggablePart({ instance }: Props) {
   const updatePosition = useAppStore((s) => s.updateComponentPosition)
   const removeComponent = useAppStore((s) => s.removeComponent)
+  const simStatus = useAppStore((s) => s.simStatus)
   const dragRef = useRef<{
     startX: number
     startY: number
@@ -45,39 +47,23 @@ export function DraggablePart({ instance }: Props) {
     }
   }, [dragging, instance.id, updatePosition])
 
-  function startDrag(clientX: number, clientY: number) {
+  function onHandleMouseDown(e: React.MouseEvent) {
+    if (e.button !== 0) return
     dragRef.current = {
-      startX: clientX,
-      startY: clientY,
+      startX: e.clientX,
+      startY: e.clientY,
       originX: instance.x,
       originY: instance.y,
     }
     setDragging(true)
   }
 
-  function onPointerDown(e: React.PointerEvent) {
-    if (e.button !== 0) return
-    startDrag(e.clientX, e.clientY)
-  }
-
-  // Some automation tools and a few odd input devices only emit mouse
-  // events, not pointer events. Listening to both keeps drag working
-  // everywhere.
-  function onMouseDown(e: React.MouseEvent) {
-    if (e.button !== 0) return
-    if (dragRef.current) return
-    startDrag(e.clientX, e.clientY)
-  }
-
   return (
     <div
-      onPointerDown={onPointerDown}
-      onMouseDown={onMouseDown}
       style={{
         position: 'absolute',
         left: instance.x,
         top: instance.y,
-        cursor: dragging ? 'grabbing' : 'grab',
         userSelect: 'none',
         touchAction: 'none',
       }}
@@ -85,17 +71,18 @@ export function DraggablePart({ instance }: Props) {
     >
       <DynamicComponent instance={instance} />
       <div className="flex items-center gap-2">
-        <span className="rounded bg-white/80 px-1 font-mono text-[10px] text-slate-600 shadow-sm">
+        <span
+          onMouseDown={onHandleMouseDown}
+          title="Drag to move"
+          style={{ cursor: dragging ? 'grabbing' : 'grab' }}
+          className="rounded bg-white/80 px-1 font-mono text-[10px] text-slate-600 shadow-sm"
+        >
           {instance.id}
         </span>
+        {simStatus === 'running' ? <SensorControl instance={instance} /> : null}
         <button
           type="button"
-          onMouseDown={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation()
-            removeComponent(instance.id)
-          }}
+          onClick={() => removeComponent(instance.id)}
           title={`Remove ${instance.id}`}
           className="rounded border border-rose-200 bg-white/90 px-1.5 text-[10px] font-medium text-rose-600 opacity-0 transition group-hover:opacity-100 hover:bg-rose-50"
         >

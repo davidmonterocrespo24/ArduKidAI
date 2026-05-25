@@ -23,9 +23,18 @@ export function BlocklyPanel() {
     const workspace = initBlockly(container)
     workspaceRef.current = workspace
 
-    requestAnimationFrame(() => Blockly.svgResize(workspace))
+    requestAnimationFrame(() => {
+      Blockly.svgResize(workspace)
+      workspace.scrollCenter()
+    })
+    // Recenter on container resize too: when the right pane is shown again
+    // (e.g. switching back from the Code tab) the panel mounts at its
+    // natural size and the kid would otherwise see an empty workspace
+    // because the blocks live at the previous scroll offset.
     const observer = new ResizeObserver(() => {
-      if (workspaceRef.current) Blockly.svgResize(workspaceRef.current)
+      if (!workspaceRef.current) return
+      Blockly.svgResize(workspaceRef.current)
+      workspaceRef.current.scrollCenter()
     })
     observer.observe(container)
 
@@ -38,6 +47,7 @@ export function BlocklyPanel() {
         const dom = Blockly.utils.xml.textToDom(initialXml)
         Blockly.Xml.domToWorkspace(dom, workspace)
         lastWrittenXmlRef.current = initialXml
+        requestAnimationFrame(() => workspace.scrollCenter())
       } catch (err) {
         console.error('failed to hydrate Blockly from store on mount', err)
       }
@@ -79,6 +89,7 @@ export function BlocklyPanel() {
       Blockly.Xml.domToWorkspace(dom, workspace)
       Blockly.Events.enable()
       lastWrittenXmlRef.current = xml
+      requestAnimationFrame(() => workspace.scrollCenter())
     } catch (err) {
       console.error('failed to apply Blockly XML from store', err)
     }
