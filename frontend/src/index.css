@@ -25,3 +25,25 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* wokwi-elements use Lit and ship without a :host display rule, so by
+ * default they fall back to display: inline. That collapses the host's
+ * bounding box to one text line of height even though the shadow-DOM
+ * SVG renders at full size. Our pin-position reader uses
+ * getBoundingClientRect, so without this every LCD / pot / 7-seg
+ * computes its pins relative to a one-line-tall box below the visible
+ * body and the wires arrive in the wrong place. Forcing inline-block
+ * lets the host wrap the SVG and report the right size. */
+wokwi-led,
+wokwi-resistor,
+wokwi-pushbutton,
+wokwi-buzzer,
+wokwi-servo,
+wokwi-potentiometer,
+wokwi-lcd1602,
+wokwi-7segment,
+wokwi-arduino-uno {
+  display: inline-block;
+  vertical-align: top;
+  line-height: 0;
+}

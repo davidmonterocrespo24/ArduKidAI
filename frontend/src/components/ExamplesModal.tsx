@@ -25,6 +25,7 @@ export function ExamplesModal({ open, onClose }: Props) {
   const addWire = useAppStore((s) => s.addWire)
   const setCppCode = useAppStore((s) => s.setCppCode)
   const setBlocklyXml = useAppStore((s) => s.setBlocklyXml)
+  const setRightTab = useAppStore((s) => s.setRightTab)
   const appendChatMessage = useAppStore((s) => s.appendChatMessage)
 
   if (!open) return null
@@ -55,13 +56,20 @@ export function ExamplesModal({ open, onClose }: Props) {
     setCppCode(ex.cpp_code)
     if (ex.blockly_xml) {
       setBlocklyXml(ex.blockly_xml)
+      setRightTab('blockly')
     } else {
+      // No starter blocks for this example (the C++ uses libraries the
+      // block toolbox does not cover yet). Show the Arduino code tab
+      // instead so the kid sees an actual program, not an empty board.
       setBlocklyXml('<xml xmlns="https://developers.google.com/blockly/xml"></xml>')
+      setRightTab('code')
     }
     appendChatMessage({
       id: crypto.randomUUID(),
       role: 'system',
-      text: `Loaded example: ${ex.title}. Hit "Compile & run" in the top bar to try it.`,
+      text: ex.blockly_xml
+        ? `Loaded example: ${ex.title}. Hit "Compile & run" in the top bar to try it.`
+        : `Loaded example: ${ex.title}. This one is written directly in Arduino code - see the Arduino code tab on the right. Hit "Compile & run" to try it.`,
     })
   }
 
