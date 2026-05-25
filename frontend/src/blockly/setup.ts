@@ -55,5 +55,8 @@ export function initBlockly(container: HTMLElement): Blockly.WorkspaceSvg {
     zoom: { controls: true, wheel: true, startScale: 0.9 },
     trashcan: true,
     renderer: 'zelos',
+    // Kids pan by dragging an empty area; the always-on scrollbars looked
+    // like an extra widget that "did not work" and just stole pixels.
+    move: { scrollbars: false, drag: true, wheel: true },
   })
 }

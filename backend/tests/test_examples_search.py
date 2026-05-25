@@ -20,7 +20,15 @@ async def test_search_examples_relevance_ordering(client):
     assert scores == sorted(scores, reverse=True)
 
 
-async def test_search_examples_empty_query_returns_empty(client):
-    response = client.get("/api/examples/search", params={"q": "", "limit": 5})
+async def test_search_examples_empty_query_returns_seed_gallery(client):
+    # Empty query is the "open the modal" case - we now surface the seeded
+    # examples sorted by difficulty so the modal has content immediately.
+    response = client.get("/api/examples/search", params={"q": "", "limit": 6})
     assert response.status_code == 200
-    assert response.json() == []
+    body = response.json()
+    assert len(body) == 6
+    # Every hit must carry the standard fields the frontend ExamplesModal renders.
+    for hit in body:
+        assert hit["id"]
+        assert hit["title"]
+        assert hit["intent"]
