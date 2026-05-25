@@ -2,6 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { readPinPositions, type PinScreenPosition } from '../sim/pinPositions'
 import { pickWireColor } from '../lib/wireColors'
+import type { ComponentType } from '../types/circuit'
+
+// wokwi-elements expose abbreviated pin names while the agent / backend
+// catalog speaks the Arduino-tutorial names. Register the agent names as
+// aliases pointing at the same pin position so wires resolve either way.
+const PIN_ALIASES: Partial<Record<ComponentType, Record<string, string[]>>> = {
+  led: { A: ['anode'], C: ['cathode'] },
+  resistor: { '1': ['a'], '2': ['b'] },
+  pushbutton: { '1.l': ['1a'], '1.r': ['1b'], '2.l': ['2a'], '2.r': ['2b'] },
+  servo: { 'V+': ['VCC'] },
+}
 
 interface Props {
   /** The element the overlay should size against (the scroll container). */
@@ -105,26 +116,42 @@ export function WireOverlay({ hostRef }: Props) {
     }
   }, [wireInProgress, hostRef])
 
-  // Build the pin lookup. The agent / backend speaks Arduino-IDE pin names
-  // ("UNO.D13", "UNO.GND", "UNO.5V") while wokwi-arduino-uno exposes them as
-  // "13", "GND.1", etc. Register both forms so wires resolve regardless of
-  // which side authored them.
+  const typeById = useMemo(() => {
+    const m = new Map<string, ComponentType>()
+    for (const c of components) m.set(c.id, c.type)
+    return m
+  }, [components])
+
+  // Build the pin lookup. The agent / backend speaks Arduino-tutorial pin
+  // names ("UNO.D13", "UNO.GND", "L1.anode", "R1.a") while the wokwi shadow
+  // DOM exposes them as "13", "GND.1", "A", "1" etc. Register both forms so
+  // wires resolve regardless of which side authored them.
   const pinIndex = useMemo(() => {
     const map = new Map<string, PositionedPin>()
     for (const p of pins) {
       map.set(`${p.componentId}.${p.name}`, p)
-      if (p.componentId !== 'UNO') continue
-      if (/^\d+$/.test(p.name)) {
-        map.set(`UNO.D${p.name}`, p)
+      if (p.componentId === 'UNO') {
+        if (/^\d+$/.test(p.name)) {
+          map.set(`UNO.D${p.name}`, p)
+        }
+        if (/^GND(\.\d+)?$/.test(p.name) && !map.has('UNO.GND')) {
+          map.set('UNO.GND', p)
+        }
+        if (p.name === '3.3V') map.set('UNO.3V3', p)
+        if (p.name === '5V') map.set('UNO.5V', p)
+        continue
       }
-      if (/^GND(\.\d+)?$/.test(p.name) && !map.has('UNO.GND')) {
-        map.set('UNO.GND', p)
+      const type = typeById.get(p.componentId)
+      if (!type) continue
+      const aliases = PIN_ALIASES[type]?.[p.name]
+      if (aliases) {
+        for (const alias of aliases) {
+          map.set(`${p.componentId}.${alias}`, p)
+        }
       }
-      if (p.name === '3.3V') map.set('UNO.3V3', p)
-      if (p.name === '5V') map.set('UNO.5V', p)
     }
     return map
-  }, [pins])
+  }, [pins, typeById])
 
   function handlePinClick(componentId: string, pinName: string) {
     const ref = `${componentId}.${pinName}`
