@@ -17,8 +17,8 @@ Legend: `[x]` done, `[ ]` pending, `[/]` partial.
 
 ## In progress / next up
 
-- [x] **AVRADC** + pot bridge - `analogRead(A0..A5)` returns the live potentiometer knob value. Wire-trace finds the component connected to each A-pin and writes its 0..5 V into `adc.channelValues[ch]` every frame. (commit pending)
-- [ ] **AVRTWI (I2C)** + virtual PCF8574 LCD backpack - LCD examples show text from `lcd.print(...)`.
+- [x] **AVRADC** + pot bridge - `analogRead(A0..A5)` returns the live potentiometer knob value. Wire-trace finds the component connected to each A-pin and writes its 0..5 V into `adc.channelValues[ch]` every frame. (commit `b5f0299`)
+- [x] **AVRTWI (I2C)** + virtual PCF8574 LCD backpack - `LiquidCrystal_I2C lcd(0x27, 16, 2)` decodes nibbles into the visible 2x16 string and pushes it to every `wokwi-lcd1602` on the canvas via `updateComponentProps`. (commit pending)
 - [ ] **PWM register polling** - `analogWrite(pin, duty)` modulates `<wokwi-led>` brightness and `<wokwi-servo>` angle.
 - [ ] **External / pin-change interrupts** - `attachInterrupt(0, fn, CHANGE)` fires.
 - [ ] **Serial line buffering polish** - Already use `onLineTransmit`. Verify long `Serial.print(...)` without `\n` flushes correctly on disconnect.

@@ -1,6 +1,7 @@
 import {
   AVRADC,
   AVRIOPort,
+  AVRTWI,
   AVRTimer,
   AVRUSART,
   CPU,
@@ -12,11 +13,15 @@ import {
   timer0Config,
   timer1Config,
   timer2Config,
+  twiConfig,
   usart0Config,
 } from 'avr8js'
 import { BLINK_PROGRAM } from './blinkProgram'
 import { bytesToProgramWords, parseIntelHex } from '../lib/intelHex'
 import { DIGITAL_PIN_LABELS, type DigitalPinLabel } from './pinState'
+import { I2CBus } from './i2cBus'
+import { PCF8574 } from './pcf8574'
+import { HD44780Backpack } from './hd44780'
 
 const PROGRAM_MEM_WORDS = 0x4000
 // 250k instructions per ~16 ms frame keeps the simulator close to a real
@@ -42,6 +47,9 @@ export interface SimCallbacks {
   /** Called every frame for each ADC channel 0..5. Return the voltage at
    * that pin (0..VCC). Feeds analogRead(A0..A5) from the canvas. */
   getAdcChannel?: (channel: number) => number
+  /** Called when a virtual I2C LCD updates its visible text. Two lines
+   * joined by "\n", trailing blanks trimmed. */
+  onLcdText?: (text: string) => void
 }
 
 export type SimProgram =
@@ -98,6 +106,18 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
   // pin; we refresh from the caller every frame so dragging the
   // potentiometer knob is reflected on the next conversion.
   const adc = new AVRADC(cpu, adcConfig)
+
+  // TWI / I2C: kids' I2C sketches are 99% "LiquidCrystal_I2C lcd(0x27,
+  // 16, 2);" so we always wire a virtual PCF8574 backpack at 0x27 into
+  // an HD44780 decoder. The text flows up via onLcdText so the canvas
+  // can mirror it on the wokwi-lcd1602 element. Sketches that don't
+  // touch I2C pay nothing.
+  const twi = new AVRTWI(cpu, twiConfig, F_CPU)
+  const i2cBus = new I2CBus(twi)
+  if (callbacks.onLcdText) {
+    const lcd = new HD44780Backpack(callbacks.onLcdText)
+    i2cBus.register(0x27, new PCF8574(lcd.onPort))
+  }
 
   if (callbacks.onSerialLine) {
     usart.onLineTransmit = callbacks.onSerialLine

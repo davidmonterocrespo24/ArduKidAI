@@ -21,6 +21,18 @@ function getAdcChannelFromStore(channel: number): number {
   return 0
 }
 
+// I2C LCD bridge: every byte the sketch writes to address 0x27 is
+// decoded by the HD44780 backpack inside the runner and surfaces here
+// as the rendered text. We mirror it onto every lcd1602 on the canvas
+// since real I2C only addresses one display at a time anyway.
+function pushLcdText(text: string): void {
+  const state = useAppStore.getState()
+  for (const c of state.components) {
+    if (c.type !== 'lcd1602') continue
+    state.updateComponentProps(c.id, { text })
+  }
+}
+
 interface CompileResponse {
   ok: boolean
   hex?: string
@@ -61,6 +73,7 @@ export function SimControls() {
         onPinChange: (snapshot) => setPinSnapshot(snapshot.levels, snapshot.activity),
         onSerialLine: (line) => appendSerial(line),
         getAdcChannel: getAdcChannelFromStore,
+        onLcdText: pushLcdText,
       },
     )
     setSimStatus('running')
@@ -86,6 +99,8 @@ export function SimControls() {
           {
             onPinChange: (snapshot) => setPinSnapshot(snapshot.levels, snapshot.activity),
             onSerialLine: (line) => appendSerial(line),
+            getAdcChannel: getAdcChannelFromStore,
+            onLcdText: pushLcdText,
           },
         )
         setSimStatus('running')
