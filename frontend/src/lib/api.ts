@@ -9,6 +9,18 @@ export function apiUrl(path: string): string {
 
 import { authHeader } from '../auth/token'
 
+export async function getJson<T>(path: string): Promise<T> {
+  const res = await fetch(apiUrl(path), {
+    method: 'GET',
+    headers: { ...authHeader() },
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`GET ${path} failed: ${res.status} ${res.statusText} ${text}`)
+  }
+  return res.json() as Promise<T>
+}
+
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(apiUrl(path), {
     method: 'POST',

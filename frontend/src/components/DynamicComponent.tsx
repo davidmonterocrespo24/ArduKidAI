@@ -141,7 +141,12 @@ function Resistor({ instance }: { instance: ComponentInstance }) {
 function Lcd1602({ instance }: { instance: ComponentInstance }) {
   const text = (instance.props.text as string | undefined) ?? ''
   const ref = useLiveProperty('text', text)
-  return <wokwi-lcd1602 ref={ref} id={instance.id} />
+  // pins="i2c" exposes GND, VCC, SDA, SCL on the element so the kid
+  // can wire it the same way as a real $2 LCM1602 backpack. The
+  // simulator only models the I2C path - the 16-pin parallel mode is
+  // not wired in our HD44780 decoder, so defaulting to i2c also
+  // matches what every example here writes to.
+  return <wokwi-lcd1602 ref={ref} id={instance.id} pins="i2c" />
 }
 
 function SevenSegment({ instance }: { instance: ComponentInstance }) {

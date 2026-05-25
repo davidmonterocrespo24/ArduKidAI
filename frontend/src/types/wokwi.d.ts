@@ -23,7 +23,7 @@ declare module 'react' {
       'wokwi-buzzer': WokwiElement<{ hasSignal?: boolean }>
       'wokwi-servo': WokwiElement<{ angle?: number }>
       'wokwi-potentiometer': WokwiElement<{ value?: number }>
-      'wokwi-lcd1602': WokwiElement<{ text?: string }>
+      'wokwi-lcd1602': WokwiElement<{ text?: string; pins?: 'full' | 'i2c' | 'none' }>
       'wokwi-7segment': WokwiElement<{ values?: string; color?: string }>
     }
   }

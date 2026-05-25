@@ -4,8 +4,9 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
-# Install arduino-cli plus the AVR core. Pinning the arduino-cli release keeps
-# the image reproducible; the AVR core is pinned via the index URL.
+# Install arduino-cli plus the AVR core and the libraries every kid-level
+# example here depends on. Without these the LCD / NeoPixel / Servo
+# sketches fail at compile time even though the simulator can handle them.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
@@ -13,6 +14,11 @@ RUN apt-get update \
        | BINDIR=/usr/local/bin sh \
     && arduino-cli core update-index \
     && arduino-cli core install arduino:avr \
+    && arduino-cli lib update-index \
+    && arduino-cli lib install \
+       "LiquidCrystal I2C" \
+       "Servo" \
+       "Adafruit NeoPixel" \
     && arduino-cli version
 
 WORKDIR /app

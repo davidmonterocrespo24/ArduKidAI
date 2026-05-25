@@ -37,6 +37,12 @@ services:
       PORT: "8080"
     ports:
       - "127.0.0.1:8080:8080"
+    # Persist runtime-installed Arduino libraries across container
+    # rebuilds. The Dockerfile pre-seeds LiquidCrystal_I2C, Servo and
+    # NeoPixel; anything the kid installs from the Libraries modal
+    # lands here and survives `docker compose up -d --build`.
+    volumes:
+      - arduino_libs:/root/.arduino15
 
   frontend:
     build:
@@ -66,3 +72,6 @@ services:
       - "npx -y mongodb-mcp-server --transport http --httpPort 3030 --httpHost 0.0.0.0"
     expose:
       - "3030"
+
+volumes:
+  arduino_libs:
