@@ -13,7 +13,11 @@ import { bytesToProgramWords, parseIntelHex } from '../lib/intelHex'
 import { DIGITAL_PIN_LABELS, type DigitalPinLabel } from './pinState'
 
 const PROGRAM_MEM_WORDS = 0x4000
-const INSTRUCTIONS_PER_FRAME = 50_000
+// 250k instructions per ~16 ms frame keeps the simulator close to a real
+// 16 MHz Arduino UNO (15 M cycles/sec actual, ~16 M target) so delay(500)
+// in the kid's sketch feels like half a second of wall time. 50k was four
+// times too slow and made every blink look frozen.
+const INSTRUCTIONS_PER_FRAME = 250_000
 const F_CPU = 16_000_000
 
 export interface PinSnapshot {
