@@ -57,6 +57,30 @@ export function resolveAnalogChannel(componentId: string, wires: Wire[]): number
   return null
 }
 
+/**
+ * Return a map of pin-name -> UNO digital pin for every wire that
+ * leaves `componentId`. Used for multi-pin parts such as the 7-segment
+ * display where each segment connects to its own digital pin.
+ */
+export function resolveAllDrivePins(
+  componentId: string,
+  wires: Wire[],
+): Record<string, DigitalPinLabel> {
+  const out: Record<string, DigitalPinLabel> = {}
+  for (const w of wires) {
+    const selfRef = w.from_pin.startsWith(`${componentId}.`) ? w.from_pin
+      : w.to_pin.startsWith(`${componentId}.`) ? w.to_pin
+        : null
+    if (!selfRef) continue
+    const other = selfRef === w.from_pin ? w.to_pin : w.from_pin
+    const pin = unoPin(other)
+    if (!pin) continue
+    const pinName = selfRef.slice(componentId.length + 1)
+    out[pinName] = pin
+  }
+  return out
+}
+
 export function resolveDrivePin(
   componentId: string,
   wires: Wire[],

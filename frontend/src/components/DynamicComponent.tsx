@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type { ComponentInstance } from '../types/circuit'
 import { useAppStore } from '../store/useAppStore'
-import { resolveDrivePin } from '../sim/wireTrace'
+import { resolveAllDrivePins, resolveDrivePin } from '../sim/wireTrace'
 import { isActive } from '../sim/pinState'
 import { servoMicrosToAngle } from '../sim/pwm'
 import { driveInputPin } from '../sim/inputBridge'
@@ -209,9 +209,28 @@ function Lcd1602({ instance }: { instance: ComponentInstance }) {
   return <wokwi-lcd1602 ref={ref} id={instance.id} pins="i2c" />
 }
 
+// Segment ordering as wokwi expects: A B C D E F G DP. Each entry is a
+// flag for that segment being lit in common-cathode mode (pin HIGH ==
+// segment on). Sketches drive each segment over its own digital pin.
+const SEG_ORDER = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'DP'] as const
+
 function SevenSegment({ instance }: { instance: ComponentInstance }) {
-  const values = (instance.props.values as string | undefined) ?? '0'
+  const wires = useAppStore((s) => s.wires)
+  const pinLevels = useAppStore((s) => s.pinLevels)
   const color = (instance.props.color as string | undefined) ?? 'red'
+  const segmentPins = useMemo(
+    () => resolveAllDrivePins(instance.id, wires),
+    [instance.id, wires],
+  )
+  // Live segment array: read the pin level for each connected segment.
+  // Pins the kid did not wire stay off. wokwi expects 1 / 0 numbers.
+  const values = useMemo(() => {
+    return SEG_ORDER.map((seg) => {
+      const pin = segmentPins[seg]
+      if (!pin) return 0
+      return pinLevels[pin] ? 1 : 0
+    })
+  }, [segmentPins, pinLevels])
   const ref = useLiveProperty('values', values)
   return <wokwi-7segment ref={ref} id={instance.id} color={color} />
 }

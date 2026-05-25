@@ -13,14 +13,19 @@
 import type { ComponentInstance, ComponentType, Wire } from '../types/circuit'
 import { nextSpawnPosition } from './spawnPosition'
 import {
+  analogRead,
+  analogWrite,
   chain,
   digitalWrite,
   ifThen,
   loop,
+  num,
   pinMode,
   setup,
+  tone,
   toXml,
   wait,
+  type BlockNode,
 } from './blocklyXml'
 
 export type Difficulty = 1 | 2 | 3
@@ -179,6 +184,326 @@ const BUZZER_TONE_BLOCKS = toXml(
     },
   ),
   loop({ type: 'ardukid_pin_mode', fields: { PIN: '13', MODE: 'OUTPUT' } }),
+)
+
+const BUTTON_TOGGLE_BLOCKS = toXml(
+  // bool variables (state, last) declared implicitly via Blockly variables
+  setup(chain(pinMode(2, 'INPUT_PULLUP'), pinMode(13, 'OUTPUT'))),
+  loop(
+    chain(
+      ifThen(
+        {
+          type: 'logic_compare',
+          fields: { OP: 'EQ' },
+          values: {
+            A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+            B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+          },
+        },
+        chain(digitalWrite(13, 'HIGH'), wait(50)),
+      ),
+      ifThen(
+        {
+          type: 'logic_compare',
+          fields: { OP: 'EQ' },
+          values: {
+            A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+            B: { type: 'logic_boolean', fields: { BOOL: 'TRUE' } },
+          },
+        },
+        digitalWrite(13, 'LOW'),
+      ),
+    ),
+  ),
+)
+
+// Variable assigning + reading helpers used by the more advanced examples.
+const setVarV = (value: BlockNode): BlockNode => ({
+  type: 'variables_set',
+  fields: { VAR: 'v' },
+  values: { VALUE: value },
+})
+const getVarV = (): BlockNode => ({ type: 'variables_get', fields: { VAR: 'v' } })
+
+const FADE_BLOCKS = toXml(
+  setup(pinMode(9, 'OUTPUT')),
+  loop(
+    chain(
+      // up
+      setVarV(num(0)),
+      {
+        type: 'controls_whileUntil',
+        fields: { MODE: 'WHILE' },
+        values: {
+          BOOL: {
+            type: 'logic_compare',
+            fields: { OP: 'LT' },
+            values: { A: getVarV(), B: num(256) },
+          },
+        },
+        statement: {
+          name: 'DO',
+          child: chain(
+            analogWrite(9, getVarV()),
+            wait(8),
+            { type: 'math_change', fields: { VAR: 'v' }, values: { DELTA: num(1) } },
+          ),
+        },
+      },
+      // down
+      setVarV(num(255)),
+      {
+        type: 'controls_whileUntil',
+        fields: { MODE: 'WHILE' },
+        values: {
+          BOOL: {
+            type: 'logic_compare',
+            fields: { OP: 'GTE' },
+            values: { A: getVarV(), B: num(0) },
+          },
+        },
+        statement: {
+          name: 'DO',
+          child: chain(
+            analogWrite(9, getVarV()),
+            wait(8),
+            { type: 'math_change', fields: { VAR: 'v' }, values: { DELTA: num(-1) } },
+          ),
+        },
+      },
+    ),
+  ),
+)
+
+const POT_DIM_BLOCKS = toXml(
+  setup(pinMode(9, 'OUTPUT')),
+  loop(
+    analogWrite(9, {
+      type: 'math_arithmetic',
+      fields: { OP: 'DIVIDE' },
+      values: { A: analogRead('A0'), B: num(4) },
+    }),
+  ),
+)
+
+const POT_BUZZER_BLOCKS = toXml(
+  setup({ type: 'ardukid_pin_mode', fields: { PIN: '13', MODE: 'OUTPUT' } }),
+  loop(
+    chain(
+      tone(8, {
+        type: 'math_arithmetic',
+        fields: { OP: 'ADD' },
+        values: {
+          A: num(220),
+          B: {
+            type: 'math_arithmetic',
+            fields: { OP: 'MULTIPLY' },
+            values: { A: analogRead('A0'), B: num(1.5) },
+          },
+        },
+      }, 30),
+      wait(10),
+    ),
+  ),
+)
+
+const PIANO_BLOCKS = toXml(
+  setup(
+    chain(
+      pinMode(2, 'INPUT_PULLUP'),
+      pinMode(3, 'INPUT_PULLUP'),
+      pinMode(4, 'INPUT_PULLUP'),
+    ),
+  ),
+  loop(
+    chain(
+      ifThen(
+        {
+          type: 'logic_compare',
+          fields: { OP: 'EQ' },
+          values: {
+            A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+            B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+          },
+        },
+        chain(tone(8, 262, 120), wait(120)),
+      ),
+      ifThen(
+        {
+          type: 'logic_compare',
+          fields: { OP: 'EQ' },
+          values: {
+            A: { type: 'ardukid_digital_read', fields: { PIN: '3' } },
+            B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+          },
+        },
+        chain(tone(8, 294, 120), wait(120)),
+      ),
+      ifThen(
+        {
+          type: 'logic_compare',
+          fields: { OP: 'EQ' },
+          values: {
+            A: { type: 'ardukid_digital_read', fields: { PIN: '4' } },
+            B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+          },
+        },
+        chain(tone(8, 330, 120), wait(120)),
+      ),
+    ),
+  ),
+)
+
+// Knight Rider: 3 LEDs on D11/D12/D13 sweep left, then right.
+const KNIGHT_BLOCKS = toXml(
+  setup(chain(pinMode(11, 'OUTPUT'), pinMode(12, 'OUTPUT'), pinMode(13, 'OUTPUT'))),
+  loop(
+    chain(
+      digitalWrite(11, 'HIGH'), wait(120), digitalWrite(11, 'LOW'),
+      digitalWrite(12, 'HIGH'), wait(120), digitalWrite(12, 'LOW'),
+      digitalWrite(13, 'HIGH'), wait(120), digitalWrite(13, 'LOW'),
+      digitalWrite(12, 'HIGH'), wait(120), digitalWrite(12, 'LOW'),
+    ),
+  ),
+)
+
+const SOS_BLOCKS = toXml(
+  setup(pinMode(13, 'OUTPUT')),
+  loop(
+    chain(
+      // S (3 dots)
+      digitalWrite(13, 'HIGH'), wait(200), digitalWrite(13, 'LOW'), wait(200),
+      digitalWrite(13, 'HIGH'), wait(200), digitalWrite(13, 'LOW'), wait(200),
+      digitalWrite(13, 'HIGH'), wait(200), digitalWrite(13, 'LOW'), wait(600),
+      // O (3 dashes)
+      digitalWrite(13, 'HIGH'), wait(600), digitalWrite(13, 'LOW'), wait(200),
+      digitalWrite(13, 'HIGH'), wait(600), digitalWrite(13, 'LOW'), wait(200),
+      digitalWrite(13, 'HIGH'), wait(600), digitalWrite(13, 'LOW'), wait(600),
+      // S
+      digitalWrite(13, 'HIGH'), wait(200), digitalWrite(13, 'LOW'), wait(200),
+      digitalWrite(13, 'HIGH'), wait(200), digitalWrite(13, 'LOW'), wait(200),
+      digitalWrite(13, 'HIGH'), wait(200), digitalWrite(13, 'LOW'), wait(1400),
+    ),
+  ),
+)
+
+const HEARTBEAT_BLOCKS = toXml(
+  setup(pinMode(9, 'OUTPUT')),
+  loop(
+    chain(
+      setVarV(num(0)),
+      {
+        type: 'controls_whileUntil',
+        fields: { MODE: 'WHILE' },
+        values: {
+          BOOL: { type: 'logic_compare', fields: { OP: 'LT' }, values: { A: getVarV(), B: num(256) } },
+        },
+        statement: {
+          name: 'DO',
+          child: chain(
+            analogWrite(9, getVarV()),
+            wait(2),
+            { type: 'math_change', fields: { VAR: 'v' }, values: { DELTA: num(1) } },
+          ),
+        },
+      },
+      setVarV(num(255)),
+      {
+        type: 'controls_whileUntil',
+        fields: { MODE: 'WHILE' },
+        values: {
+          BOOL: { type: 'logic_compare', fields: { OP: 'GTE' }, values: { A: getVarV(), B: num(0) } },
+        },
+        statement: {
+          name: 'DO',
+          child: chain(
+            analogWrite(9, getVarV()),
+            wait(2),
+            { type: 'math_change', fields: { VAR: 'v' }, values: { DELTA: num(-1) } },
+          ),
+        },
+      },
+      wait(500),
+    ),
+  ),
+)
+
+const GREETING_BLOCKS = toXml(
+  setup(chain(pinMode(2, 'INPUT_PULLUP'), pinMode(13, 'OUTPUT'))),
+  loop(
+    ifThen(
+      {
+        type: 'logic_compare',
+        fields: { OP: 'EQ' },
+        values: {
+          A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+          B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+        },
+      },
+      chain(
+        digitalWrite(13, 'HIGH'), tone(8, 262, 300), wait(300), digitalWrite(13, 'LOW'), wait(40),
+        digitalWrite(13, 'HIGH'), tone(8, 262, 300), wait(300), digitalWrite(13, 'LOW'), wait(40),
+        digitalWrite(13, 'HIGH'), tone(8, 392, 300), wait(300), digitalWrite(13, 'LOW'), wait(40),
+        digitalWrite(13, 'HIGH'), tone(8, 392, 300), wait(300), digitalWrite(13, 'LOW'), wait(40),
+        digitalWrite(13, 'HIGH'), tone(8, 440, 300), wait(300), digitalWrite(13, 'LOW'), wait(40),
+        digitalWrite(13, 'HIGH'), tone(8, 440, 300), wait(300), digitalWrite(13, 'LOW'), wait(40),
+        digitalWrite(13, 'HIGH'), tone(8, 392, 600), wait(600), digitalWrite(13, 'LOW'), wait(40),
+        wait(500),
+      ),
+    ),
+  ),
+)
+
+const BINARY_BLOCKS = toXml(
+  setup(chain(pinMode(11, 'OUTPUT'), pinMode(12, 'OUTPUT'), pinMode(13, 'OUTPUT'))),
+  loop(
+    chain(
+      // 0..7 unrolled as 3-LED binary; clearer for kids than a loop+math.
+      digitalWrite(11, 'LOW'),  digitalWrite(12, 'LOW'),  digitalWrite(13, 'LOW'),  wait(700),
+      digitalWrite(11, 'HIGH'), digitalWrite(12, 'LOW'),  digitalWrite(13, 'LOW'),  wait(700),
+      digitalWrite(11, 'LOW'),  digitalWrite(12, 'HIGH'), digitalWrite(13, 'LOW'),  wait(700),
+      digitalWrite(11, 'HIGH'), digitalWrite(12, 'HIGH'), digitalWrite(13, 'LOW'),  wait(700),
+      digitalWrite(11, 'LOW'),  digitalWrite(12, 'LOW'),  digitalWrite(13, 'HIGH'), wait(700),
+      digitalWrite(11, 'HIGH'), digitalWrite(12, 'LOW'),  digitalWrite(13, 'HIGH'), wait(700),
+      digitalWrite(11, 'LOW'),  digitalWrite(12, 'HIGH'), digitalWrite(13, 'HIGH'), wait(700),
+      digitalWrite(11, 'HIGH'), digitalWrite(12, 'HIGH'), digitalWrite(13, 'HIGH'), wait(700),
+    ),
+  ),
+)
+
+// Show the digit `d` on a common-cathode 7-seg wired A..G on D2..D8.
+function seg7DigitChain(d: number): BlockNode[] {
+  const SEGS: Record<number, [number, number, number, number, number, number, number]> = {
+    0: [1, 1, 1, 1, 1, 1, 0],
+    1: [0, 1, 1, 0, 0, 0, 0],
+    2: [1, 1, 0, 1, 1, 0, 1],
+    3: [1, 1, 1, 1, 0, 0, 1],
+    4: [0, 1, 1, 0, 0, 1, 1],
+    5: [1, 0, 1, 1, 0, 1, 1],
+    6: [1, 0, 1, 1, 1, 1, 1],
+    7: [1, 1, 1, 0, 0, 0, 0],
+    8: [1, 1, 1, 1, 1, 1, 1],
+    9: [1, 1, 1, 1, 0, 1, 1],
+  }
+  return SEGS[d].map((on, i) => digitalWrite(i + 2, on ? 'HIGH' : 'LOW'))
+}
+
+const SEG7_COUNT_BLOCKS = toXml(
+  setup(
+    chain(
+      pinMode(2, 'OUTPUT'), pinMode(3, 'OUTPUT'), pinMode(4, 'OUTPUT'),
+      pinMode(5, 'OUTPUT'), pinMode(6, 'OUTPUT'), pinMode(7, 'OUTPUT'),
+      pinMode(8, 'OUTPUT'),
+    ),
+  ),
+  loop(
+    chain(
+      ...[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].flatMap((d) => [
+        ...seg7DigitChain(d),
+        wait(800),
+      ]),
+    ),
+  ),
 )
 
 const PREFIX: Record<ComponentType, string> = {
@@ -818,6 +1143,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       { type: 'resistor', props: { value: '220' } },
     ]),
     wires: [...buttonOnPin(1, '2'), ...ledOnPin(1, 1, '13')],
+    blockly_xml: BUTTON_TOGGLE_BLOCKS,
     cpp_code: BUTTON_LED_TOGGLE_CPP,
   },
   {
@@ -832,6 +1158,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       { type: 'resistor', props: { value: '220' } },
     ]),
     wires: ledOnPin(1, 1, '9'),
+    blockly_xml: FADE_BLOCKS,
     cpp_code: FADE_CPP,
   },
   {
@@ -852,6 +1179,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('P1.SIG', 'UNO.A0'),
       ...ledOnPin(1, 1, '9'),
     ],
+    blockly_xml: POT_DIM_BLOCKS,
     cpp_code: POT_DIM_CPP,
   },
   {
@@ -970,6 +1298,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('SEG1.DP', 'UNO.D9'),
       w('SEG1.COM', 'UNO.GND'),
     ],
+    blockly_xml: SEG7_COUNT_BLOCKS,
     cpp_code: SEG7_COUNTER_CPP,
   },
   {
@@ -1031,6 +1360,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     difficulty: 2,
     components: layout([{ type: 'led', props: { color: 'red' } }, { type: 'resistor', props: { value: '220' } }]),
     wires: ledOnPin(1, 1, '13'),
+    blockly_xml: SOS_BLOCKS,
     cpp_code: MORSE_SOS_CPP,
   },
   {
@@ -1049,6 +1379,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       { type: 'resistor', props: { value: '220' } },
     ]),
     wires: [...ledOnPin(1, 1, '11'), ...ledOnPin(2, 2, '12'), ...ledOnPin(3, 3, '13')],
+    blockly_xml: KNIGHT_BLOCKS,
     cpp_code: KNIGHT_CPP,
   },
   {
@@ -1060,6 +1391,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     difficulty: 2,
     components: layout([{ type: 'led', props: { color: 'red' } }, { type: 'resistor', props: { value: '220' } }]),
     wires: ledOnPin(1, 1, '9'),
+    blockly_xml: HEARTBEAT_BLOCKS,
     cpp_code: HEARTBEAT_CPP,
   },
   {
@@ -1094,6 +1426,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('P1.VCC', 'UNO.5V'),
       w('P1.SIG', 'UNO.A0'),
     ],
+    blockly_xml: POT_BUZZER_BLOCKS,
     cpp_code: POT_BUZZER_CPP,
   },
   {
@@ -1114,6 +1447,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('P1.SIG', 'UNO.A0'),
       ...ledOnPin(1, 1, '9'),
     ],
+    blockly_xml: POT_DIM_BLOCKS,
     cpp_code: POT_DIM_CPP,
   },
   {
@@ -1136,6 +1470,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('BZ1.1', 'UNO.D8'),
       w('BZ1.2', 'UNO.GND'),
     ],
+    blockly_xml: PIANO_BLOCKS,
     cpp_code: PIANO_CPP,
   },
   {
@@ -1186,6 +1521,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       { type: 'resistor', props: { value: '220' } },
     ]),
     wires: [...ledOnPin(1, 1, '11'), ...ledOnPin(2, 2, '12'), ...ledOnPin(3, 3, '13')],
+    blockly_xml: BINARY_BLOCKS,
     cpp_code: BINARY_CPP,
   },
   {
@@ -1226,6 +1562,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('BZ1.1', 'UNO.D8'),
       w('BZ1.2', 'UNO.GND'),
     ],
+    blockly_xml: GREETING_BLOCKS,
     cpp_code: GREETING_CPP,
   },
 ]

@@ -24,7 +24,7 @@ declare module 'react' {
       'wokwi-servo': WokwiElement<{ angle?: number }>
       'wokwi-potentiometer': WokwiElement<{ value?: number }>
       'wokwi-lcd1602': WokwiElement<{ text?: string; pins?: 'full' | 'i2c' | 'none' }>
-      'wokwi-7segment': WokwiElement<{ values?: string; color?: string }>
+      'wokwi-7segment': WokwiElement<{ values?: number[] | string; color?: string }>
     }
   }
 }
