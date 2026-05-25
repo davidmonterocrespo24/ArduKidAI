@@ -1,11 +1,15 @@
 import {
   AVRIOPort,
+  AVRTimer,
   AVRUSART,
   CPU,
   avrInstruction,
   portBConfig,
   portCConfig,
   portDConfig,
+  timer0Config,
+  timer1Config,
+  timer2Config,
   usart0Config,
 } from 'avr8js'
 import { BLINK_PROGRAM } from './blinkProgram'
@@ -77,6 +81,14 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
   const portC = new AVRIOPort(cpu, portCConfig)
   const portD = new AVRIOPort(cpu, portDConfig)
   const usart = new AVRUSART(cpu, usart0Config, F_CPU)
+  // Wire the three ATmega328P timers. Without them `millis()` stays at 0
+  // because the Timer0 overflow interrupt never fires, so `delay()` and
+  // `tone()` block forever and any sketch using them looks frozen after
+  // the first instruction. tone() also needs Timer2; Timer1 is here for
+  // sketches that use PWM on pins 9/10.
+  new AVRTimer(cpu, timer0Config)
+  new AVRTimer(cpu, timer1Config)
+  new AVRTimer(cpu, timer2Config)
 
   if (callbacks.onSerialLine) {
     usart.onLineTransmit = callbacks.onSerialLine
