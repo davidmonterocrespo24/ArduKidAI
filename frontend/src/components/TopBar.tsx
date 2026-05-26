@@ -31,7 +31,7 @@ export function TopBar() {
         <button
           type="button"
           onClick={() => setLibrariesOpen(true)}
-          className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+          className="rounded-md border border-brand-200 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
           title="Install Arduino libraries (LCD, NeoPixel, ...)"
         >
           Libraries
