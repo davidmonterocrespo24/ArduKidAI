@@ -79,3 +79,4 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+/wires-*.png
