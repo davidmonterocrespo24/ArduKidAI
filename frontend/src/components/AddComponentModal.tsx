@@ -28,6 +28,9 @@ const DESCRIPTIONS: Record<ComponentType, string> = {
   seg7: 'Single-digit common-cathode 7-segment. Drives A..G + DP.',
   dipSwitch8: '8-way DIP switch. Each switch ties its a-side pin LOW when ON.',
   analogJoystick: 'Thumb joystick. X / Y feed two analog pins, SEL is a button.',
+  soundSensor: 'Sound sensor (KY-038). AOUT gives the level, DOUT goes LOW when loud.',
+  flameSensor: 'Flame sensor. AOUT analog brightness, DOUT goes LOW when flame seen.',
+  rotaryEncoder: 'KY-040 rotary encoder. Turn the knob to fire CLK + DT pulses.',
   photoresistor: 'Light sensor (LDR). Slider sets the lux while running.',
   ntcTemperature: 'NTC temperature sensor. Slider sets the C while running.',
   tiltSwitch: 'Tilt switch. Toggle to drive the output pin HIGH / LOW.',
@@ -160,6 +163,24 @@ function Preview({ type }: { type: ComponentType }) {
       return (
         <div className={common} style={{ transform: 'scale(0.5)' }}>
           <wokwi-analog-joystick />
+        </div>
+      )
+    case 'soundSensor':
+      return (
+        <div className={common} style={{ transform: 'scale(0.6)' }}>
+          <wokwi-big-sound-sensor />
+        </div>
+      )
+    case 'flameSensor':
+      return (
+        <div className={common} style={{ transform: 'scale(0.7)' }}>
+          <wokwi-flame-sensor />
+        </div>
+      )
+    case 'rotaryEncoder':
+      return (
+        <div className={common} style={{ transform: 'scale(0.5)' }}>
+          <wokwi-ky-040 />
         </div>
       )
     default:

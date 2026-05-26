@@ -235,6 +235,75 @@ function DipSwitch8({ instance }: { instance: ComponentInstance }) {
   return <wokwi-dip-switch-8 ref={ref} id={instance.id} />
 }
 
+function SoundSensor({ instance }: { instance: ComponentInstance }) {
+  // Threshold sensor: while running, when "sound level" exceeds threshold
+  // DOUT goes LOW (typical active-low module). The AOUT analog reading is
+  // routed via the existing ADC bridge.
+  const wires = useAppStore((s) => s.wires)
+  const level = (instance.props.level as number | undefined) ?? 0
+  const threshold = (instance.props.threshold as number | undefined) ?? 600
+  useEffect(() => {
+    const pin = resolveSingleWireToUno(`${instance.id}.DOUT`, wires)
+    if (!pin) return
+    driveInputPin(pin, level < threshold)
+  }, [instance.id, wires, level, threshold])
+  return <wokwi-big-sound-sensor id={instance.id} />
+}
+
+function FlameSensor({ instance }: { instance: ComponentInstance }) {
+  const wires = useAppStore((s) => s.wires)
+  const flame = (instance.props.flame as number | undefined) ?? 0
+  const threshold = (instance.props.threshold as number | undefined) ?? 600
+  // Visual indicator on the wokwi element: ledSignal lights when the
+  // simulated flame reading is above threshold (matches the on-board LED
+  // on real modules).
+  const props = useMemo(
+    () => ({ ledPower: true, ledSignal: flame >= threshold }),
+    [flame, threshold],
+  )
+  const ref = useLiveProperties(props)
+  useEffect(() => {
+    const pin = resolveSingleWireToUno(`${instance.id}.DOUT`, wires)
+    if (!pin) return
+    driveInputPin(pin, flame < threshold)
+  }, [instance.id, wires, flame, threshold])
+  return <wokwi-flame-sensor ref={ref} id={instance.id} />
+}
+
+function RotaryEncoder({ instance }: { instance: ComponentInstance }) {
+  // KY-040 quadrature emulation: when the kid rotates (control panel
+  // +/- buttons set props.angle), we fire a CLK pulse on the wired
+  // CLK pin and a phase-shifted DT pulse so the sketch's interrupt or
+  // quadrature decoder sees direction-encoded rising edges.
+  const wires = useAppStore((s) => s.wires)
+  const angle = (instance.props.angle as number | undefined) ?? 0
+  const pressed = (instance.props.pressed as boolean | undefined) ?? false
+  const ref = useLiveProperty('angle', angle)
+  const lastAngle = useRef(angle)
+  useEffect(() => {
+    if (angle === lastAngle.current) return
+    const dir = angle > lastAngle.current ? 1 : -1
+    lastAngle.current = angle
+    const clkPin = resolveSingleWireToUno(`${instance.id}.CLK`, wires)
+    const dtPin = resolveSingleWireToUno(`${instance.id}.DT`, wires)
+    if (!clkPin) return
+    // Idle high. Clockwise: CLK falls before DT. Counter-clockwise: DT
+    // falls before CLK. After 30 ms both go high again.
+    const first = dir > 0 ? clkPin : dtPin
+    const second = dir > 0 ? dtPin : clkPin
+    if (first) driveInputPin(first, false)
+    if (second) window.setTimeout(() => driveInputPin(second, false), 10)
+    if (first) window.setTimeout(() => driveInputPin(first, true), 20)
+    if (second) window.setTimeout(() => driveInputPin(second, true), 30)
+  }, [angle, wires, instance.id])
+  useEffect(() => {
+    const pin = resolveSingleWireToUno(`${instance.id}.SW`, wires)
+    if (!pin) return
+    driveInputPin(pin, !pressed)
+  }, [instance.id, wires, pressed])
+  return <wokwi-ky-040 ref={ref} id={instance.id} />
+}
+
 function AnalogJoystick({ instance }: { instance: ComponentInstance }) {
   const xValue = (instance.props.xValue as number | undefined) ?? 512
   const yValue = (instance.props.yValue as number | undefined) ?? 512
@@ -443,6 +512,12 @@ export function DynamicComponent({ instance }: { instance: ComponentInstance }) 
       return <DipSwitch8 instance={instance} />
     case 'analogJoystick':
       return <AnalogJoystick instance={instance} />
+    case 'soundSensor':
+      return <SoundSensor instance={instance} />
+    case 'flameSensor':
+      return <FlameSensor instance={instance} />
+    case 'rotaryEncoder':
+      return <RotaryEncoder instance={instance} />
     case 'photoresistor':
       return <Photoresistor instance={instance} />
     case 'ntcTemperature':

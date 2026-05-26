@@ -42,6 +42,9 @@ export function SensorControl({ instance }: Props) {
     'slideSwitch',
     'dipSwitch8',
     'analogJoystick',
+    'soundSensor',
+    'flameSensor',
+    'rotaryEncoder',
   ].includes(instance.type)
   if (!hasControl) return null
 
@@ -124,6 +127,35 @@ export function SensorControl({ instance }: Props) {
               xValue={Number(instance.props.xValue ?? 512)}
               yValue={Number(instance.props.yValue ?? 512)}
               pressed={Boolean(instance.props.pressed)}
+              onChange={(p) => updateComponentProps(instance.id, p)}
+            />
+          ) : null}
+          {instance.type === 'soundSensor' ? (
+            <SliderControl
+              label="Sound"
+              min={0}
+              max={1023}
+              value={Number(instance.props.level ?? 0)}
+              onChange={(v) => updateComponentProps(instance.id, { level: v })}
+              wires={wires}
+              componentId={instance.id}
+            />
+          ) : null}
+          {instance.type === 'flameSensor' ? (
+            <SliderControl
+              label="Flame"
+              min={0}
+              max={1023}
+              value={Number(instance.props.flame ?? 0)}
+              onChange={(v) => updateComponentProps(instance.id, { flame: v })}
+              wires={wires}
+              componentId={instance.id}
+            />
+          ) : null}
+          {instance.type === 'rotaryEncoder' ? (
+            <RotaryControl
+              instance={instance}
+              wires={wires}
               onChange={(p) => updateComponentProps(instance.id, p)}
             />
           ) : null}
@@ -392,6 +424,58 @@ function JoystickControl({
           {pressed ? 'PRESSED' : 'Release'}
         </button>
       </div>
+    </div>
+  )
+}
+
+function RotaryControl({
+  instance,
+  wires,
+  onChange,
+}: {
+  instance: ComponentInstance
+  wires: { from_pin: string; to_pin: string }[]
+  onChange: (p: { angle?: number; pressed?: boolean }) => void
+}) {
+  const angle = Number(instance.props.angle ?? 0)
+  const pressed = Boolean(instance.props.pressed)
+  const swPin = resolveDrivePin(`${instance.id}.SW` as never, wires) // ignored, just for label
+  void swPin
+  return (
+    <div className="flex flex-col gap-1 text-[10px] text-slate-700">
+      <div className="flex items-center justify-between">
+        <span className="font-medium">Encoder</span>
+        <span className="font-mono">{angle}</span>
+      </div>
+      <div className="flex gap-1">
+        <button
+          type="button"
+          onClick={() => onChange({ angle: angle - 1 })}
+          className="flex-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-slate-50"
+        >
+          - turn
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange({ angle: angle + 1 })}
+          className="flex-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-slate-50"
+        >
+          + turn
+        </button>
+      </div>
+      <button
+        type="button"
+        onMouseDown={() => onChange({ pressed: true })}
+        onMouseUp={() => onChange({ pressed: false })}
+        onMouseLeave={() => pressed && onChange({ pressed: false })}
+        className={
+          pressed
+            ? 'rounded border border-rose-400 bg-rose-500 px-2 py-1 text-white'
+            : 'rounded border border-slate-300 bg-white px-2 py-1 text-slate-700 hover:bg-slate-50'
+        }
+      >
+        Press knob (SW)
+      </button>
     </div>
   )
 }

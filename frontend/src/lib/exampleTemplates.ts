@@ -584,6 +584,9 @@ const PREFIX: Record<ComponentType, string> = {
   seg7: 'SEG',
   dipSwitch8: 'DIP',
   analogJoystick: 'JOY',
+  soundSensor: 'SND',
+  flameSensor: 'FLM',
+  rotaryEncoder: 'ENC',
   photoresistor: 'LDR',
   ntcTemperature: 'NTC',
   tiltSwitch: 'TILT',
@@ -2209,6 +2212,150 @@ void loop() {
   int x = analogRead(A1); // HORZ
   digitalWrite(12, x < 300 ? HIGH : LOW); // pushed left -> LED 12
   digitalWrite(13, x > 700 ? HIGH : LOW); // pushed right -> LED 13
+}
+`,
+  },
+  {
+    id: 'ex-043',
+    title: 'Clap-detector LED',
+    intent_en: 'turn the LED on whenever the sound sensor hears a loud noise',
+    intent_es: 'prender el LED cuando el sensor escucha un sonido fuerte',
+    tags: ['sound', 'led'],
+    difficulty: 2,
+    components: layout([
+      { type: 'soundSensor' },
+      { type: 'led', props: { color: 'red' } },
+      { type: 'resistor', props: { value: '220' } },
+    ]),
+    wires: [
+      w('SND1.VCC', 'UNO.5V'),
+      w('SND1.GND', 'UNO.GND'),
+      w('SND1.DOUT', 'UNO.D2'),
+      ...ledOnPin(1, 1, '13'),
+    ],
+    blockly_xml: toXml(
+      setup(chain(pinMode(2, 'INPUT'), pinMode(13, 'OUTPUT'))),
+      loop(
+        chain(
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'EQ' },
+              values: {
+                A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+                B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+              },
+            },
+            digitalWrite(13, 'HIGH'),
+          ),
+          ifThen(
+            { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+            digitalWrite(13, 'LOW'),
+          ),
+        ),
+      ),
+    ),
+    cpp_code: `void setup() {
+  pinMode(2, INPUT);
+  pinMode(13, OUTPUT);
+}
+
+void loop() {
+  // Sound sensor pulls DOUT LOW when level > threshold.
+  digitalWrite(13, digitalRead(2) == LOW ? HIGH : LOW);
+}
+`,
+  },
+  {
+    id: 'ex-044',
+    title: 'Fire alarm',
+    intent_en: 'beep a buzzer when the flame sensor sees a strong light source',
+    intent_es: 'sonar el buzzer cuando el sensor de llama detecta luz fuerte',
+    tags: ['flame', 'buzzer'],
+    difficulty: 2,
+    components: layout([
+      { type: 'flameSensor' },
+      { type: 'buzzer' },
+    ]),
+    wires: [
+      w('FLM1.VCC', 'UNO.5V'),
+      w('FLM1.GND', 'UNO.GND'),
+      w('FLM1.DOUT', 'UNO.D2'),
+      w('BZ1.1', 'UNO.D8'),
+      w('BZ1.2', 'UNO.GND'),
+    ],
+    blockly_xml: toXml(
+      setup(chain(pinMode(2, 'INPUT'), pinMode(8, 'OUTPUT'))),
+      loop(
+        chain(
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'EQ' },
+              values: {
+                A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+                B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+              },
+            },
+            tone(8, 1500, 200),
+          ),
+          wait(80),
+        ),
+      ),
+    ),
+    cpp_code: `void setup() {
+  pinMode(2, INPUT);
+  pinMode(8, OUTPUT);
+}
+
+void loop() {
+  if (digitalRead(2) == LOW) tone(8, 1500, 200);
+  delay(80);
+}
+`,
+  },
+  {
+    id: 'ex-045',
+    title: 'Rotary encoder LED brightness',
+    intent_en: 'turn the rotary encoder knob to fade an LED brighter or dimmer',
+    intent_es: 'girar el encoder para subir o bajar el brillo de un LED',
+    tags: ['encoder', 'led', 'pwm'],
+    difficulty: 3,
+    components: layout([
+      { type: 'rotaryEncoder' },
+      { type: 'led', props: { color: 'green' } },
+      { type: 'resistor', props: { value: '220' } },
+    ]),
+    wires: [
+      w('ENC1.VCC', 'UNO.5V'),
+      w('ENC1.GND', 'UNO.GND'),
+      w('ENC1.CLK', 'UNO.D2'),
+      w('ENC1.DT', 'UNO.D3'),
+      w('ENC1.SW', 'UNO.D4'),
+      ...ledOnPin(1, 1, '9'),
+    ],
+    cpp_code: `volatile int level = 128;
+
+void onClkFall() {
+  // When CLK falls, check DT to decide direction (Gray-code quadrature).
+  if (digitalRead(3) == HIGH) level += 8;
+  else                         level -= 8;
+  if (level < 0) level = 0;
+  if (level > 255) level = 255;
+}
+
+void setup() {
+  pinMode(2, INPUT_PULLUP);
+  pinMode(3, INPUT_PULLUP);
+  pinMode(4, INPUT_PULLUP);
+  pinMode(9, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(2), onClkFall, FALLING);
+}
+
+void loop() {
+  analogWrite(9, level);
+  if (digitalRead(4) == LOW) level = 0; // press knob resets to 0
+  delay(20);
 }
 `,
   },

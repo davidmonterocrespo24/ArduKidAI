@@ -29,6 +29,14 @@ function getAdcChannelFromStore(channel: number): number {
       const t = Math.max(-10, Math.min(60, c1))
       return clampVolts(((t + 10) / 70) * 5)
     }
+    if (c.type === 'soundSensor') {
+      const level = Number(c.props.level ?? 0)
+      return clampVolts((level / 1023) * 5)
+    }
+    if (c.type === 'flameSensor') {
+      const flame = Number(c.props.flame ?? 0)
+      return clampVolts((flame / 1023) * 5)
+    }
   }
   // Analog joystick exposes two outputs (VERT/HORZ) so resolveAnalogChannel
   // is not enough - VERT and HORZ may map to different ADC channels.
