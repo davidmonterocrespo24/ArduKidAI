@@ -83,15 +83,20 @@ export function DraggablePart({ instance }: Props) {
 
   function onWrapperMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) return
+    // While the sim is running the kid is interacting with sensor
+    // controls (sliders, buttons, popovers). Dragging the part would
+    // hijack the slider drag, so block all drag-initiating clicks.
+    if (simStatus === 'running') return
     if (isOnInteractiveSurface(e.target)) return
     startDrag(e.clientX, e.clientY)
   }
 
   // The id-badge below the part is always a drag handle, even for
   // interactive components - it's how the kid grabs a button or pot
-  // to rearrange them.
+  // to rearrange them. Still disabled while the sim is running.
   function onHandleMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) return
+    if (simStatus === 'running') return
     e.stopPropagation()
     startDrag(e.clientX, e.clientY)
   }
@@ -103,7 +108,7 @@ export function DraggablePart({ instance }: Props) {
         position: 'absolute',
         left: instance.x,
         top: instance.y,
-        cursor: dragging ? 'grabbing' : 'grab',
+        cursor: simStatus === 'running' ? 'default' : dragging ? 'grabbing' : 'grab',
         userSelect: 'none',
         touchAction: 'none',
       }}
@@ -120,7 +125,7 @@ export function DraggablePart({ instance }: Props) {
         <span
           onMouseDown={onHandleMouseDown}
           title="Drag to move"
-          style={{ cursor: dragging ? 'grabbing' : 'grab' }}
+          style={{ cursor: simStatus === 'running' ? 'default' : dragging ? 'grabbing' : 'grab' }}
           className="rounded bg-white/80 px-1 font-mono text-[10px] text-slate-600 shadow-sm"
         >
           {instance.id}
