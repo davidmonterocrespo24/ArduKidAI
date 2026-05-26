@@ -17,15 +17,24 @@ const UNO_PINS = [
 ]
 
 export const COMPONENT_CATALOG: ComponentMeta[] = [
-  { type: 'uno',           label: 'Arduino UNO',         pins: UNO_PINS,                                       defaultProps: {} },
-  { type: 'led',           label: 'LED',                 pins: ['anode', 'cathode'],                            defaultProps: { color: 'red' } },
-  { type: 'resistor',      label: 'Resistor 220',        pins: ['a', 'b'],                                      defaultProps: { value: '220' } },
-  { type: 'pushbutton',    label: 'Pushbutton',          pins: ['1a', '1b', '2a', '2b'],                        defaultProps: { color: 'blue' } },
-  { type: 'buzzer',        label: 'Buzzer',              pins: ['1', '2'],                                      defaultProps: {} },
-  { type: 'servo',         label: 'Servo SG90',          pins: ['PWM', 'VCC', 'GND'],                           defaultProps: { angle: 0 } },
-  { type: 'potentiometer', label: 'Potentiometer',       pins: ['GND', 'SIG', 'VCC'],                           defaultProps: { value: 0 } },
-  { type: 'lcd1602',       label: 'LCD 16x2 (I2C)',      pins: ['GND', 'VCC', 'SDA', 'SCL'],                    defaultProps: {} },
-  { type: 'seg7',          label: '7-segment',           pins: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'DP', 'COM'], defaultProps: { color: 'red' } },
+  { type: 'uno',                label: 'Arduino UNO',          pins: UNO_PINS,                                       defaultProps: {} },
+  { type: 'led',                label: 'LED',                  pins: ['anode', 'cathode'],                            defaultProps: { color: 'red' } },
+  { type: 'resistor',           label: 'Resistor 220',         pins: ['a', 'b'],                                      defaultProps: { value: '220' } },
+  { type: 'pushbutton',         label: 'Pushbutton',           pins: ['1a', '1b', '2a', '2b'],                        defaultProps: { color: 'blue' } },
+  { type: 'pushbutton6mm',      label: 'Pushbutton 6mm',       pins: ['1a', '1b', '2a', '2b'],                        defaultProps: { color: 'red' } },
+  { type: 'buzzer',             label: 'Buzzer',               pins: ['1', '2'],                                      defaultProps: {} },
+  { type: 'servo',              label: 'Servo SG90',           pins: ['PWM', 'VCC', 'GND'],                           defaultProps: { angle: 0 } },
+  { type: 'potentiometer',      label: 'Potentiometer',        pins: ['GND', 'SIG', 'VCC'],                           defaultProps: { value: 0 } },
+  { type: 'slidePotentiometer', label: 'Slide pot (fader)',    pins: ['VCC', 'SIG', 'GND'],                           defaultProps: { value: 0 } },
+  { type: 'slideSwitch',        label: 'Slide switch',         pins: ['1', '2', '3'],                                 defaultProps: { value: 1 } },
+  { type: 'lcd1602',            label: 'LCD 16x2 (I2C)',       pins: ['GND', 'VCC', 'SDA', 'SCL'],                    defaultProps: {} },
+  { type: 'seg7',               label: '7-segment',            pins: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'DP', 'COM'], defaultProps: { color: 'red' } },
+  { type: 'photoresistor',      label: 'Light sensor (LDR)',   pins: ['VCC', 'GND', 'DO', 'AO'],                      defaultProps: { lux: 500 } },
+  { type: 'ntcTemperature',     label: 'NTC temperature',      pins: ['GND', 'VCC', 'OUT'],                           defaultProps: { celsius: 22 } },
+  { type: 'tiltSwitch',         label: 'Tilt switch',          pins: ['GND', 'VCC', 'OUT'],                           defaultProps: { tilted: false } },
+  { type: 'pirMotion',          label: 'PIR motion',           pins: ['VCC', 'OUT', 'GND'],                           defaultProps: { triggered: false } },
+  { type: 'rgbLed',             label: 'RGB LED',              pins: ['R', 'COM', 'G', 'B'],                          defaultProps: {} },
+  { type: 'ledBarGraph',        label: 'LED bar graph (10)',   pins: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10'], defaultProps: { color: 'red' } },
 ]
 
 export const PERIPHERAL_COMPONENTS = COMPONENT_CATALOG.filter((c) => c.type !== 'uno')

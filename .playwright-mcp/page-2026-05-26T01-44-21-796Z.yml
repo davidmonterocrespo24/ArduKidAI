@@ -1,0 +1,807 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: A
+      - generic [ref=e7]:
+        - heading "ArduKid" [level=1] [ref=e8]
+        - paragraph [ref=e9]: An AI Arduino IDE for kids
+      - button "Examples" [active] [ref=e10]
+      - button "Libraries" [ref=e11]
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - button "Run" [ref=e15]
+        - button "Compile & run" [ref=e16]
+        - button "Stop" [disabled] [ref=e17]
+        - button "Reset" [ref=e18]
+        - button "Save" [ref=e19]
+      - button "Sign in" [ref=e21]
+    - generic [ref=e3224]:
+      - banner [ref=e3225]:
+        - generic [ref=e3226]:
+          - heading "Example circuits" [level=3] [ref=e3227]
+          - paragraph [ref=e3228]: Click one and the canvas resets to that starter circuit. Then hit Compile & run.
+        - button "Close" [ref=e3229]
+      - 'textbox "Filter: led, button, servo, melody..." [ref=e3231]'
+      - generic [ref=e3233]:
+        - button "Blink the on-board LED easy hacer parpadear el LED del pin 13 una vez por segundo led blink starter" [ref=e3234]:
+          - generic [ref=e3235]:
+            - paragraph [ref=e3236]: Blink the on-board LED
+            - generic "difficulty 1" [ref=e3237]: easy
+          - paragraph [ref=e3239]: hacer parpadear el LED del pin 13 una vez por segundo
+          - generic [ref=e3240]:
+            - generic [ref=e3241]: led
+            - generic [ref=e3242]: blink
+            - generic [ref=e3243]: starter
+        - button "Button-controlled LED easy un LED que se prende mientras se aprieta un boton led button" [ref=e3244]:
+          - generic [ref=e3245]:
+            - paragraph [ref=e3246]: Button-controlled LED
+            - generic "difficulty 1" [ref=e3247]: easy
+          - paragraph [ref=e3249]: un LED que se prende mientras se aprieta un boton
+          - generic [ref=e3250]:
+            - generic [ref=e3251]: led
+            - generic [ref=e3252]: button
+        - button "Buzzer plays a tone easy hacer que un buzzer toque una nota al arrancar buzzer tone" [ref=e3253]:
+          - generic [ref=e3254]:
+            - paragraph [ref=e3255]: Buzzer plays a tone
+            - generic "difficulty 1" [ref=e3256]: easy
+          - paragraph [ref=e3258]: hacer que un buzzer toque una nota al arrancar
+          - generic [ref=e3259]:
+            - generic [ref=e3260]: buzzer
+            - generic [ref=e3261]: tone
+        - button "Christmas lights easy alternar tres LEDs de colores como luces de navidad led sequence" [ref=e3262]:
+          - generic [ref=e3263]:
+            - paragraph [ref=e3264]: Christmas lights
+            - generic "difficulty 1" [ref=e3265]: easy
+          - paragraph [ref=e3267]: alternar tres LEDs de colores como luces de navidad
+          - generic [ref=e3268]:
+            - generic [ref=e3269]: led
+            - generic [ref=e3270]: sequence
+        - button "Police lights easy alternar LEDs rojo y azul rapido como luces de emergencia led alternate" [ref=e3271]:
+          - generic [ref=e3272]:
+            - paragraph [ref=e3273]: Police lights
+            - generic "difficulty 1" [ref=e3274]: easy
+          - paragraph [ref=e3276]: alternar LEDs rojo y azul rapido como luces de emergencia
+          - generic [ref=e3277]:
+            - generic [ref=e3278]: led
+            - generic [ref=e3279]: alternate
+        - button "Two LEDs alternating easy alternar dos LEDs, uno prendido y el otro apagado led blink alternate" [ref=e3280]:
+          - generic [ref=e3281]:
+            - paragraph [ref=e3282]: Two LEDs alternating
+            - generic "difficulty 1" [ref=e3283]: easy
+          - paragraph [ref=e3285]: alternar dos LEDs, uno prendido y el otro apagado
+          - generic [ref=e3286]:
+            - generic [ref=e3287]: led
+            - generic [ref=e3288]: blink
+            - generic [ref=e3289]: alternate
+        - button "7-segment counts 0 to 9 medium contar de 0 a 9 en un display de 7 segmentos una vez por segundo 7segment counter" [ref=e3290]:
+          - generic [ref=e3291]:
+            - paragraph [ref=e3292]: 7-segment counts 0 to 9
+            - generic "difficulty 2" [ref=e3293]: medium
+          - paragraph [ref=e3295]: contar de 0 a 9 en un display de 7 segmentos una vez por segundo
+          - generic [ref=e3296]:
+            - generic [ref=e3297]: 7segment
+            - generic [ref=e3298]: counter
+        - button "Button toggles LED on and off medium apretar el boton una vez prende el LED, otra vez lo apaga led button toggle" [ref=e3299]:
+          - generic [ref=e3300]:
+            - paragraph [ref=e3301]: Button toggles LED on and off
+            - generic "difficulty 2" [ref=e3302]: medium
+          - paragraph [ref=e3304]: apretar el boton una vez prende el LED, otra vez lo apaga
+          - generic [ref=e3305]:
+            - generic [ref=e3306]: led
+            - generic [ref=e3307]: button
+            - generic [ref=e3308]: toggle
+        - button "Dimmer with potentiometer medium leer un potenciometro y usarlo para regular el brillo de un LED led potentiometer dimmer" [ref=e3309]:
+          - generic [ref=e3310]:
+            - paragraph [ref=e3311]: Dimmer with potentiometer
+            - generic "difficulty 2" [ref=e3312]: medium
+          - paragraph [ref=e3314]: leer un potenciometro y usarlo para regular el brillo de un LED
+          - generic [ref=e3315]:
+            - generic [ref=e3316]: led
+            - generic [ref=e3317]: potentiometer
+            - generic [ref=e3318]: dimmer
+        - button "Doorbell medium apretar un boton y que suene un timbre de puerta en el buzzer buzzer button doorbell" [ref=e3319]:
+          - generic [ref=e3320]:
+            - paragraph [ref=e3321]: Doorbell
+            - generic "difficulty 2" [ref=e3322]: medium
+          - paragraph [ref=e3324]: apretar un boton y que suene un timbre de puerta en el buzzer
+          - generic [ref=e3325]:
+            - generic [ref=e3326]: buzzer
+            - generic [ref=e3327]: button
+            - generic [ref=e3328]: doorbell
+        - button "Fading LED (PWM) medium hacer que un LED se prenda y apague suavemente con PWM led pwm fade" [ref=e3329]:
+          - generic [ref=e3330]:
+            - paragraph [ref=e3331]: Fading LED (PWM)
+            - generic "difficulty 2" [ref=e3332]: medium
+          - paragraph [ref=e3334]: hacer que un LED se prenda y apague suavemente con PWM
+          - generic [ref=e3335]:
+            - generic [ref=e3336]: led
+            - generic [ref=e3337]: pwm
+            - generic [ref=e3338]: fade
+        - button "Heartbeat LED medium hacer que un LED lata como un corazon con PWM led pwm heartbeat" [ref=e3339]:
+          - generic [ref=e3340]:
+            - paragraph [ref=e3341]: Heartbeat LED
+            - generic "difficulty 2" [ref=e3342]: medium
+          - paragraph [ref=e3344]: hacer que un LED lata como un corazon con PWM
+          - generic [ref=e3345]:
+            - generic [ref=e3346]: led
+            - generic [ref=e3347]: pwm
+            - generic [ref=e3348]: heartbeat
+        - button "Hello world on LCD medium mostrar 'Hola mundo' en una pantalla LCD 16x2 por I2C lcd display" [ref=e3349]:
+          - generic [ref=e3350]:
+            - paragraph [ref=e3351]: Hello world on LCD
+            - generic "difficulty 2" [ref=e3352]: medium
+          - paragraph [ref=e3354]: mostrar 'Hola mundo' en una pantalla LCD 16x2 por I2C
+          - generic [ref=e3355]:
+            - generic [ref=e3356]: lcd
+            - generic [ref=e3357]: display
+        - button "Knight Rider scanner medium barrer una fila de LEDs ida y vuelta estilo el auto de Knight Rider led sequence scan" [ref=e3358]:
+          - generic [ref=e3359]:
+            - paragraph [ref=e3360]: Knight Rider scanner
+            - generic "difficulty 2" [ref=e3361]: medium
+          - paragraph [ref=e3363]: barrer una fila de LEDs ida y vuelta estilo el auto de Knight Rider
+          - generic [ref=e3364]:
+            - generic [ref=e3365]: led
+            - generic [ref=e3366]: sequence
+            - generic [ref=e3367]: scan
+        - button "Potentiometer controls a servo medium controlar el angulo de un servo con un potenciometro servo potentiometer motor" [ref=e3368]:
+          - generic [ref=e3369]:
+            - paragraph [ref=e3370]: Potentiometer controls a servo
+            - generic "difficulty 2" [ref=e3371]: medium
+          - paragraph [ref=e3373]: controlar el angulo de un servo con un potenciometro
+          - generic [ref=e3374]:
+            - generic [ref=e3375]: servo
+            - generic [ref=e3376]: potentiometer
+            - generic [ref=e3377]: motor
+        - button "Potentiometer dims an LED medium leer un potenciometro y usarlo para regular el brillo del LED led potentiometer pwm" [ref=e3378]:
+          - generic [ref=e3379]:
+            - paragraph [ref=e3380]: Potentiometer dims an LED
+            - generic "difficulty 2" [ref=e3381]: medium
+          - paragraph [ref=e3383]: leer un potenciometro y usarlo para regular el brillo del LED
+          - generic [ref=e3384]:
+            - generic [ref=e3385]: led
+            - generic [ref=e3386]: potentiometer
+            - generic [ref=e3387]: pwm
+        - button "Random number on 7-segment medium mostrar un numero aleatorio del 0 al 9 en un display de 7 segmentos al apretar un boton 7segment button random" [ref=e3388]:
+          - generic [ref=e3389]:
+            - paragraph [ref=e3390]: Random number on 7-segment
+            - generic "difficulty 2" [ref=e3391]: medium
+          - paragraph [ref=e3393]: mostrar un numero aleatorio del 0 al 9 en un display de 7 segmentos al apretar un boton
+          - generic [ref=e3394]:
+            - generic [ref=e3395]: 7segment
+            - generic [ref=e3396]: button
+            - generic [ref=e3397]: random
+        - button "Servo door lock medium apretar un boton para que un servo cambie entre posicion abierta y cerrada servo button lock" [ref=e3398]:
+          - generic [ref=e3399]:
+            - paragraph [ref=e3400]: Servo door lock
+            - generic "difficulty 2" [ref=e3401]: medium
+          - paragraph [ref=e3403]: apretar un boton para que un servo cambie entre posicion abierta y cerrada
+          - generic [ref=e3404]:
+            - generic [ref=e3405]: servo
+            - generic [ref=e3406]: button
+            - generic [ref=e3407]: lock
+        - button "Servo sweep 0 to 180 medium hacer que un servo barra de 0 a 180 grados y vuelva servo sweep" [ref=e3408]:
+          - generic [ref=e3409]:
+            - paragraph [ref=e3410]: Servo sweep 0 to 180
+            - generic "difficulty 2" [ref=e3411]: medium
+          - paragraph [ref=e3413]: hacer que un servo barra de 0 a 180 grados y vuelva
+          - generic [ref=e3414]:
+            - generic [ref=e3415]: servo
+            - generic [ref=e3416]: sweep
+        - button "SOS Morse with LED medium hacer parpadear un LED con codigo Morse de SOS led morse" [ref=e3417]:
+          - generic [ref=e3418]:
+            - paragraph [ref=e3419]: SOS Morse with LED
+            - generic "difficulty 2" [ref=e3420]: medium
+          - paragraph [ref=e3422]: hacer parpadear un LED con codigo Morse de SOS
+          - generic [ref=e3423]:
+            - generic [ref=e3424]: led
+            - generic [ref=e3425]: morse
+        - button "Theremin-style buzzer medium cambiar la nota que toca el buzzer girando un potenciometro buzzer potentiometer" [ref=e3426]:
+          - generic [ref=e3427]:
+            - paragraph [ref=e3428]: Theremin-style buzzer
+            - generic "difficulty 2" [ref=e3429]: medium
+          - paragraph [ref=e3431]: cambiar la nota que toca el buzzer girando un potenciometro
+          - generic [ref=e3432]:
+            - generic [ref=e3433]: buzzer
+            - generic [ref=e3434]: potentiometer
+        - button "Traffic light medium tres LEDs en secuencia rojo, amarillo, verde como un semaforo led traffic sequence" [ref=e3435]:
+          - generic [ref=e3436]:
+            - paragraph [ref=e3437]: Traffic light
+            - generic "difficulty 2" [ref=e3438]: medium
+          - paragraph [ref=e3440]: tres LEDs en secuencia rojo, amarillo, verde como un semaforo
+          - generic [ref=e3441]:
+            - generic [ref=e3442]: led
+            - generic [ref=e3443]: traffic
+            - generic [ref=e3444]: sequence
+        - button "7-segment counts button presses hard contar cuantas veces se aprieta un boton y mostrar el digito en un 7 segmentos 7segment button counter" [ref=e3445]:
+          - generic [ref=e3446]:
+            - paragraph [ref=e3447]: 7-segment counts button presses
+            - generic "difficulty 3" [ref=e3448]: hard
+          - paragraph [ref=e3450]: contar cuantas veces se aprieta un boton y mostrar el digito en un 7 segmentos
+          - generic [ref=e3451]:
+            - generic [ref=e3452]: 7segment
+            - generic [ref=e3453]: button
+            - generic [ref=e3454]: counter
+        - button "Binary counter on LEDs hard contar en binario con tres LEDs, avanzando cada segundo led binary counter" [ref=e3455]:
+          - generic [ref=e3456]:
+            - paragraph [ref=e3457]: Binary counter on LEDs
+            - generic "difficulty 3" [ref=e3458]: hard
+          - paragraph [ref=e3460]: contar en binario con tres LEDs, avanzando cada segundo
+          - generic [ref=e3461]:
+            - generic [ref=e3462]: led
+            - generic [ref=e3463]: binary
+            - generic [ref=e3464]: counter
+        - button "Fake thermometer on LCD hard usar un potenciometro como sensor de temperatura falso y mostrar el valor en el LCD lcd potentiometer sensor" [ref=e3465]:
+          - generic [ref=e3466]:
+            - paragraph [ref=e3467]: Fake thermometer on LCD
+            - generic "difficulty 3" [ref=e3468]: hard
+          - paragraph [ref=e3470]: usar un potenciometro como sensor de temperatura falso y mostrar el valor en el LCD
+          - generic [ref=e3471]:
+            - generic [ref=e3472]: lcd
+            - generic [ref=e3473]: potentiometer
+            - generic [ref=e3474]: sensor
+        - button "Greeting card hard apretar un boton para que suene una melodia y un LED parpadee al ritmo buzzer led button music" [ref=e3475]:
+          - generic [ref=e3476]:
+            - paragraph [ref=e3477]: Greeting card
+            - generic "difficulty 3" [ref=e3478]: hard
+          - paragraph [ref=e3480]: apretar un boton para que suene una melodia y un LED parpadee al ritmo
+          - generic [ref=e3481]:
+            - generic [ref=e3482]: buzzer
+            - generic [ref=e3483]: led
+            - generic [ref=e3484]: button
+            - generic [ref=e3485]: music
+        - button "Happy Birthday melody hard tocar la melodia de Feliz Cumpleanos con un buzzer buzzer melody music" [ref=e3486]:
+          - generic [ref=e3487]:
+            - paragraph [ref=e3488]: Happy Birthday melody
+            - generic "difficulty 3" [ref=e3489]: hard
+          - paragraph [ref=e3491]: tocar la melodia de Feliz Cumpleanos con un buzzer
+          - generic [ref=e3492]:
+            - generic [ref=e3493]: buzzer
+            - generic [ref=e3494]: melody
+            - generic [ref=e3495]: music
+        - button "Reaction time game hard esperar un tiempo aleatorio, prender un LED y medir cuanto tarda en apretarse un boton led button game" [ref=e3496]:
+          - generic [ref=e3497]:
+            - paragraph [ref=e3498]: Reaction time game
+            - generic "difficulty 3" [ref=e3499]: hard
+          - paragraph [ref=e3501]: esperar un tiempo aleatorio, prender un LED y medir cuanto tarda en apretarse un boton
+          - generic [ref=e3502]:
+            - generic [ref=e3503]: led
+            - generic [ref=e3504]: button
+            - generic [ref=e3505]: game
+        - button "Show potentiometer value on LCD hard leer un potenciometro y mostrar su valor en un LCD 16x2 lcd potentiometer" [ref=e3506]:
+          - generic [ref=e3507]:
+            - paragraph [ref=e3508]: Show potentiometer value on LCD
+            - generic "difficulty 3" [ref=e3509]: hard
+          - paragraph [ref=e3511]: leer un potenciometro y mostrar su valor en un LCD 16x2
+          - generic [ref=e3512]:
+            - generic [ref=e3513]: lcd
+            - generic [ref=e3514]: potentiometer
+        - button "Three-button mini piano hard tres botones que tocan notas distintas en un buzzer buzzer button music" [ref=e3515]:
+          - generic [ref=e3516]:
+            - paragraph [ref=e3517]: Three-button mini piano
+            - generic "difficulty 3" [ref=e3518]: hard
+          - paragraph [ref=e3520]: tres botones que tocan notas distintas en un buzzer
+          - generic [ref=e3521]:
+            - generic [ref=e3522]: buzzer
+            - generic [ref=e3523]: button
+            - generic [ref=e3524]: music
+  - main [ref=e22]:
+    - generic [ref=e23]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - button "Blocks" [ref=e27]
+          - button "Arduino code" [ref=e28]
+        - generic [ref=e252]:
+          - tree [ref=e254]:
+            - treeitem "Arduino" [level=1] [ref=e255]:
+              - generic [ref=e256]:
+                - generic: Arduino
+            - treeitem "LCD" [level=1] [ref=e257]:
+              - generic [ref=e258]:
+                - generic: LCD
+            - treeitem "Logic" [level=1] [ref=e259]:
+              - generic [ref=e260]:
+                - generic: Logic
+            - treeitem "Loops" [level=1] [ref=e261]:
+              - generic [ref=e262]:
+                - generic: Loops
+            - treeitem "Math" [level=1] [ref=e263]:
+              - generic [ref=e264]:
+                - generic: Math
+            - treeitem "Variables" [level=1] [ref=e265]:
+              - generic [ref=e266]:
+                - generic: Variables
+          - img [ref=e267]:
+            - generic "Blockly Workspace" [ref=e268]:
+              - generic [ref=e273]:
+                - generic [ref=e1974]:
+                  - generic [ref=e1976]:
+                    - generic [ref=e1978]:
+                      - generic [ref=e1980]:
+                        - generic [ref=e1982]:
+                          - generic [ref=e1984]:
+                            - generic [ref=e1986]:
+                              - generic [ref=e1988]:
+                                - generic [ref=e1991]: set pin
+                                - generic [ref=e1994]: "8"
+                                - generic [ref=e1997]: as
+                                - generic [ref=e2000]: OUTPUT
+                              - generic [ref=e2003]: set pin
+                              - generic [ref=e2006]: "7"
+                              - generic [ref=e2009]: as
+                              - generic [ref=e2012]: OUTPUT
+                            - generic [ref=e2015]: set pin
+                            - generic [ref=e2018]: "6"
+                            - generic [ref=e2021]: as
+                            - generic [ref=e2024]: OUTPUT
+                          - generic [ref=e2027]: set pin
+                          - generic [ref=e2030]: "5"
+                          - generic [ref=e2033]: as
+                          - generic [ref=e2036]: OUTPUT
+                        - generic [ref=e2039]: set pin
+                        - generic [ref=e2042]: "4"
+                        - generic [ref=e2045]: as
+                        - generic [ref=e2048]: OUTPUT
+                      - generic [ref=e2051]: set pin
+                      - generic [ref=e2054]: "3"
+                      - generic [ref=e2057]: as
+                      - generic [ref=e2060]: OUTPUT
+                    - generic [ref=e2063]: set pin
+                    - generic [ref=e2066]: "2"
+                    - generic [ref=e2069]: as
+                    - generic [ref=e2072]: OUTPUT
+                  - generic [ref=e2075]: when Arduino starts
+                - generic [ref=e2076]:
+                  - generic [ref=e2078]:
+                    - generic [ref=e2080]:
+                      - generic [ref=e2082]:
+                        - generic [ref=e2084]:
+                          - generic [ref=e2086]:
+                            - generic [ref=e2088]:
+                              - generic [ref=e2090]:
+                                - generic [ref=e2092]:
+                                  - generic [ref=e2097]: "800"
+                                  - generic [ref=e2098]:
+                                    - generic [ref=e2100]:
+                                      - generic [ref=e2102]:
+                                        - generic [ref=e2104]:
+                                          - generic [ref=e2106]:
+                                            - generic [ref=e2108]:
+                                              - generic [ref=e2110]:
+                                                - generic [ref=e2112]:
+                                                  - generic [ref=e2117]: "800"
+                                                  - generic [ref=e2118]:
+                                                    - generic [ref=e2120]:
+                                                      - generic [ref=e2122]:
+                                                        - generic [ref=e2124]:
+                                                          - generic [ref=e2126]:
+                                                            - generic [ref=e2128]:
+                                                              - generic [ref=e2130]:
+                                                                - generic [ref=e2132]:
+                                                                  - generic [ref=e2137]: "800"
+                                                                  - generic [ref=e2138]:
+                                                                    - generic [ref=e2140]:
+                                                                      - generic [ref=e2142]:
+                                                                        - generic [ref=e2144]:
+                                                                          - generic [ref=e2146]:
+                                                                            - generic [ref=e2148]:
+                                                                              - generic [ref=e2150]:
+                                                                                - generic [ref=e2152]:
+                                                                                  - generic [ref=e2157]: "800"
+                                                                                  - generic [ref=e2158]:
+                                                                                    - generic [ref=e2160]:
+                                                                                      - generic [ref=e2162]:
+                                                                                        - generic [ref=e2164]:
+                                                                                          - generic [ref=e2166]:
+                                                                                            - generic [ref=e2168]:
+                                                                                              - generic [ref=e2170]:
+                                                                                                - generic [ref=e2172]:
+                                                                                                  - generic [ref=e2177]: "800"
+                                                                                                  - generic [ref=e2178]:
+                                                                                                    - generic [ref=e2180]:
+                                                                                                      - generic [ref=e2182]:
+                                                                                                        - generic [ref=e2184]:
+                                                                                                          - generic [ref=e2186]:
+                                                                                                            - generic [ref=e2188]:
+                                                                                                              - generic [ref=e2190]:
+                                                                                                                - generic [ref=e2192]:
+                                                                                                                  - generic [ref=e2197]: "800"
+                                                                                                                  - generic [ref=e2198]:
+                                                                                                                    - generic [ref=e2200]:
+                                                                                                                      - generic [ref=e2202]:
+                                                                                                                        - generic [ref=e2204]:
+                                                                                                                          - generic [ref=e2206]:
+                                                                                                                            - generic [ref=e2208]:
+                                                                                                                              - generic [ref=e2210]:
+                                                                                                                                - generic [ref=e2212]:
+                                                                                                                                  - generic [ref=e2217]: "800"
+                                                                                                                                  - generic [ref=e2218]:
+                                                                                                                                    - generic [ref=e2220]:
+                                                                                                                                      - generic [ref=e2222]:
+                                                                                                                                        - generic [ref=e2224]:
+                                                                                                                                          - generic [ref=e2226]:
+                                                                                                                                            - generic [ref=e2228]:
+                                                                                                                                              - generic [ref=e2230]:
+                                                                                                                                                - generic [ref=e2232]:
+                                                                                                                                                  - generic [ref=e2237]: "800"
+                                                                                                                                                  - generic [ref=e2238]:
+                                                                                                                                                    - generic [ref=e2240]:
+                                                                                                                                                      - generic [ref=e2242]:
+                                                                                                                                                        - generic [ref=e2244]:
+                                                                                                                                                          - generic [ref=e2246]:
+                                                                                                                                                            - generic [ref=e2248]:
+                                                                                                                                                              - generic [ref=e2250]:
+                                                                                                                                                                - generic [ref=e2252]:
+                                                                                                                                                                  - generic [ref=e2257]: "800"
+                                                                                                                                                                  - generic [ref=e2258]:
+                                                                                                                                                                    - generic [ref=e2260]:
+                                                                                                                                                                      - generic [ref=e2262]:
+                                                                                                                                                                        - generic [ref=e2264]:
+                                                                                                                                                                          - generic [ref=e2266]:
+                                                                                                                                                                            - generic [ref=e2268]:
+                                                                                                                                                                              - generic [ref=e2270]:
+                                                                                                                                                                                - generic [ref=e2272]:
+                                                                                                                                                                                  - generic [ref=e2277]: "800"
+                                                                                                                                                                                  - generic [ref=e2279]: wait
+                                                                                                                                                                                  - generic [ref=e2281]: ms
+                                                                                                                                                                                - generic [ref=e2283]: write pin
+                                                                                                                                                                                - generic [ref=e2286]: "8"
+                                                                                                                                                                                - generic [ref=e2289]: =
+                                                                                                                                                                                - generic [ref=e2292]: HIGH
+                                                                                                                                                                              - generic [ref=e2295]: write pin
+                                                                                                                                                                              - generic [ref=e2298]: "7"
+                                                                                                                                                                              - generic [ref=e2301]: =
+                                                                                                                                                                              - generic [ref=e2304]: HIGH
+                                                                                                                                                                            - generic [ref=e2307]: write pin
+                                                                                                                                                                            - generic [ref=e2310]: "6"
+                                                                                                                                                                            - generic [ref=e2313]: =
+                                                                                                                                                                            - generic [ref=e2316]: LOW
+                                                                                                                                                                          - generic [ref=e2319]: write pin
+                                                                                                                                                                          - generic [ref=e2322]: "5"
+                                                                                                                                                                          - generic [ref=e2325]: =
+                                                                                                                                                                          - generic [ref=e2328]: HIGH
+                                                                                                                                                                        - generic [ref=e2331]: write pin
+                                                                                                                                                                        - generic [ref=e2334]: "4"
+                                                                                                                                                                        - generic [ref=e2337]: =
+                                                                                                                                                                        - generic [ref=e2340]: HIGH
+                                                                                                                                                                      - generic [ref=e2343]: write pin
+                                                                                                                                                                      - generic [ref=e2346]: "3"
+                                                                                                                                                                      - generic [ref=e2349]: =
+                                                                                                                                                                      - generic [ref=e2352]: HIGH
+                                                                                                                                                                    - generic [ref=e2355]: write pin
+                                                                                                                                                                    - generic [ref=e2358]: "2"
+                                                                                                                                                                    - generic [ref=e2361]: =
+                                                                                                                                                                    - generic [ref=e2364]: HIGH
+                                                                                                                                                                  - generic [ref=e2367]: wait
+                                                                                                                                                                  - generic [ref=e2369]: ms
+                                                                                                                                                                - generic [ref=e2371]: write pin
+                                                                                                                                                                - generic [ref=e2374]: "8"
+                                                                                                                                                                - generic [ref=e2377]: =
+                                                                                                                                                                - generic [ref=e2380]: HIGH
+                                                                                                                                                              - generic [ref=e2383]: write pin
+                                                                                                                                                              - generic [ref=e2386]: "7"
+                                                                                                                                                              - generic [ref=e2389]: =
+                                                                                                                                                              - generic [ref=e2392]: HIGH
+                                                                                                                                                            - generic [ref=e2395]: write pin
+                                                                                                                                                            - generic [ref=e2398]: "6"
+                                                                                                                                                            - generic [ref=e2401]: =
+                                                                                                                                                            - generic [ref=e2404]: HIGH
+                                                                                                                                                          - generic [ref=e2407]: write pin
+                                                                                                                                                          - generic [ref=e2410]: "5"
+                                                                                                                                                          - generic [ref=e2413]: =
+                                                                                                                                                          - generic [ref=e2416]: HIGH
+                                                                                                                                                        - generic [ref=e2419]: write pin
+                                                                                                                                                        - generic [ref=e2422]: "4"
+                                                                                                                                                        - generic [ref=e2425]: =
+                                                                                                                                                        - generic [ref=e2428]: HIGH
+                                                                                                                                                      - generic [ref=e2431]: write pin
+                                                                                                                                                      - generic [ref=e2434]: "3"
+                                                                                                                                                      - generic [ref=e2437]: =
+                                                                                                                                                      - generic [ref=e2440]: HIGH
+                                                                                                                                                    - generic [ref=e2443]: write pin
+                                                                                                                                                    - generic [ref=e2446]: "2"
+                                                                                                                                                    - generic [ref=e2449]: =
+                                                                                                                                                    - generic [ref=e2452]: HIGH
+                                                                                                                                                  - generic [ref=e2455]: wait
+                                                                                                                                                  - generic [ref=e2457]: ms
+                                                                                                                                                - generic [ref=e2459]: write pin
+                                                                                                                                                - generic [ref=e2462]: "8"
+                                                                                                                                                - generic [ref=e2465]: =
+                                                                                                                                                - generic [ref=e2468]: LOW
+                                                                                                                                              - generic [ref=e2471]: write pin
+                                                                                                                                              - generic [ref=e2474]: "7"
+                                                                                                                                              - generic [ref=e2477]: =
+                                                                                                                                              - generic [ref=e2480]: LOW
+                                                                                                                                            - generic [ref=e2483]: write pin
+                                                                                                                                            - generic [ref=e2486]: "6"
+                                                                                                                                            - generic [ref=e2489]: =
+                                                                                                                                            - generic [ref=e2492]: LOW
+                                                                                                                                          - generic [ref=e2495]: write pin
+                                                                                                                                          - generic [ref=e2498]: "5"
+                                                                                                                                          - generic [ref=e2501]: =
+                                                                                                                                          - generic [ref=e2504]: LOW
+                                                                                                                                        - generic [ref=e2507]: write pin
+                                                                                                                                        - generic [ref=e2510]: "4"
+                                                                                                                                        - generic [ref=e2513]: =
+                                                                                                                                        - generic [ref=e2516]: HIGH
+                                                                                                                                      - generic [ref=e2519]: write pin
+                                                                                                                                      - generic [ref=e2522]: "3"
+                                                                                                                                      - generic [ref=e2525]: =
+                                                                                                                                      - generic [ref=e2528]: HIGH
+                                                                                                                                    - generic [ref=e2531]: write pin
+                                                                                                                                    - generic [ref=e2534]: "2"
+                                                                                                                                    - generic [ref=e2537]: =
+                                                                                                                                    - generic [ref=e2540]: HIGH
+                                                                                                                                  - generic [ref=e2543]: wait
+                                                                                                                                  - generic [ref=e2545]: ms
+                                                                                                                                - generic [ref=e2547]: write pin
+                                                                                                                                - generic [ref=e2550]: "8"
+                                                                                                                                - generic [ref=e2553]: =
+                                                                                                                                - generic [ref=e2556]: HIGH
+                                                                                                                              - generic [ref=e2559]: write pin
+                                                                                                                              - generic [ref=e2562]: "7"
+                                                                                                                              - generic [ref=e2565]: =
+                                                                                                                              - generic [ref=e2568]: HIGH
+                                                                                                                            - generic [ref=e2571]: write pin
+                                                                                                                            - generic [ref=e2574]: "6"
+                                                                                                                            - generic [ref=e2577]: =
+                                                                                                                            - generic [ref=e2580]: HIGH
+                                                                                                                          - generic [ref=e2583]: write pin
+                                                                                                                          - generic [ref=e2586]: "5"
+                                                                                                                          - generic [ref=e2589]: =
+                                                                                                                          - generic [ref=e2592]: HIGH
+                                                                                                                        - generic [ref=e2595]: write pin
+                                                                                                                        - generic [ref=e2598]: "4"
+                                                                                                                        - generic [ref=e2601]: =
+                                                                                                                        - generic [ref=e2604]: HIGH
+                                                                                                                      - generic [ref=e2607]: write pin
+                                                                                                                      - generic [ref=e2610]: "3"
+                                                                                                                      - generic [ref=e2613]: =
+                                                                                                                      - generic [ref=e2616]: LOW
+                                                                                                                    - generic [ref=e2619]: write pin
+                                                                                                                    - generic [ref=e2622]: "2"
+                                                                                                                    - generic [ref=e2625]: =
+                                                                                                                    - generic [ref=e2628]: HIGH
+                                                                                                                  - generic [ref=e2631]: wait
+                                                                                                                  - generic [ref=e2633]: ms
+                                                                                                                - generic [ref=e2635]: write pin
+                                                                                                                - generic [ref=e2638]: "8"
+                                                                                                                - generic [ref=e2641]: =
+                                                                                                                - generic [ref=e2644]: HIGH
+                                                                                                              - generic [ref=e2647]: write pin
+                                                                                                              - generic [ref=e2650]: "7"
+                                                                                                              - generic [ref=e2653]: =
+                                                                                                              - generic [ref=e2656]: HIGH
+                                                                                                            - generic [ref=e2659]: write pin
+                                                                                                            - generic [ref=e2662]: "6"
+                                                                                                            - generic [ref=e2665]: =
+                                                                                                            - generic [ref=e2668]: LOW
+                                                                                                          - generic [ref=e2671]: write pin
+                                                                                                          - generic [ref=e2674]: "5"
+                                                                                                          - generic [ref=e2677]: =
+                                                                                                          - generic [ref=e2680]: HIGH
+                                                                                                        - generic [ref=e2683]: write pin
+                                                                                                        - generic [ref=e2686]: "4"
+                                                                                                        - generic [ref=e2689]: =
+                                                                                                        - generic [ref=e2692]: HIGH
+                                                                                                      - generic [ref=e2695]: write pin
+                                                                                                      - generic [ref=e2698]: "3"
+                                                                                                      - generic [ref=e2701]: =
+                                                                                                      - generic [ref=e2704]: LOW
+                                                                                                    - generic [ref=e2707]: write pin
+                                                                                                    - generic [ref=e2710]: "2"
+                                                                                                    - generic [ref=e2713]: =
+                                                                                                    - generic [ref=e2716]: HIGH
+                                                                                                  - generic [ref=e2719]: wait
+                                                                                                  - generic [ref=e2721]: ms
+                                                                                                - generic [ref=e2723]: write pin
+                                                                                                - generic [ref=e2726]: "8"
+                                                                                                - generic [ref=e2729]: =
+                                                                                                - generic [ref=e2732]: HIGH
+                                                                                              - generic [ref=e2735]: write pin
+                                                                                              - generic [ref=e2738]: "7"
+                                                                                              - generic [ref=e2741]: =
+                                                                                              - generic [ref=e2744]: HIGH
+                                                                                            - generic [ref=e2747]: write pin
+                                                                                            - generic [ref=e2750]: "6"
+                                                                                            - generic [ref=e2753]: =
+                                                                                            - generic [ref=e2756]: LOW
+                                                                                          - generic [ref=e2759]: write pin
+                                                                                          - generic [ref=e2762]: "5"
+                                                                                          - generic [ref=e2765]: =
+                                                                                          - generic [ref=e2768]: LOW
+                                                                                        - generic [ref=e2771]: write pin
+                                                                                        - generic [ref=e2774]: "4"
+                                                                                        - generic [ref=e2777]: =
+                                                                                        - generic [ref=e2780]: HIGH
+                                                                                      - generic [ref=e2783]: write pin
+                                                                                      - generic [ref=e2786]: "3"
+                                                                                      - generic [ref=e2789]: =
+                                                                                      - generic [ref=e2792]: HIGH
+                                                                                    - generic [ref=e2795]: write pin
+                                                                                    - generic [ref=e2798]: "2"
+                                                                                    - generic [ref=e2801]: =
+                                                                                    - generic [ref=e2804]: LOW
+                                                                                  - generic [ref=e2807]: wait
+                                                                                  - generic [ref=e2809]: ms
+                                                                                - generic [ref=e2811]: write pin
+                                                                                - generic [ref=e2814]: "8"
+                                                                                - generic [ref=e2817]: =
+                                                                                - generic [ref=e2820]: HIGH
+                                                                              - generic [ref=e2823]: write pin
+                                                                              - generic [ref=e2826]: "7"
+                                                                              - generic [ref=e2829]: =
+                                                                              - generic [ref=e2832]: LOW
+                                                                            - generic [ref=e2835]: write pin
+                                                                            - generic [ref=e2838]: "6"
+                                                                            - generic [ref=e2841]: =
+                                                                            - generic [ref=e2844]: LOW
+                                                                          - generic [ref=e2847]: write pin
+                                                                          - generic [ref=e2850]: "5"
+                                                                          - generic [ref=e2853]: =
+                                                                          - generic [ref=e2856]: HIGH
+                                                                        - generic [ref=e2859]: write pin
+                                                                        - generic [ref=e2862]: "4"
+                                                                        - generic [ref=e2865]: =
+                                                                        - generic [ref=e2868]: HIGH
+                                                                      - generic [ref=e2871]: write pin
+                                                                      - generic [ref=e2874]: "3"
+                                                                      - generic [ref=e2877]: =
+                                                                      - generic [ref=e2880]: HIGH
+                                                                    - generic [ref=e2883]: write pin
+                                                                    - generic [ref=e2886]: "2"
+                                                                    - generic [ref=e2889]: =
+                                                                    - generic [ref=e2892]: HIGH
+                                                                  - generic [ref=e2895]: wait
+                                                                  - generic [ref=e2897]: ms
+                                                                - generic [ref=e2899]: write pin
+                                                                - generic [ref=e2902]: "8"
+                                                                - generic [ref=e2905]: =
+                                                                - generic [ref=e2908]: HIGH
+                                                              - generic [ref=e2911]: write pin
+                                                              - generic [ref=e2914]: "7"
+                                                              - generic [ref=e2917]: =
+                                                              - generic [ref=e2920]: LOW
+                                                            - generic [ref=e2923]: write pin
+                                                            - generic [ref=e2926]: "6"
+                                                            - generic [ref=e2929]: =
+                                                            - generic [ref=e2932]: HIGH
+                                                          - generic [ref=e2935]: write pin
+                                                          - generic [ref=e2938]: "5"
+                                                          - generic [ref=e2941]: =
+                                                          - generic [ref=e2944]: HIGH
+                                                        - generic [ref=e2947]: write pin
+                                                        - generic [ref=e2950]: "4"
+                                                        - generic [ref=e2953]: =
+                                                        - generic [ref=e2956]: LOW
+                                                      - generic [ref=e2959]: write pin
+                                                      - generic [ref=e2962]: "3"
+                                                      - generic [ref=e2965]: =
+                                                      - generic [ref=e2968]: HIGH
+                                                    - generic [ref=e2971]: write pin
+                                                    - generic [ref=e2974]: "2"
+                                                    - generic [ref=e2977]: =
+                                                    - generic [ref=e2980]: HIGH
+                                                  - generic [ref=e2983]: wait
+                                                  - generic [ref=e2985]: ms
+                                                - generic [ref=e2987]: write pin
+                                                - generic [ref=e2990]: "8"
+                                                - generic [ref=e2993]: =
+                                                - generic [ref=e2996]: LOW
+                                              - generic [ref=e2999]: write pin
+                                              - generic [ref=e3002]: "7"
+                                              - generic [ref=e3005]: =
+                                              - generic [ref=e3008]: LOW
+                                            - generic [ref=e3011]: write pin
+                                            - generic [ref=e3014]: "6"
+                                            - generic [ref=e3017]: =
+                                            - generic [ref=e3020]: LOW
+                                          - generic [ref=e3023]: write pin
+                                          - generic [ref=e3026]: "5"
+                                          - generic [ref=e3029]: =
+                                          - generic [ref=e3032]: LOW
+                                        - generic [ref=e3035]: write pin
+                                        - generic [ref=e3038]: "4"
+                                        - generic [ref=e3041]: =
+                                        - generic [ref=e3044]: HIGH
+                                      - generic [ref=e3047]: write pin
+                                      - generic [ref=e3050]: "3"
+                                      - generic [ref=e3053]: =
+                                      - generic [ref=e3056]: HIGH
+                                    - generic [ref=e3059]: write pin
+                                    - generic [ref=e3062]: "2"
+                                    - generic [ref=e3065]: =
+                                    - generic [ref=e3068]: LOW
+                                  - generic [ref=e3071]: wait
+                                  - generic [ref=e3073]: ms
+                                - generic [ref=e3075]: write pin
+                                - generic [ref=e3078]: "8"
+                                - generic [ref=e3081]: =
+                                - generic [ref=e3084]: LOW
+                              - generic [ref=e3087]: write pin
+                              - generic [ref=e3090]: "7"
+                              - generic [ref=e3093]: =
+                              - generic [ref=e3096]: HIGH
+                            - generic [ref=e3099]: write pin
+                            - generic [ref=e3102]: "6"
+                            - generic [ref=e3105]: =
+                            - generic [ref=e3108]: HIGH
+                          - generic [ref=e3111]: write pin
+                          - generic [ref=e3114]: "5"
+                          - generic [ref=e3117]: =
+                          - generic [ref=e3120]: HIGH
+                        - generic [ref=e3123]: write pin
+                        - generic [ref=e3126]: "4"
+                        - generic [ref=e3129]: =
+                        - generic [ref=e3132]: HIGH
+                      - generic [ref=e3135]: write pin
+                      - generic [ref=e3138]: "3"
+                      - generic [ref=e3141]: =
+                      - generic [ref=e3144]: HIGH
+                    - generic [ref=e3147]: write pin
+                    - generic [ref=e3150]: "2"
+                    - generic [ref=e3153]: =
+                    - generic [ref=e3156]: HIGH
+                  - generic [ref=e3159]: forever
+          - img [ref=e351]
+          - img [ref=e352]
+          - img
+          - img
+      - separator [ref=e31]
+      - generic [ref=e34]:
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - button "Add component" [ref=e39]
+            - button "dropdown wire" [ref=e40]
+          - generic [ref=e42]:
+            - generic [ref=e43]:
+              - img [ref=e45]:
+                - generic [ref=e95]: "false"
+                - generic [ref=e97]: "ON"
+                - generic [ref=e98]: "false"
+                - generic [ref=e100]: "false"
+                - generic [ref=e102]: "false"
+                - generic [ref=e104]: L TX RX
+                - generic [ref=e106]: DIGITAL (PWM ~)
+                - generic [ref=e107]: AREF GND 13 12 ~11 ~10 ~9 8 7 ~6 ~5 4 ~3 2 TX→1 RX←0
+                - generic [ref=e110]: POWER ANALOG IN
+                - generic [ref=e111]: IOREF RESET 3.3V 5V GND GND Vin A0 A1 A2 A3 A4 A5
+                - generic [ref=e114]: ARDUINO
+                - generic [ref=e116]: UNO
+              - generic [ref=e117]: UNO (pinned)
+            - generic [ref=e3160]:
+              - img [ref=e3162]
+              - generic [ref=e3176]:
+                - generic "Drag to move" [ref=e3177]: SEG1
+                - button "remove" [ref=e3178]
+            - img "circuit wires overlay"
+        - separator [ref=e212]
+        - generic [ref=e215]:
+          - generic [ref=e216]:
+            - button "Compile output 2" [ref=e3212]:
+              - text: Compile output
+              - generic [ref=e3213]: "2"
+            - button "Serial monitor" [ref=e218]
+          - generic [ref=e220]:
+            - generic [ref=e221]:
+              - generic [ref=e222]: 2 entries
+              - button "Clear" [ref=e223]
+            - list [ref=e3214]:
+              - listitem [ref=e3215]:
+                - generic [ref=e3216]: "[03:43:55]"
+                - generic [ref=e3218]: POST /api/compile (arduino:avr:uno)
+              - listitem [ref=e3219]:
+                - generic [ref=e3220]: "[03:43:56]"
+                - generic [ref=e3222]: "OK: HEX ready (~1444 bytes of program memory)"
+      - separator [ref=e226]
+      - complementary [ref=e229]:
+        - generic [ref=e230]:
+          - heading "Talk to the agent" [level=2] [ref=e231]
+          - paragraph [ref=e232]: Type what you want to build. The agent picks parts, wires them, writes the program, and runs the simulator.
+        - generic [ref=e233]:
+          - generic [ref=e774]: "Loaded example: Blink the on-board LED. Hit \"Compile & run\" in the top bar to try it."
+          - generic [ref=e1237]: "Loaded example: Button-controlled LED. Hit \"Compile & run\" in the top bar to try it."
+          - generic [ref=e1649]: "Loaded example: Potentiometer dims an LED. Hit \"Compile & run\" in the top bar to try it."
+          - generic [ref=e3211]: "Loaded example: 7-segment counts 0 to 9. Hit \"Compile & run\" in the top bar to try it."
+        - generic [ref=e248]:
+          - textbox "What do you want to build?" [ref=e249]
+          - button "Send" [disabled] [ref=e250]

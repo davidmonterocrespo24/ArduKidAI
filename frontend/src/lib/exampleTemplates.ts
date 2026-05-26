@@ -573,11 +573,20 @@ const PREFIX: Record<ComponentType, string> = {
   led: 'L',
   resistor: 'R',
   pushbutton: 'B',
+  pushbutton6mm: 'B',
   buzzer: 'BZ',
   servo: 'S',
   potentiometer: 'P',
+  slidePotentiometer: 'SP',
+  slideSwitch: 'SW',
   lcd1602: 'LCD',
   seg7: 'SEG',
+  photoresistor: 'LDR',
+  ntcTemperature: 'NTC',
+  tiltSwitch: 'TILT',
+  pirMotion: 'PIR',
+  rgbLed: 'RGB',
+  ledBarGraph: 'BAR',
 }
 
 interface ComponentSpec {

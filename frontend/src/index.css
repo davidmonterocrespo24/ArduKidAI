@@ -37,11 +37,20 @@ body {
 wokwi-led,
 wokwi-resistor,
 wokwi-pushbutton,
+wokwi-pushbutton-6mm,
 wokwi-buzzer,
 wokwi-servo,
 wokwi-potentiometer,
+wokwi-slide-potentiometer,
+wokwi-slide-switch,
 wokwi-lcd1602,
 wokwi-7segment,
+wokwi-photoresistor-sensor,
+wokwi-ntc-temperature-sensor,
+wokwi-tilt-switch,
+wokwi-pir-motion-sensor,
+wokwi-rgb-led,
+wokwi-led-bar-graph,
 wokwi-arduino-uno {
   display: inline-block;
   vertical-align: top;

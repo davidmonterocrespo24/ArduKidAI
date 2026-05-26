@@ -6,19 +6,35 @@ import { postJson } from '../lib/api'
 import { cn } from '../lib/cn'
 import { SaveProjectDialog } from './SaveProjectDialog'
 
-// Walks the live store on every frame: any potentiometer whose SIG pin is
-// wired to UNO.A<channel> contributes its knob value (0..1023) as a voltage
-// (0..5 V) to that ADC channel. Other components on analog inputs would slot
-// in here too once we add them.
+// Walks the live store on every frame: any sensor whose analog output is
+// wired to UNO.A<channel> contributes a voltage (0..5 V) on that ADC channel.
+// Covers pots/slide-pots (raw 0..1023 / 1023 * 5), photoresistor (lux),
+// and NTC temperature (mapped from -10..60 C to 0..5 V).
 function getAdcChannelFromStore(channel: number): number {
   const state = useAppStore.getState()
   for (const c of state.components) {
-    if (c.type !== 'potentiometer') continue
     if (resolveAnalogChannel(c.id, state.wires) !== channel) continue
-    const raw = Number(c.props.value ?? 0)
-    return Math.min(5, Math.max(0, (raw / 1023) * 5))
+    if (c.type === 'potentiometer' || c.type === 'slidePotentiometer') {
+      const raw = Number(c.props.value ?? 0)
+      return clampVolts((raw / 1023) * 5)
+    }
+    if (c.type === 'photoresistor') {
+      const lux = Number(c.props.lux ?? 500)
+      return clampVolts((lux / 1023) * 5)
+    }
+    if (c.type === 'ntcTemperature') {
+      // Map -10..60 C linearly onto 0..5 V — close enough for a kid
+      // sketch that just calls analogRead and maps it back to Celsius.
+      const c1 = Number(c.props.celsius ?? 22)
+      const t = Math.max(-10, Math.min(60, c1))
+      return clampVolts(((t + 10) / 70) * 5)
+    }
   }
   return 0
+}
+
+function clampVolts(v: number): number {
+  return Math.min(5, Math.max(0, v))
 }
 
 // I2C LCD bridge: every byte the sketch writes to address 0x27 is

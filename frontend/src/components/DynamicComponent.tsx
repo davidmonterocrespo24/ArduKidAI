@@ -214,6 +214,114 @@ function Lcd1602({ instance }: { instance: ComponentInstance }) {
 // segment on). Sketches drive each segment over its own digital pin.
 const SEG_ORDER = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'DP'] as const
 
+function Pushbutton6mm({ instance }: { instance: ComponentInstance }) {
+  // Same drive-input wiring as the regular pushbutton: idle pin is
+  // seeded HIGH so INPUT_PULLUP reads behave, press/release toggle
+  // the connected pin via the bridge.
+  const color = (instance.props.color as string | undefined) ?? 'red'
+  const drivePin = useDrivePin(instance.id)
+  const ref = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (!drivePin) return
+    driveInputPin(drivePin, true)
+  }, [drivePin])
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !drivePin) return
+    const onPress = () => driveInputPin(drivePin, false)
+    const onRelease = () => driveInputPin(drivePin, true)
+    el.addEventListener('button-press', onPress)
+    el.addEventListener('button-release', onRelease)
+    return () => {
+      el.removeEventListener('button-press', onPress)
+      el.removeEventListener('button-release', onRelease)
+    }
+  }, [drivePin])
+  return <wokwi-pushbutton-6mm ref={ref} id={instance.id} color={color} />
+}
+
+function SlidePotentiometer({ instance }: { instance: ComponentInstance }) {
+  const value = (instance.props.value as number | undefined) ?? 0
+  const ref = useLiveProperty('value', value)
+  return <wokwi-slide-potentiometer ref={ref} id={instance.id} />
+}
+
+function SlideSwitch({ instance }: { instance: ComponentInstance }) {
+  const value = (instance.props.value as number | undefined) ?? 1
+  const ref = useLiveProperty('value', value)
+  return <wokwi-slide-switch ref={ref} id={instance.id} />
+}
+
+function Photoresistor({ instance }: { instance: ComponentInstance }) {
+  // Visual prop: a brightness 0..1 value is what wokwi expects, not lux.
+  // Translate the kid's 0..1023 "lux" prop into the wokwi 0..1 range.
+  const lux = (instance.props.lux as number | undefined) ?? 500
+  const ref = useLiveProperty('value', Math.max(0, Math.min(1, lux / 1023)))
+  return <wokwi-photoresistor-sensor ref={ref} id={instance.id} />
+}
+
+function NtcTemperature({ instance }: { instance: ComponentInstance }) {
+  const celsius = (instance.props.celsius as number | undefined) ?? 22
+  const ref = useLiveProperty('temperature', celsius)
+  return <wokwi-ntc-temperature-sensor ref={ref} id={instance.id} />
+}
+
+function TiltSwitch({ instance }: { instance: ComponentInstance }) {
+  const tilted = (instance.props.tilted as boolean | undefined) ?? false
+  const ref = useLiveProperty('tilted', tilted)
+  return <wokwi-tilt-switch ref={ref} id={instance.id} />
+}
+
+function PirMotion({ instance }: { instance: ComponentInstance }) {
+  const triggered = (instance.props.triggered as boolean | undefined) ?? false
+  const ref = useLiveProperty('value', triggered)
+  return <wokwi-pir-motion-sensor ref={ref} id={instance.id} />
+}
+
+function RgbLed({ instance }: { instance: ComponentInstance }) {
+  // Each of R, G, B is a separate pin (common-cathode). Read the PWM
+  // duty cycle per pin, fall back to digital level for non-PWM pins.
+  const wires = useAppStore((s) => s.wires)
+  const pinLevels = useAppStore((s) => s.pinLevels)
+  const duty = useAppStore((s) => s.pwm.duty)
+  const pins = useMemo(() => resolveAllDrivePins(instance.id, wires), [instance.id, wires])
+  function brightness(pinName: string): number {
+    const p = pins[pinName]
+    if (!p) return 0
+    const d = duty[p]
+    if (d !== undefined) return d
+    return pinLevels[p] ? 1 : 0
+  }
+  const props = useMemo(
+    () => ({
+      ledRed: brightness('R'),
+      ledGreen: brightness('G'),
+      ledBlue: brightness('B'),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pins, duty, pinLevels],
+  )
+  const ref = useLiveProperties(props)
+  return <wokwi-rgb-led ref={ref} id={instance.id} />
+}
+
+function LedBarGraph({ instance }: { instance: ComponentInstance }) {
+  const wires = useAppStore((s) => s.wires)
+  const pinLevels = useAppStore((s) => s.pinLevels)
+  const color = (instance.props.color as string | undefined) ?? 'red'
+  const pins = useMemo(() => resolveAllDrivePins(instance.id, wires), [instance.id, wires])
+  const values = useMemo(() => {
+    const out: number[] = []
+    for (let i = 1; i <= 10; i++) {
+      const p = pins[`A${i}`]
+      out.push(p && pinLevels[p] ? 1 : 0)
+    }
+    return out
+  }, [pins, pinLevels])
+  const ref = useLiveProperty('values', values)
+  return <wokwi-led-bar-graph ref={ref} id={instance.id} color={color} />
+}
+
 function SevenSegment({ instance }: { instance: ComponentInstance }) {
   const wires = useAppStore((s) => s.wires)
   const pinLevels = useAppStore((s) => s.pinLevels)
@@ -245,16 +353,34 @@ export function DynamicComponent({ instance }: { instance: ComponentInstance }) 
       return <Resistor instance={instance} />
     case 'pushbutton':
       return <Pushbutton instance={instance} />
+    case 'pushbutton6mm':
+      return <Pushbutton6mm instance={instance} />
     case 'buzzer':
       return <Buzzer instance={instance} />
     case 'servo':
       return <Servo instance={instance} />
     case 'potentiometer':
       return <Potentiometer instance={instance} />
+    case 'slidePotentiometer':
+      return <SlidePotentiometer instance={instance} />
+    case 'slideSwitch':
+      return <SlideSwitch instance={instance} />
     case 'lcd1602':
       return <Lcd1602 instance={instance} />
     case 'seg7':
       return <SevenSegment instance={instance} />
+    case 'photoresistor':
+      return <Photoresistor instance={instance} />
+    case 'ntcTemperature':
+      return <NtcTemperature instance={instance} />
+    case 'tiltSwitch':
+      return <TiltSwitch instance={instance} />
+    case 'pirMotion':
+      return <PirMotion instance={instance} />
+    case 'rgbLed':
+      return <RgbLed instance={instance} />
+    case 'ledBarGraph':
+      return <LedBarGraph instance={instance} />
     default:
       return <div className="rounded bg-rose-100 px-2 text-xs text-rose-700">unknown</div>
   }

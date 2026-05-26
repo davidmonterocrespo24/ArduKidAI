@@ -3,11 +3,20 @@ export type ComponentType =
   | 'led'
   | 'resistor'
   | 'pushbutton'
+  | 'pushbutton6mm'
   | 'buzzer'
   | 'servo'
   | 'potentiometer'
+  | 'slidePotentiometer'
+  | 'slideSwitch'
   | 'lcd1602'
   | 'seg7'
+  | 'photoresistor'
+  | 'ntcTemperature'
+  | 'tiltSwitch'
+  | 'pirMotion'
+  | 'rgbLed'
+  | 'ledBarGraph'
 
 export interface ComponentInstance {
   id: string

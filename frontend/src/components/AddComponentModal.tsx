@@ -17,11 +17,20 @@ const DESCRIPTIONS: Record<ComponentType, string> = {
   led: 'Lights up when its anode is HIGH.',
   resistor: '220 ohm current limiter (use with every LED).',
   pushbutton: 'Momentary tactile switch. Pulls a digital pin low.',
+  pushbutton6mm: 'Small 6 mm tactile button. Same wiring as the big one.',
   buzzer: 'Piezo speaker. Drive it with tone() to play notes.',
   servo: 'SG90 hobby servo. Set an angle 0-180 with Servo.write().',
   potentiometer: 'Rotary knob (0..1023 on an analog pin).',
+  slidePotentiometer: 'Linear fader, same 0..1023 analog signal as the knob pot.',
+  slideSwitch: 'SPDT 3-pin slide switch (left / middle / right).',
   lcd1602: '16x2 character LCD over I2C. Wire to A4/A5 + 5V/GND.',
   seg7: 'Single-digit common-cathode 7-segment. Drives A..G + DP.',
+  photoresistor: 'Light sensor (LDR). Slider sets the lux while running.',
+  ntcTemperature: 'NTC temperature sensor. Slider sets the C while running.',
+  tiltSwitch: 'Tilt switch. Toggle to drive the output pin HIGH / LOW.',
+  pirMotion: 'PIR motion sensor. Tap "Trigger" to pulse the output pin.',
+  rgbLed: 'Common-cathode RGB LED. Wire R / G / B to 3 PWM pins.',
+  ledBarGraph: '10-LED bar graph. Anodes A1..A10 wired to digital pins.',
 }
 
 // Render the actual wokwi element as the preview so kids see the real
@@ -76,6 +85,60 @@ function Preview({ type }: { type: ComponentType }) {
       return (
         <div className={common}>
           <wokwi-7segment color="red" />
+        </div>
+      )
+    case 'pushbutton6mm':
+      return (
+        <div className={common}>
+          <wokwi-pushbutton-6mm color="red" />
+        </div>
+      )
+    case 'slidePotentiometer':
+      return (
+        <div className={common} style={{ transform: 'scale(0.7)' }}>
+          <wokwi-slide-potentiometer />
+        </div>
+      )
+    case 'slideSwitch':
+      return (
+        <div className={common}>
+          <wokwi-slide-switch />
+        </div>
+      )
+    case 'photoresistor':
+      return (
+        <div className={common} style={{ transform: 'scale(0.6)' }}>
+          <wokwi-photoresistor-sensor />
+        </div>
+      )
+    case 'ntcTemperature':
+      return (
+        <div className={common} style={{ transform: 'scale(0.7)' }}>
+          <wokwi-ntc-temperature-sensor />
+        </div>
+      )
+    case 'tiltSwitch':
+      return (
+        <div className={common}>
+          <wokwi-tilt-switch />
+        </div>
+      )
+    case 'pirMotion':
+      return (
+        <div className={common} style={{ transform: 'scale(0.7)' }}>
+          <wokwi-pir-motion-sensor />
+        </div>
+      )
+    case 'rgbLed':
+      return (
+        <div className={common}>
+          <wokwi-rgb-led />
+        </div>
+      )
+    case 'ledBarGraph':
+      return (
+        <div className={common} style={{ transform: 'scale(0.7)' }}>
+          <wokwi-led-bar-graph color="red" />
         </div>
       )
     default:
