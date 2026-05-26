@@ -172,10 +172,12 @@ function Pushbutton({ instance }: { instance: ComponentInstance }) {
   // sketch will use pinMode(INPUT_PULLUP) to read it). avr8js' IOPort
   // does not auto-pull on its own, so without this the input would
   // float and `digitalRead` would think the button is forever pressed.
+  const simStatus = useAppStore((s) => s.simStatus)
   useEffect(() => {
     if (!drivePin) return
+    if (simStatus !== 'running') return
     driveInputPin(drivePin, true)
-  }, [drivePin])
+  }, [drivePin, simStatus])
 
   useEffect(() => {
     const el = ref.current
@@ -217,6 +219,7 @@ function Lcd2004({ instance }: { instance: ComponentInstance }) {
 
 function DipSwitch8({ instance }: { instance: ComponentInstance }) {
   const wires = useAppStore((s) => s.wires)
+  const simStatus = useAppStore((s) => s.simStatus)
   const values = useMemo(
     () => (instance.props.values as number[] | undefined) ?? [0, 0, 0, 0, 0, 0, 0, 0],
     [instance.props.values],
@@ -226,12 +229,13 @@ function DipSwitch8({ instance }: { instance: ComponentInstance }) {
   // on (value === 1) we drive that pin LOW (closed to ground via the
   // b-side); off leaves the pin HIGH (assumes INPUT_PULLUP wiring).
   useEffect(() => {
+    if (simStatus !== 'running') return
     for (let i = 0; i < 8; i++) {
       const pin = resolveSingleWireToUno(`${instance.id}.${i + 1}a`, wires)
       if (!pin) continue
       driveInputPin(pin, values[i] !== 1)
     }
-  }, [instance.id, wires, values])
+  }, [instance.id, wires, values, simStatus])
   return <wokwi-dip-switch-8 ref={ref} id={instance.id} />
 }
 
@@ -240,33 +244,34 @@ function SoundSensor({ instance }: { instance: ComponentInstance }) {
   // DOUT goes LOW (typical active-low module). The AOUT analog reading is
   // routed via the existing ADC bridge.
   const wires = useAppStore((s) => s.wires)
+  const simStatus = useAppStore((s) => s.simStatus)
   const level = (instance.props.level as number | undefined) ?? 0
   const threshold = (instance.props.threshold as number | undefined) ?? 600
   useEffect(() => {
+    if (simStatus !== 'running') return
     const pin = resolveSingleWireToUno(`${instance.id}.DOUT`, wires)
     if (!pin) return
     driveInputPin(pin, level < threshold)
-  }, [instance.id, wires, level, threshold])
+  }, [instance.id, wires, level, threshold, simStatus])
   return <wokwi-big-sound-sensor id={instance.id} />
 }
 
 function FlameSensor({ instance }: { instance: ComponentInstance }) {
   const wires = useAppStore((s) => s.wires)
+  const simStatus = useAppStore((s) => s.simStatus)
   const flame = (instance.props.flame as number | undefined) ?? 0
   const threshold = (instance.props.threshold as number | undefined) ?? 600
-  // Visual indicator on the wokwi element: ledSignal lights when the
-  // simulated flame reading is above threshold (matches the on-board LED
-  // on real modules).
   const props = useMemo(
     () => ({ ledPower: true, ledSignal: flame >= threshold }),
     [flame, threshold],
   )
   const ref = useLiveProperties(props)
   useEffect(() => {
+    if (simStatus !== 'running') return
     const pin = resolveSingleWireToUno(`${instance.id}.DOUT`, wires)
     if (!pin) return
     driveInputPin(pin, flame < threshold)
-  }, [instance.id, wires, flame, threshold])
+  }, [instance.id, wires, flame, threshold, simStatus])
   return <wokwi-flame-sensor ref={ref} id={instance.id} />
 }
 
@@ -296,11 +301,13 @@ function RotaryEncoder({ instance }: { instance: ComponentInstance }) {
     if (first) window.setTimeout(() => driveInputPin(first, true), 20)
     if (second) window.setTimeout(() => driveInputPin(second, true), 30)
   }, [angle, wires, instance.id])
+  const simStatus = useAppStore((s) => s.simStatus)
   useEffect(() => {
+    if (simStatus !== 'running') return
     const pin = resolveSingleWireToUno(`${instance.id}.SW`, wires)
     if (!pin) return
     driveInputPin(pin, !pressed)
-  }, [instance.id, wires, pressed])
+  }, [instance.id, wires, pressed, simStatus])
   return <wokwi-ky-040 ref={ref} id={instance.id} />
 }
 
@@ -310,14 +317,14 @@ function AnalogJoystick({ instance }: { instance: ComponentInstance }) {
   const pressed = (instance.props.pressed as boolean | undefined) ?? false
   const props = useMemo(() => ({ xValue, yValue, pressed }), [xValue, yValue, pressed])
   const ref = useLiveProperties(props)
-  // SEL pin: when pressed, drives the connected digital pin LOW (the
-  // joystick's switch closes to GND).
   const wires = useAppStore((s) => s.wires)
+  const simStatus = useAppStore((s) => s.simStatus)
   useEffect(() => {
+    if (simStatus !== 'running') return
     const pin = resolveSingleWireToUno(`${instance.id}.SEL`, wires)
     if (!pin) return
     driveInputPin(pin, !pressed)
-  }, [instance.id, wires, pressed])
+  }, [instance.id, wires, pressed, simStatus])
   return <wokwi-analog-joystick ref={ref} id={instance.id} />
 }
 
@@ -349,10 +356,12 @@ function Pushbutton6mm({ instance }: { instance: ComponentInstance }) {
   const color = (instance.props.color as string | undefined) ?? 'red'
   const drivePin = useDrivePin(instance.id)
   const ref = useRef<HTMLElement>(null)
+  const simStatus = useAppStore((s) => s.simStatus)
   useEffect(() => {
     if (!drivePin) return
+    if (simStatus !== 'running') return
     driveInputPin(drivePin, true)
-  }, [drivePin])
+  }, [drivePin, simStatus])
   useEffect(() => {
     const el = ref.current
     if (!el || !drivePin) return
@@ -378,14 +387,15 @@ function SlideSwitch({ instance }: { instance: ComponentInstance }) {
   const value = (instance.props.value as number | undefined) ?? 1
   const ref = useLiveProperty('value', value)
   const drivePin = useDrivePin(instance.id)
+  const simStatus = useAppStore((s) => s.simStatus)
   // Position 1 -> common tied to ground (LOW). Positions 2/3 -> common
   // pulled high (HIGH). Without a real contact matrix this is the
   // simplest mapping that matches the most common kid wiring: pin "2"
   // to a digital pin, pin "1" to GND, pin "3" to VCC.
   useEffect(() => {
-    if (!drivePin) return
+    if (!drivePin || simStatus !== 'running') return
     driveInputPin(drivePin, value !== 1)
-  }, [drivePin, value])
+  }, [drivePin, value, simStatus])
   return <wokwi-slide-switch ref={ref} id={instance.id} />
 }
 
@@ -406,12 +416,25 @@ function NtcTemperature({ instance }: { instance: ComponentInstance }) {
 function TiltSwitch({ instance }: { instance: ComponentInstance }) {
   const tilted = (instance.props.tilted as boolean | undefined) ?? false
   const ref = useLiveProperty('tilted', tilted)
+  const drivePin = useDrivePin(instance.id)
+  const simStatus = useAppStore((s) => s.simStatus)
+  useEffect(() => {
+    if (!drivePin || simStatus !== 'running') return
+    // OUT goes HIGH when tilted (or whatever orientation the kid picked).
+    driveInputPin(drivePin, tilted)
+  }, [drivePin, tilted, simStatus])
   return <wokwi-tilt-switch ref={ref} id={instance.id} />
 }
 
 function PirMotion({ instance }: { instance: ComponentInstance }) {
   const triggered = (instance.props.triggered as boolean | undefined) ?? false
   const ref = useLiveProperty('value', triggered)
+  const drivePin = useDrivePin(instance.id)
+  const simStatus = useAppStore((s) => s.simStatus)
+  useEffect(() => {
+    if (!drivePin || simStatus !== 'running') return
+    driveInputPin(drivePin, triggered)
+  }, [drivePin, triggered, simStatus])
   return <wokwi-pir-motion-sensor ref={ref} id={instance.id} />
 }
 
