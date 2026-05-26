@@ -32,7 +32,10 @@ declare module 'react' {
         pressed?: boolean
       }>
       'wokwi-big-sound-sensor': WokwiElement
+      'wokwi-small-sound-sensor': WokwiElement<{ ledPower?: boolean; ledSignal?: boolean }>
       'wokwi-flame-sensor': WokwiElement<{ ledPower?: boolean; ledSignal?: boolean }>
+      'wokwi-gas-sensor': WokwiElement<{ ledPower?: boolean }>
+      'wokwi-heart-beat-sensor': WokwiElement
       'wokwi-ky-040': WokwiElement<{ angle?: number; stepSize?: number }>
       'wokwi-7segment': WokwiElement<{ values?: number[] | string; color?: string }>
       'wokwi-pushbutton-6mm': WokwiElement<{ color?: string; pressed?: boolean }>

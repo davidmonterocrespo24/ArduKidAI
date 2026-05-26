@@ -29,7 +29,10 @@ const DESCRIPTIONS: Record<ComponentType, string> = {
   dipSwitch8: '8-way DIP switch. Each switch ties its a-side pin LOW when ON.',
   analogJoystick: 'Thumb joystick. X / Y feed two analog pins, SEL is a button.',
   soundSensor: 'Sound sensor (KY-038). AOUT gives the level, DOUT goes LOW when loud.',
+  smallSoundSensor: 'Small sound sensor. Same wiring as the big one in a tinier board.',
   flameSensor: 'Flame sensor. AOUT analog brightness, DOUT goes LOW when flame seen.',
+  gasSensor: 'MQ-2 gas sensor. AOUT analog smoke level, DOUT LOW above threshold.',
+  heartBeatSensor: 'Pulse sensor. OUT pulses high once per heartbeat at the chosen BPM.',
   rotaryEncoder: 'KY-040 rotary encoder. Turn the knob to fire CLK + DT pulses.',
   photoresistor: 'Light sensor (LDR). Slider sets the lux while running.',
   ntcTemperature: 'NTC temperature sensor. Slider sets the C while running.',
@@ -169,6 +172,24 @@ function Preview({ type }: { type: ComponentType }) {
       return (
         <div className={common} style={{ transform: 'scale(0.6)' }}>
           <wokwi-big-sound-sensor />
+        </div>
+      )
+    case 'smallSoundSensor':
+      return (
+        <div className={common} style={{ transform: 'scale(0.8)' }}>
+          <wokwi-small-sound-sensor />
+        </div>
+      )
+    case 'gasSensor':
+      return (
+        <div className={common} style={{ transform: 'scale(0.55)' }}>
+          <wokwi-gas-sensor />
+        </div>
+      )
+    case 'heartBeatSensor':
+      return (
+        <div className={common} style={{ transform: 'scale(0.8)' }}>
+          <wokwi-heart-beat-sensor />
         </div>
       )
     case 'flameSensor':

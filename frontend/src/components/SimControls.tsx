@@ -29,13 +29,21 @@ function getAdcChannelFromStore(channel: number): number {
       const t = Math.max(-10, Math.min(60, c1))
       return clampVolts(((t + 10) / 70) * 5)
     }
-    if (c.type === 'soundSensor') {
+    if (c.type === 'soundSensor' || c.type === 'smallSoundSensor') {
       const level = Number(c.props.level ?? 0)
       return clampVolts((level / 1023) * 5)
     }
     if (c.type === 'flameSensor') {
       const flame = Number(c.props.flame ?? 0)
       return clampVolts((flame / 1023) * 5)
+    }
+    if (c.type === 'gasSensor') {
+      const gas = Number(c.props.gas ?? 0)
+      return clampVolts((gas / 1023) * 5)
+    }
+    if (c.type === 'heartBeatSensor') {
+      const pulse = Number(c.props.pulse ?? 100)
+      return clampVolts((pulse / 1023) * 5)
     }
   }
   // Analog joystick exposes two outputs (VERT/HORZ) so resolveAnalogChannel

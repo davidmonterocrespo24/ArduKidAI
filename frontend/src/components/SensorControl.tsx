@@ -43,7 +43,10 @@ export function SensorControl({ instance }: Props) {
     'dipSwitch8',
     'analogJoystick',
     'soundSensor',
+    'smallSoundSensor',
     'flameSensor',
+    'gasSensor',
+    'heartBeatSensor',
     'rotaryEncoder',
   ].includes(instance.type)
   if (!hasControl) return null
@@ -130,13 +133,35 @@ export function SensorControl({ instance }: Props) {
               onChange={(p) => updateComponentProps(instance.id, p)}
             />
           ) : null}
-          {instance.type === 'soundSensor' ? (
+          {instance.type === 'soundSensor' || instance.type === 'smallSoundSensor' ? (
             <SliderControl
               label="Sound"
               min={0}
               max={1023}
               value={Number(instance.props.level ?? 0)}
               onChange={(v) => updateComponentProps(instance.id, { level: v })}
+              wires={wires}
+              componentId={instance.id}
+            />
+          ) : null}
+          {instance.type === 'gasSensor' ? (
+            <SliderControl
+              label="Gas"
+              min={0}
+              max={1023}
+              value={Number(instance.props.gas ?? 0)}
+              onChange={(v) => updateComponentProps(instance.id, { gas: v })}
+              wires={wires}
+              componentId={instance.id}
+            />
+          ) : null}
+          {instance.type === 'heartBeatSensor' ? (
+            <SliderControl
+              label="BPM"
+              min={30}
+              max={180}
+              value={Number(instance.props.bpm ?? 60)}
+              onChange={(v) => updateComponentProps(instance.id, { bpm: v })}
               wires={wires}
               componentId={instance.id}
             />

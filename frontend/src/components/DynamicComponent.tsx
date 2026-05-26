@@ -256,6 +256,66 @@ function SoundSensor({ instance }: { instance: ComponentInstance }) {
   return <wokwi-big-sound-sensor id={instance.id} />
 }
 
+function SmallSoundSensor({ instance }: { instance: ComponentInstance }) {
+  const wires = useAppStore((s) => s.wires)
+  const simStatus = useAppStore((s) => s.simStatus)
+  const level = (instance.props.level as number | undefined) ?? 0
+  const threshold = (instance.props.threshold as number | undefined) ?? 600
+  const props = useMemo(
+    () => ({ ledPower: true, ledSignal: level >= threshold }),
+    [level, threshold],
+  )
+  const ref = useLiveProperties(props)
+  useEffect(() => {
+    if (simStatus !== 'running') return
+    const pin = resolveSingleWireToUno(`${instance.id}.DOUT`, wires)
+    if (!pin) return
+    driveInputPin(pin, level < threshold)
+  }, [instance.id, wires, level, threshold, simStatus])
+  return <wokwi-small-sound-sensor ref={ref} id={instance.id} />
+}
+
+function GasSensor({ instance }: { instance: ComponentInstance }) {
+  const wires = useAppStore((s) => s.wires)
+  const simStatus = useAppStore((s) => s.simStatus)
+  const gas = (instance.props.gas as number | undefined) ?? 0
+  const threshold = (instance.props.threshold as number | undefined) ?? 600
+  const ref = useLiveProperty('ledPower', true)
+  useEffect(() => {
+    if (simStatus !== 'running') return
+    const pin = resolveSingleWireToUno(`${instance.id}.DOUT`, wires)
+    if (!pin) return
+    driveInputPin(pin, gas < threshold)
+  }, [instance.id, wires, gas, threshold, simStatus])
+  return <wokwi-gas-sensor ref={ref} id={instance.id} />
+}
+
+function HeartBeatSensor({ instance }: { instance: ComponentInstance }) {
+  // Simulate a pulse waveform. Every (60000 / bpm) ms emit a short
+  // analog spike to ~800; idle reading sits around 100. The pulse
+  // value is held in component props so the ADC bridge can sample it.
+  const bpm = (instance.props.bpm as number | undefined) ?? 60
+  const updateComponentProps = useAppStore((s) => s.updateComponentProps)
+  const simStatus = useAppStore((s) => s.simStatus)
+  useEffect(() => {
+    if (simStatus !== 'running' || bpm <= 0) return
+    const period = Math.max(200, 60000 / bpm)
+    let alive = true
+    function beat() {
+      if (!alive) return
+      updateComponentProps(instance.id, { pulse: 800 })
+      window.setTimeout(() => {
+        if (!alive) return
+        updateComponentProps(instance.id, { pulse: 100 })
+      }, Math.min(120, period * 0.3))
+    }
+    beat()
+    const id = window.setInterval(beat, period)
+    return () => { alive = false; window.clearInterval(id) }
+  }, [bpm, simStatus, instance.id, updateComponentProps])
+  return <wokwi-heart-beat-sensor id={instance.id} />
+}
+
 function FlameSensor({ instance }: { instance: ComponentInstance }) {
   const wires = useAppStore((s) => s.wires)
   const simStatus = useAppStore((s) => s.simStatus)
@@ -537,8 +597,14 @@ export function DynamicComponent({ instance }: { instance: ComponentInstance }) 
       return <AnalogJoystick instance={instance} />
     case 'soundSensor':
       return <SoundSensor instance={instance} />
+    case 'smallSoundSensor':
+      return <SmallSoundSensor instance={instance} />
     case 'flameSensor':
       return <FlameSensor instance={instance} />
+    case 'gasSensor':
+      return <GasSensor instance={instance} />
+    case 'heartBeatSensor':
+      return <HeartBeatSensor instance={instance} />
     case 'rotaryEncoder':
       return <RotaryEncoder instance={instance} />
     case 'photoresistor':

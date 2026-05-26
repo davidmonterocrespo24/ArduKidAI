@@ -585,7 +585,10 @@ const PREFIX: Record<ComponentType, string> = {
   dipSwitch8: 'DIP',
   analogJoystick: 'JOY',
   soundSensor: 'SND',
+  smallSoundSensor: 'SND',
   flameSensor: 'FLM',
+  gasSensor: 'GAS',
+  heartBeatSensor: 'HBR',
   rotaryEncoder: 'ENC',
   photoresistor: 'LDR',
   ntcTemperature: 'NTC',
@@ -2356,6 +2359,135 @@ void loop() {
   analogWrite(9, level);
   if (digitalRead(4) == LOW) level = 0; // press knob resets to 0
   delay(20);
+}
+`,
+  },
+  {
+    id: 'ex-046',
+    title: 'Gas alarm with LED',
+    intent_en: 'turn on a red LED when the gas sensor reads above its threshold',
+    intent_es: 'prender un LED rojo cuando el sensor de gas supera el umbral',
+    tags: ['gas', 'led', 'sensor'],
+    difficulty: 2,
+    components: layout([
+      { type: 'gasSensor' },
+      { type: 'led', props: { color: 'red' } },
+      { type: 'resistor', props: { value: '220' } },
+    ]),
+    wires: [
+      w('GAS1.VCC', 'UNO.5V'),
+      w('GAS1.GND', 'UNO.GND'),
+      w('GAS1.DOUT', 'UNO.D2'),
+      ...ledOnPin(1, 1, '13'),
+    ],
+    blockly_xml: toXml(
+      setup(chain(pinMode(2, 'INPUT'), pinMode(13, 'OUTPUT'))),
+      loop(
+        chain(
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'EQ' },
+              values: {
+                A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+                B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+              },
+            },
+            digitalWrite(13, 'HIGH'),
+          ),
+          ifThen(
+            { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+            digitalWrite(13, 'LOW'),
+          ),
+        ),
+      ),
+    ),
+    cpp_code: `void setup() {
+  pinMode(2, INPUT);
+  pinMode(13, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(13, digitalRead(2) == LOW ? HIGH : LOW);
+}
+`,
+  },
+  {
+    id: 'ex-047',
+    title: 'Heartbeat LED',
+    intent_en: 'blink an LED in time with the pulse sensor heartbeat',
+    intent_es: 'hacer parpadear un LED al ritmo del pulso del sensor',
+    tags: ['heart-beat', 'led', 'sensor'],
+    difficulty: 3,
+    components: layout([
+      { type: 'heartBeatSensor' },
+      { type: 'led', props: { color: 'red' } },
+      { type: 'resistor', props: { value: '220' } },
+    ]),
+    wires: [
+      w('HBR1.VCC', 'UNO.5V'),
+      w('HBR1.GND', 'UNO.GND'),
+      w('HBR1.OUT', 'UNO.A0'),
+      ...ledOnPin(1, 1, '13'),
+    ],
+    cpp_code: `void setup() {
+  pinMode(13, OUTPUT);
+}
+
+void loop() {
+  int v = analogRead(A0);
+  // A spike above ~500 means a beat just happened.
+  digitalWrite(13, v > 500 ? HIGH : LOW);
+}
+`,
+  },
+  {
+    id: 'ex-048',
+    title: 'Clap-detector (tiny board)',
+    intent_en: 'flash an LED whenever the small sound sensor hears noise',
+    intent_es: 'parpadear un LED cuando el sensor de sonido chico escucha un ruido',
+    tags: ['sound', 'led', 'sensor'],
+    difficulty: 2,
+    components: layout([
+      { type: 'smallSoundSensor' },
+      { type: 'led', props: { color: 'green' } },
+      { type: 'resistor', props: { value: '220' } },
+    ]),
+    wires: [
+      w('SND1.VCC', 'UNO.5V'),
+      w('SND1.GND', 'UNO.GND'),
+      w('SND1.DOUT', 'UNO.D2'),
+      ...ledOnPin(1, 1, '13'),
+    ],
+    blockly_xml: toXml(
+      setup(chain(pinMode(2, 'INPUT'), pinMode(13, 'OUTPUT'))),
+      loop(
+        chain(
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'EQ' },
+              values: {
+                A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+                B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+              },
+            },
+            digitalWrite(13, 'HIGH'),
+          ),
+          ifThen(
+            { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+            digitalWrite(13, 'LOW'),
+          ),
+        ),
+      ),
+    ),
+    cpp_code: `void setup() {
+  pinMode(2, INPUT);
+  pinMode(13, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(13, digitalRead(2) == LOW ? HIGH : LOW);
 }
 `,
   },
