@@ -77,6 +77,53 @@ export const analogRead = (pin: string): BlockNode => ({
   fields: { PIN: pin },
 })
 
+export const arduinoMap = (
+  value: BlockNode,
+  fromLow: number | BlockNode,
+  fromHigh: number | BlockNode,
+  toLow: number | BlockNode,
+  toHigh: number | BlockNode,
+): BlockNode => ({
+  type: 'ardukid_map',
+  values: {
+    VALUE: value,
+    FROM_LOW: typeof fromLow === 'number' ? num(fromLow) : fromLow,
+    FROM_HIGH: typeof fromHigh === 'number' ? num(fromHigh) : fromHigh,
+    TO_LOW: typeof toLow === 'number' ? num(toLow) : toLow,
+    TO_HIGH: typeof toHigh === 'number' ? num(toHigh) : toHigh,
+  },
+})
+
+export const text = (s: string): BlockNode => ({
+  type: 'text',
+  fields: { TEXT: s },
+})
+
+export const lcdBegin = (): BlockNode => ({ type: 'ardukid_lcd_begin' })
+export const lcdClear = (): BlockNode => ({ type: 'ardukid_lcd_clear' })
+export const lcdSetCursor = (col: number | BlockNode, row: number | BlockNode): BlockNode => ({
+  type: 'ardukid_lcd_set_cursor',
+  values: {
+    COL: typeof col === 'number' ? num(col) : col,
+    ROW: typeof row === 'number' ? num(row) : row,
+  },
+})
+export const lcdPrint = (value: string | BlockNode): BlockNode => ({
+  type: 'ardukid_lcd_print',
+  values: { VALUE: typeof value === 'string' ? text(value) : value },
+})
+
+export const setVar = (name: string, value: BlockNode): BlockNode => ({
+  type: 'variables_set',
+  fields: { VAR: name },
+  values: { VALUE: value },
+})
+
+export const getVar = (name: string): BlockNode => ({
+  type: 'variables_get',
+  fields: { VAR: name },
+})
+
 export const num = (n: number): BlockNode => ({
   type: 'math_number',
   fields: { NUM: n },

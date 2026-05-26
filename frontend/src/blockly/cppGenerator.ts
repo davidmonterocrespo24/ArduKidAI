@@ -62,6 +62,31 @@ function statementBlockToCpp(block: Blockly.Block): string {
       const pin = block.getFieldValue('PIN') || '8'
       return `noTone(${pin});\n`
     }
+    case 'ardukid_lcd_begin':
+      // The "begin" emits both init() and backlight() so a one-block
+      // setup is enough. Includes are added at file scope by emitter.
+      return 'lcd.init();\nlcd.backlight();\n'
+    case 'ardukid_lcd_clear':
+      return 'lcd.clear();\n'
+    case 'ardukid_lcd_set_cursor': {
+      const col = valueOf(block, 'COL', '0')
+      const row = valueOf(block, 'ROW', '0')
+      return `lcd.setCursor(${col}, ${row});\n`
+    }
+    case 'ardukid_lcd_print': {
+      const value = valueOf(block, 'VALUE', '""')
+      return `lcd.print(${value});\n`
+    }
+    case 'variables_set': {
+      const name = block.getFieldValue('VAR') ?? 'v'
+      const value = valueOf(block, 'VALUE', '0')
+      return `${cVarName(name)} = ${value};\n`
+    }
+    case 'math_change': {
+      const name = block.getFieldValue('VAR') ?? 'v'
+      const delta = valueOf(block, 'DELTA', '1')
+      return `${cVarName(name)} += ${delta};\n`
+    }
     case 'controls_if': {
       const condition = valueOf(block, 'IF0', 'false')
       const body = statementsOf(block, 'DO0')
@@ -130,9 +155,45 @@ function expressionToCpp(block: Blockly.Block): string {
       const pin = block.getFieldValue('PIN') || 'A0'
       return `analogRead(${pin})`
     }
+    case 'ardukid_map': {
+      const value = valueOf(block, 'VALUE', '0')
+      const fl = valueOf(block, 'FROM_LOW', '0')
+      const fh = valueOf(block, 'FROM_HIGH', '1023')
+      const tl = valueOf(block, 'TO_LOW', '0')
+      const th = valueOf(block, 'TO_HIGH', '255')
+      return `map(${value}, ${fl}, ${fh}, ${tl}, ${th})`
+    }
+    case 'text':
+      return `"${String(block.getFieldValue('TEXT') ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+    case 'variables_get': {
+      const name = block.getFieldValue('VAR') ?? 'v'
+      return cVarName(name)
+    }
     default:
       return '/* unsupported expression */ 0'
   }
+}
+
+// Sanitize a Blockly variable name into a valid C identifier. Blockly
+// allows spaces and other characters; the Arduino sketch does not.
+function cVarName(raw: string): string {
+  return raw.replace(/[^A-Za-z0-9_]/g, '_').replace(/^[0-9]/, '_$&')
+}
+
+function collectBlockTypes(workspace: Blockly.Workspace): Set<string> {
+  const types = new Set<string>()
+  function walk(block: Blockly.Block | null) {
+    while (block) {
+      types.add(block.type)
+      for (const input of block.inputList) {
+        const child = input.connection?.targetBlock() ?? null
+        if (child) walk(child)
+      }
+      block = block.getNextBlock()
+    }
+  }
+  for (const top of workspace.getTopBlocks(false)) walk(top)
+  return types
 }
 
 export function generateCpp(workspace: Blockly.Workspace): string {
@@ -155,8 +216,38 @@ export function generateCpp(workspace: Blockly.Workspace): string {
     return ''
   }
 
+  // Auto-declare any Blockly variable as a top-level int. Kids never
+  // bother with explicit type declarations; an int default covers
+  // every block our generator emits (analogRead, map, counters).
+  const allBlockTypes = collectBlockTypes(workspace)
+  const varNames = new Set<string>(
+    workspace
+      .getAllVariables()
+      .map((v) => cVarName((v as unknown as { name: string }).name)),
+  )
+  const declarations: string[] = []
+  for (const name of varNames) declarations.push(`int ${name} = 0;`)
+
+  // Auto-include LCD library + global instance when any LCD block is
+  // used, so the kid can drop "LCD start" and the sketch compiles.
+  let includes = ''
+  let globals = ''
+  if ([...allBlockTypes].some((t) => t.startsWith('ardukid_lcd_'))) {
+    includes += '#include <Wire.h>\n#include <LiquidCrystal_I2C.h>\n'
+    globals += 'LiquidCrystal_I2C lcd(0x27, 16, 2);\n'
+  }
+
+  const preamble = [
+    SKETCH_HEADER.trim(),
+    includes && includes.trim(),
+    globals && globals.trim(),
+    declarations.length > 0 && declarations.join('\n'),
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+
   return (
-    SKETCH_HEADER +
+    `${preamble}\n\n` +
     `void setup() {\n${indentLines(setupBody, '  ')}}\n\n` +
     `void loop() {\n${indentLines(loopBody, '  ')}${
       stray ? `\n  // stray top-level blocks:\n${indentLines(stray, '  ')}` : ''

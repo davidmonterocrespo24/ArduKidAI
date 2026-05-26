@@ -15,12 +15,18 @@ import { nextSpawnPosition } from './spawnPosition'
 import {
   analogRead,
   analogWrite,
+  arduinoMap,
   chain,
   digitalWrite,
+  getVar,
   ifThen,
+  lcdBegin,
+  lcdPrint,
+  lcdSetCursor,
   loop,
   num,
   pinMode,
+  setVar,
   setup,
   tone,
   toXml,
@@ -487,6 +493,62 @@ function seg7DigitChain(d: number): BlockNode[] {
   }
   return SEGS[d].map((on, i) => digitalWrite(i + 2, on ? 'HIGH' : 'LOW'))
 }
+
+// Hello world on a 16x2 I2C LCD: just print two lines in setup.
+const LCD_HELLO_BLOCKS = toXml(
+  setup(
+    chain(
+      lcdBegin(),
+      lcdSetCursor(0, 0),
+      lcdPrint('Hello, world!'),
+      lcdSetCursor(0, 1),
+      lcdPrint('From ArduKid'),
+    ),
+  ),
+  loop({ type: 'ardukid_pin_mode', fields: { PIN: '13', MODE: 'OUTPUT' } }),
+)
+
+// Pot value displayed on the LCD second line.
+const LCD_POT_BLOCKS = toXml(
+  setup(
+    chain(
+      lcdBegin(),
+      lcdSetCursor(0, 0),
+      lcdPrint('Pot value:'),
+    ),
+  ),
+  loop(
+    chain(
+      lcdSetCursor(0, 1),
+      lcdPrint('       '),
+      lcdSetCursor(0, 1),
+      lcdPrint(analogRead('A0')),
+      wait(100),
+    ),
+  ),
+)
+
+// Fake thermometer: pot -> map(0..1023, 15..35) -> show "Temperature:\n<t> C".
+const LCD_THERMOMETER_BLOCKS = toXml(
+  setup(
+    chain(
+      lcdBegin(),
+      lcdSetCursor(0, 0),
+      lcdPrint('Temperature:'),
+    ),
+  ),
+  loop(
+    chain(
+      setVar('t', arduinoMap(analogRead('A0'), 0, 1023, 15, 35)),
+      lcdSetCursor(0, 1),
+      lcdPrint('      '),
+      lcdSetCursor(0, 1),
+      lcdPrint(getVar('t')),
+      lcdPrint(' C'),
+      wait(200),
+    ),
+  ),
+)
 
 const SEG7_COUNT_BLOCKS = toXml(
   setup(
@@ -1264,6 +1326,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('LCD1.SDA', 'UNO.A4'),
       w('LCD1.SCL', 'UNO.A5'),
     ],
+    blockly_xml: LCD_HELLO_BLOCKS,
     cpp_code: LCD_HELLO_CPP,
   },
   {
@@ -1283,6 +1346,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('P1.VCC', 'UNO.5V'),
       w('P1.SIG', 'UNO.A0'),
     ],
+    blockly_xml: LCD_POT_BLOCKS,
     cpp_code: LCD_POT_CPP,
   },
   {
@@ -1541,6 +1605,7 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('P1.VCC', 'UNO.5V'),
       w('P1.SIG', 'UNO.A0'),
     ],
+    blockly_xml: LCD_THERMOMETER_BLOCKS,
     cpp_code: LCD_THERMOMETER_CPP,
   },
   {

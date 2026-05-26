@@ -125,6 +125,58 @@ export function registerArduinoBlocks(): void {
       nextStatement: null,
       colour: 60,
     },
+    {
+      type: 'ardukid_map',
+      message0: 'map %1 from %2 .. %3 to %4 .. %5',
+      args0: [
+        { type: 'input_value', name: 'VALUE', check: 'Number' },
+        { type: 'input_value', name: 'FROM_LOW', check: 'Number' },
+        { type: 'input_value', name: 'FROM_HIGH', check: 'Number' },
+        { type: 'input_value', name: 'TO_LOW', check: 'Number' },
+        { type: 'input_value', name: 'TO_HIGH', check: 'Number' },
+      ],
+      inputsInline: true,
+      output: 'Number',
+      colour: 230,
+      tooltip: 'Maps a value from one range to another (Arduino map()).',
+    },
+    {
+      type: 'ardukid_lcd_begin',
+      message0: 'LCD start (I2C 0x27)',
+      previousStatement: null,
+      nextStatement: null,
+      colour: 320,
+      tooltip: 'Initialise a 16x2 I2C LCD and turn its backlight on.',
+    },
+    {
+      type: 'ardukid_lcd_clear',
+      message0: 'LCD clear',
+      previousStatement: null,
+      nextStatement: null,
+      colour: 320,
+    },
+    {
+      type: 'ardukid_lcd_set_cursor',
+      message0: 'LCD cursor at column %1 row %2',
+      args0: [
+        { type: 'input_value', name: 'COL', check: 'Number' },
+        { type: 'input_value', name: 'ROW', check: 'Number' },
+      ],
+      inputsInline: true,
+      previousStatement: null,
+      nextStatement: null,
+      colour: 320,
+    },
+    {
+      type: 'ardukid_lcd_print',
+      message0: 'LCD print %1',
+      args0: [{ type: 'input_value', name: 'VALUE' }],
+      inputsInline: true,
+      previousStatement: null,
+      nextStatement: null,
+      colour: 320,
+      tooltip: 'Prints a number or text at the current cursor position.',
+    },
   ])
 }
 
@@ -155,6 +207,38 @@ export const ARDUINO_TOOLBOX_CATEGORIES = [
         },
       },
       { kind: 'block', type: 'ardukid_no_tone' },
+      {
+        kind: 'block',
+        type: 'ardukid_map',
+        inputs: {
+          FROM_LOW: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+          FROM_HIGH: { shadow: { type: 'math_number', fields: { NUM: 1023 } } },
+          TO_LOW: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+          TO_HIGH: { shadow: { type: 'math_number', fields: { NUM: 255 } } },
+        },
+      },
+    ],
+  },
+  {
+    kind: 'category',
+    name: 'LCD',
+    colour: '320',
+    contents: [
+      { kind: 'block', type: 'ardukid_lcd_begin' },
+      { kind: 'block', type: 'ardukid_lcd_clear' },
+      {
+        kind: 'block',
+        type: 'ardukid_lcd_set_cursor',
+        inputs: {
+          COL: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+          ROW: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+        },
+      },
+      {
+        kind: 'block',
+        type: 'ardukid_lcd_print',
+        inputs: { VALUE: { shadow: { type: 'text', fields: { TEXT: 'Hello' } } } },
+      },
     ],
   },
 ]
