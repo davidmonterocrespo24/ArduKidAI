@@ -27,6 +27,9 @@ import {
   noTone,
   num,
   pinMode,
+  randomFromTo,
+  servoAttach,
+  servoWrite,
   setVar,
   setup,
   tone,
@@ -1477,6 +1480,22 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     difficulty: 3,
     components: layout([{ type: 'buzzer' }]),
     wires: [w('BZ1.1', 'UNO.D8'), w('BZ1.2', 'UNO.GND')],
+    blockly_xml: toXml(
+      // Happy Birthday in C/G/A/F notes. Six tones per phrase, two phrases.
+      setup(
+        chain(
+          // Notes: 262=C4, 294=D4, 349=F4, 330=E4, 392=G4, 440=A4.
+          tone(8, 262, 350), wait(410),
+          tone(8, 262, 350), wait(410),
+          tone(8, 294, 600), wait(660),
+          tone(8, 262, 600), wait(660),
+          tone(8, 349, 600), wait(660),
+          tone(8, 330, 800), wait(860),
+          noTone(8),
+        ),
+      ),
+      loop({ type: 'ardukid_pin_mode', fields: { PIN: '13', MODE: 'OUTPUT' } }),
+    ),
     cpp_code: BUZZER_MELODY_CPP,
   },
   {
@@ -1488,6 +1507,55 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     difficulty: 2,
     components: layout([{ type: 'servo' }]),
     wires: [w('S1.PWM', 'UNO.D9'), w('S1.VCC', 'UNO.5V'), w('S1.GND', 'UNO.GND')],
+    blockly_xml: toXml(
+      setup(servoAttach(9)),
+      loop(
+        chain(
+          // Sweep 0 -> 180.
+          setVar('a', num(0)),
+          {
+            type: 'controls_whileUntil',
+            fields: { MODE: 'WHILE' },
+            values: {
+              BOOL: {
+                type: 'logic_compare',
+                fields: { OP: 'LTE' },
+                values: { A: getVar('a'), B: num(180) },
+              },
+            },
+            statement: {
+              name: 'DO',
+              child: chain(
+                servoWrite(9, getVar('a')),
+                wait(15),
+                { type: 'math_change', fields: { VAR: 'a' }, values: { DELTA: num(1) } },
+              ),
+            },
+          },
+          // Sweep back 180 -> 0.
+          setVar('a', num(180)),
+          {
+            type: 'controls_whileUntil',
+            fields: { MODE: 'WHILE' },
+            values: {
+              BOOL: {
+                type: 'logic_compare',
+                fields: { OP: 'GTE' },
+                values: { A: getVar('a'), B: num(0) },
+              },
+            },
+            statement: {
+              name: 'DO',
+              child: chain(
+                servoWrite(9, getVar('a')),
+                wait(15),
+                { type: 'math_change', fields: { VAR: 'a' }, values: { DELTA: num(-1) } },
+              ),
+            },
+          },
+        ),
+      ),
+    ),
     cpp_code: SERVO_SWEEP_CPP,
   },
   {
@@ -1506,6 +1574,10 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('P1.VCC', 'UNO.5V'),
       w('P1.SIG', 'UNO.A0'),
     ],
+    blockly_xml: toXml(
+      setup(servoAttach(9)),
+      loop(servoWrite(9, arduinoMap(analogRead('A0'), 0, 1023, 0, 180))),
+    ),
     cpp_code: POT_SERVO_CPP,
   },
   {
@@ -1591,6 +1663,57 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('SEG1.COM', 'UNO.GND'),
       ...buttonOnPin(1, '10'),
     ],
+    blockly_xml: toXml(
+      setup(
+        chain(
+          pinMode(10, 'INPUT_PULLUP'),
+          pinMode(2, 'OUTPUT'), pinMode(3, 'OUTPUT'), pinMode(4, 'OUTPUT'),
+          pinMode(5, 'OUTPUT'), pinMode(6, 'OUTPUT'), pinMode(7, 'OUTPUT'),
+          pinMode(8, 'OUTPUT'),
+          setVar('count', num(0)),
+        ),
+      ),
+      loop(
+        chain(
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'EQ' },
+              values: {
+                A: { type: 'ardukid_digital_read', fields: { PIN: '10' } },
+                B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+              },
+            },
+            chain(
+              { type: 'math_change', fields: { VAR: 'count' }, values: { DELTA: num(1) } },
+              // wrap to 0..9 by writing `count = count % 10` would need a
+              // mod block; instead just check >= 10 and reset.
+              ifThen(
+                {
+                  type: 'logic_compare',
+                  fields: { OP: 'GTE' },
+                  values: { A: getVar('count'), B: num(10) },
+                },
+                setVar('count', num(0)),
+              ),
+              wait(50),
+              // ten unrolled if-then setting each segment.
+              ...[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].flatMap((d) => [
+                ifThen(
+                  {
+                    type: 'logic_compare',
+                    fields: { OP: 'EQ' },
+                    values: { A: getVar('count'), B: num(d) },
+                  },
+                  chain(...seg7DigitChain(d)),
+                ),
+              ]),
+              wait(200),
+            ),
+          ),
+        ),
+      ),
+    ),
     cpp_code: SEG7_BUTTON_CPP,
   },
   {
@@ -1763,6 +1886,43 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('S1.GND', 'UNO.GND'),
       ...buttonOnPin(1, '2'),
     ],
+    blockly_xml: toXml(
+      // Variable `locked` toggles each button press; servo points at 0 or 90.
+      setup(chain(pinMode(2, 'INPUT_PULLUP'), servoAttach(9), setVar('locked', num(0)))),
+      loop(
+        chain(
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'EQ' },
+              values: {
+                A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+                B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+              },
+            },
+            chain(
+              ifThen(
+                {
+                  type: 'logic_compare',
+                  fields: { OP: 'EQ' },
+                  values: { A: getVar('locked'), B: num(0) },
+                },
+                chain(setVar('locked', num(1)), servoWrite(9, 90)),
+              ),
+              ifThen(
+                {
+                  type: 'logic_compare',
+                  fields: { OP: 'EQ' },
+                  values: { A: getVar('locked'), B: num(1) },
+                },
+                chain(setVar('locked', num(0)), servoWrite(9, 0)),
+              ),
+              wait(200),
+            ),
+          ),
+        ),
+      ),
+    ),
     cpp_code: SERVO_LOCK_CPP,
   },
   {
@@ -1779,6 +1939,46 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('SEG1.COM', 'UNO.GND'),
       ...buttonOnPin(1, '10'),
     ],
+    blockly_xml: toXml(
+      setup(
+        chain(
+          pinMode(10, 'INPUT_PULLUP'),
+          pinMode(2, 'OUTPUT'), pinMode(3, 'OUTPUT'), pinMode(4, 'OUTPUT'),
+          pinMode(5, 'OUTPUT'), pinMode(6, 'OUTPUT'), pinMode(7, 'OUTPUT'),
+          pinMode(8, 'OUTPUT'),
+          // initial digit so the display starts at 0
+          ...seg7DigitChain(0),
+        ),
+      ),
+      loop(
+        chain(
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'EQ' },
+              values: {
+                A: { type: 'ardukid_digital_read', fields: { PIN: '10' } },
+                B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+              },
+            },
+            chain(
+              setVar('r', randomFromTo(0, 10)),
+              ...[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].flatMap((d) => [
+                ifThen(
+                  {
+                    type: 'logic_compare',
+                    fields: { OP: 'EQ' },
+                    values: { A: getVar('r'), B: num(d) },
+                  },
+                  chain(...seg7DigitChain(d)),
+                ),
+              ]),
+              wait(250),
+            ),
+          ),
+        ),
+      ),
+    ),
     cpp_code: SEG7_RANDOM_CPP,
   },
   {

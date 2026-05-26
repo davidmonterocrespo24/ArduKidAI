@@ -77,6 +77,15 @@ function statementBlockToCpp(block: Blockly.Block): string {
       const value = valueOf(block, 'VALUE', '""')
       return `lcd.print(${value});\n`
     }
+    case 'ardukid_servo_attach': {
+      const pin = block.getFieldValue('PIN') || '9'
+      return `_servo_${pin}.attach(${pin});\n`
+    }
+    case 'ardukid_servo_write': {
+      const pin = block.getFieldValue('PIN') || '9'
+      const angle = valueOf(block, 'ANGLE', '90')
+      return `_servo_${pin}.write(${angle});\n`
+    }
     case 'variables_set': {
       const name = block.getFieldValue('VAR') ?? 'v'
       const value = valueOf(block, 'VALUE', '0')
@@ -163,6 +172,11 @@ function expressionToCpp(block: Blockly.Block): string {
       const th = valueOf(block, 'TO_HIGH', '255')
       return `map(${value}, ${fl}, ${fh}, ${tl}, ${th})`
     }
+    case 'ardukid_random': {
+      const min = valueOf(block, 'MIN', '0')
+      const max = valueOf(block, 'MAX', '10')
+      return `random(${min}, ${max})`
+    }
     case 'text':
       return `"${String(block.getFieldValue('TEXT') ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
     case 'variables_get': {
@@ -178,6 +192,25 @@ function expressionToCpp(block: Blockly.Block): string {
 // allows spaces and other characters; the Arduino sketch does not.
 function cVarName(raw: string): string {
   return raw.replace(/[^A-Za-z0-9_]/g, '_').replace(/^[0-9]/, '_$&')
+}
+
+// Recursively walk a block tree and add every pin referenced by a
+// servo_attach / servo_write block to `out`. Used by the C++ emitter
+// to declare one global `Servo _servo_<pin>` per pin the workspace
+// touches.
+function walkServoPins(block: Blockly.Block | null, out: Set<string>) {
+  let b: Blockly.Block | null = block
+  while (b) {
+    if (b.type === 'ardukid_servo_attach' || b.type === 'ardukid_servo_write') {
+      const pin = b.getFieldValue('PIN')
+      if (pin) out.add(String(pin))
+    }
+    for (const input of b.inputList) {
+      const child = input.connection?.targetBlock() ?? null
+      if (child) walkServoPins(child, out)
+    }
+    b = b.getNextBlock()
+  }
 }
 
 function collectBlockTypes(workspace: Blockly.Workspace): Set<string> {
@@ -235,6 +268,18 @@ export function generateCpp(workspace: Blockly.Workspace): string {
   if ([...allBlockTypes].some((t) => t.startsWith('ardukid_lcd_'))) {
     includes += '#include <Wire.h>\n#include <LiquidCrystal_I2C.h>\n'
     globals += 'LiquidCrystal_I2C lcd(0x27, 16, 2);\n'
+  }
+  // Auto-include Servo and declare one Servo instance per PWM pin
+  // the workspace mentions. The block emits `_servo_<pin>.attach(...)`
+  // / `_servo_<pin>.write(...)`, so each unique pin needs a matching
+  // global declaration.
+  const servoPins = new Set<string>()
+  for (const top of workspace.getTopBlocks(false)) {
+    walkServoPins(top, servoPins)
+  }
+  if (servoPins.size > 0) {
+    includes += '#include <Servo.h>\n'
+    for (const pin of servoPins) globals += `Servo _servo_${pin};\n`
   }
 
   const preamble = [

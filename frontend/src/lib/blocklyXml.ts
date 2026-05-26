@@ -119,6 +119,25 @@ export const setVar = (name: string, value: BlockNode): BlockNode => ({
   values: { VALUE: value },
 })
 
+export const randomFromTo = (min: number | BlockNode, max: number | BlockNode): BlockNode => ({
+  type: 'ardukid_random',
+  values: {
+    MIN: typeof min === 'number' ? num(min) : min,
+    MAX: typeof max === 'number' ? num(max) : max,
+  },
+})
+
+export const servoAttach = (pin: number | string): BlockNode => ({
+  type: 'ardukid_servo_attach',
+  fields: { PIN: String(pin) },
+})
+
+export const servoWrite = (pin: number | string, angle: number | BlockNode): BlockNode => ({
+  type: 'ardukid_servo_write',
+  fields: { PIN: String(pin) },
+  values: { ANGLE: typeof angle === 'number' ? num(angle) : angle },
+})
+
 export const getVar = (name: string): BlockNode => ({
   type: 'variables_get',
   fields: { VAR: name },

@@ -177,6 +177,40 @@ export function registerArduinoBlocks(): void {
       colour: 320,
       tooltip: 'Prints a number or text at the current cursor position.',
     },
+    {
+      type: 'ardukid_random',
+      message0: 'random from %1 to %2',
+      args0: [
+        { type: 'input_value', name: 'MIN', check: 'Number' },
+        { type: 'input_value', name: 'MAX', check: 'Number' },
+      ],
+      inputsInline: true,
+      output: 'Number',
+      colour: 230,
+      tooltip: 'Arduino random(min, max) - returns a whole number in [min, max).',
+    },
+    {
+      type: 'ardukid_servo_attach',
+      message0: 'attach servo to pin %1',
+      args0: [{ type: 'field_dropdown', name: 'PIN', options: DIGITAL_PINS.map((p) => [p, p]) }],
+      previousStatement: null,
+      nextStatement: null,
+      colour: 0,
+      tooltip: 'Bind a Servo to a PWM-capable pin (D3/D5/D6/D9/D10/D11).',
+    },
+    {
+      type: 'ardukid_servo_write',
+      message0: 'servo on pin %1 angle %2',
+      args0: [
+        { type: 'field_dropdown', name: 'PIN', options: DIGITAL_PINS.map((p) => [p, p]) },
+        { type: 'input_value', name: 'ANGLE', check: 'Number' },
+      ],
+      inputsInline: true,
+      previousStatement: null,
+      nextStatement: null,
+      colour: 0,
+      tooltip: 'Move the servo on this pin to an angle 0..180.',
+    },
   ])
 }
 
@@ -216,6 +250,27 @@ export const ARDUINO_TOOLBOX_CATEGORIES = [
           TO_LOW: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
           TO_HIGH: { shadow: { type: 'math_number', fields: { NUM: 255 } } },
         },
+      },
+      {
+        kind: 'block',
+        type: 'ardukid_random',
+        inputs: {
+          MIN: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+          MAX: { shadow: { type: 'math_number', fields: { NUM: 10 } } },
+        },
+      },
+    ],
+  },
+  {
+    kind: 'category',
+    name: 'Servo',
+    colour: '0',
+    contents: [
+      { kind: 'block', type: 'ardukid_servo_attach' },
+      {
+        kind: 'block',
+        type: 'ardukid_servo_write',
+        inputs: { ANGLE: { shadow: { type: 'math_number', fields: { NUM: 90 } } } },
       },
     ],
   },
