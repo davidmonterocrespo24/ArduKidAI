@@ -35,10 +35,10 @@ export function RightTabs() {
             type="button"
             onClick={() => setTab(t.id)}
             className={cn(
-              'flex-1 px-3 py-2 text-sm font-semibold',
+              'flex-1 px-3 py-2 text-sm font-semibold transition-colors',
               tab === t.id
-                ? 'border-b-2 border-brand-500 text-brand-600'
-                : 'text-slate-500 hover:text-slate-700',
+                ? 'bg-brand-500 text-white'
+                : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700',
             )}
           >
             {t.label}

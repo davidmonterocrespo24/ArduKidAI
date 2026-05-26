@@ -26,10 +26,10 @@ export function ConsolePanel() {
               type="button"
               onClick={() => setTab(t.id)}
               className={cn(
-                'flex items-center gap-2 px-3 py-2 text-sm font-semibold',
+                'flex items-center gap-2 px-3 py-2 text-sm font-semibold transition-colors',
                 active
-                  ? 'border-b-2 border-brand-500 text-brand-600'
-                  : 'text-slate-500 hover:text-slate-700',
+                  ? 'bg-brand-500 text-white'
+                  : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700',
               )}
             >
               {t.label}
@@ -37,7 +37,7 @@ export function ConsolePanel() {
                 <span
                   className={cn(
                     'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-                    active ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-600',
+                    active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600',
                   )}
                 >
                   {badge}
