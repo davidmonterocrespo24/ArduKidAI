@@ -95,6 +95,32 @@ function pushLcdText(text: string): void {
   }
 }
 
+// SSD1306 frame buffer bridge: copy the 128x64 monochrome buffer the
+// runner produced into every wokwi-ssd1306 on the canvas. Done by
+// addressing the element directly (it owns the canvas inside its
+// shadow DOM); we bypass the store because pixel data is too big to
+// JSON-stringify on every frame.
+function pushOledPixels(pixels: Uint8Array): void {
+  const oleds = document.querySelectorAll('wokwi-ssd1306') as NodeListOf<HTMLElement & {
+    imageData?: ImageData
+    redraw?: () => void
+  }>
+  for (const el of oleds) {
+    const img = el.imageData
+    if (!img) continue
+    const data = img.data
+    for (let i = 0; i < pixels.length; i++) {
+      const lit = pixels[i]
+      const off = i * 4
+      data[off] = lit ? 255 : 0
+      data[off + 1] = lit ? 255 : 0
+      data[off + 2] = lit ? 255 : 0
+      data[off + 3] = 255
+    }
+    el.redraw?.()
+  }
+}
+
 interface CompileResponse {
   ok: boolean
   hex?: string
@@ -137,6 +163,7 @@ export function SimControls() {
         onSerialLine: (line) => appendSerial(line + '\n'),
         getAdcChannel: getAdcChannelFromStore,
         onLcdText: pushLcdText,
+        onOledPixels: pushOledPixels,
         onPwmChange: (snap) => setPwmSnapshot(snap),
       },
     )
@@ -165,6 +192,7 @@ export function SimControls() {
             onSerialLine: (line) => appendSerial(line + '\n'),
             getAdcChannel: getAdcChannelFromStore,
             onLcdText: pushLcdText,
+            onOledPixels: pushOledPixels,
             onPwmChange: (snap) => setPwmSnapshot(snap),
           },
         )

@@ -48,6 +48,8 @@ export function SensorControl({ instance }: Props) {
     'gasSensor',
     'heartBeatSensor',
     'rotaryEncoder',
+    'dht22',
+    'hcSr04',
   ].includes(instance.type)
   if (!hasControl) return null
 
@@ -182,6 +184,29 @@ export function SensorControl({ instance }: Props) {
               instance={instance}
               wires={wires}
               onChange={(p) => updateComponentProps(instance.id, p)}
+            />
+          ) : null}
+          {instance.type === 'dht22' ? (
+            // DHT22's 1-wire timing isn't simulated yet; these sliders
+            // still set the props so future bridge work can pick them up.
+            <Dht22Control
+              celsius={Number(instance.props.celsius ?? 22)}
+              humidity={Number(instance.props.humidity ?? 50)}
+              onChange={(p) => updateComponentProps(instance.id, p)}
+            />
+          ) : null}
+          {instance.type === 'hcSr04' ? (
+            // HC-SR04's echo pulse isn't simulated yet; the slider sets
+            // the prop for future pulseIn() emulation.
+            <SliderControl
+              label="Distance (cm)"
+              min={2}
+              max={400}
+              value={Number(instance.props.distanceCm ?? 25)}
+              onChange={(v) => updateComponentProps(instance.id, { distanceCm: v })}
+              wires={wires}
+              componentId={instance.id}
+              unit=" cm"
             />
           ) : null}
         </div>
@@ -556,6 +581,54 @@ function ButtonControl({
           {held ? 'Release' : 'Hold'}
         </button>
       </div>
+    </div>
+  )
+}
+
+function Dht22Control({
+  celsius,
+  humidity,
+  onChange,
+}: {
+  celsius: number
+  humidity: number
+  onChange: (p: { celsius?: number; humidity?: number }) => void
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between text-[10px] text-slate-600">
+          <span className="font-medium">Temperature</span>
+          <span className="font-mono">{Math.round(celsius)} C</span>
+        </div>
+        <input
+          type="range"
+          min={-40}
+          max={80}
+          step={1}
+          value={celsius}
+          onChange={(e) => onChange({ celsius: Number(e.target.value) })}
+          className="w-full accent-brand-600"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between text-[10px] text-slate-600">
+          <span className="font-medium">Humidity</span>
+          <span className="font-mono">{Math.round(humidity)} %</span>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={humidity}
+          onChange={(e) => onChange({ humidity: Number(e.target.value) })}
+          className="w-full accent-brand-600"
+        />
+      </div>
+      <p className="text-[9px] leading-snug text-slate-400">
+        1-wire timing not simulated yet — readings will time out in code.
+      </p>
     </div>
   )
 }

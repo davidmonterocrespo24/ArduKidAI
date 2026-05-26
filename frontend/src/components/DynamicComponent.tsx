@@ -563,6 +563,27 @@ function SevenSegment({ instance }: { instance: ComponentInstance }) {
   return <wokwi-7segment ref={ref} id={instance.id} color={color} />
 }
 
+// SSD1306 OLED. Pure host element; the runner's I2C decoder pushes
+// pixels into its 128x64 imageData via SimControls.pushOledPixels and
+// calls redraw() on every frame. Without a sketch driving I2C the
+// canvas stays black, which is the right behaviour for a real module.
+function Ssd1306({ instance }: { instance: ComponentInstance }) {
+  return <wokwi-ssd1306 id={instance.id} />
+}
+
+// DHT22 and HC-SR04 are visual-only for now. Their digital-line
+// protocols (1-wire for DHT, microsecond echo pulse for ultrasonic)
+// are not yet implemented in the simulator, so library reads will
+// time out. The control sliders set the props anyway so future bridge
+// work can pick them up without UI changes.
+function Dht22({ instance }: { instance: ComponentInstance }) {
+  return <wokwi-dht22 id={instance.id} />
+}
+
+function HcSr04({ instance }: { instance: ComponentInstance }) {
+  return <wokwi-hc-sr04 id={instance.id} />
+}
+
 export function DynamicComponent({ instance }: { instance: ComponentInstance }) {
   switch (instance.type) {
     case 'uno':
@@ -619,6 +640,12 @@ export function DynamicComponent({ instance }: { instance: ComponentInstance }) 
       return <RgbLed instance={instance} />
     case 'ledBarGraph':
       return <LedBarGraph instance={instance} />
+    case 'ssd1306':
+      return <Ssd1306 instance={instance} />
+    case 'dht22':
+      return <Dht22 instance={instance} />
+    case 'hcSr04':
+      return <HcSr04 instance={instance} />
     default:
       return <div className="rounded bg-rose-100 px-2 text-xs text-rose-700">unknown</div>
   }

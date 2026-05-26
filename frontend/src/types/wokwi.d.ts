@@ -37,6 +37,9 @@ declare module 'react' {
       'wokwi-gas-sensor': WokwiElement<{ ledPower?: boolean }>
       'wokwi-heart-beat-sensor': WokwiElement
       'wokwi-ky-040': WokwiElement<{ angle?: number; stepSize?: number }>
+      'wokwi-ssd1306': WokwiElement
+      'wokwi-dht22': WokwiElement
+      'wokwi-hc-sr04': WokwiElement
       'wokwi-7segment': WokwiElement<{ values?: number[] | string; color?: string }>
       'wokwi-pushbutton-6mm': WokwiElement<{ color?: string; pressed?: boolean }>
       'wokwi-slide-potentiometer': WokwiElement<{ value?: number; min?: number; max?: number }>

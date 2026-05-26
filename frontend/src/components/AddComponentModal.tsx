@@ -40,6 +40,9 @@ const DESCRIPTIONS: Record<ComponentType, string> = {
   pirMotion: 'PIR motion sensor. Tap "Trigger" to pulse the output pin.',
   rgbLed: 'Common-cathode RGB LED. Wire R / G / B to 3 PWM pins.',
   ledBarGraph: '10-LED bar graph. Anodes A1..A10 wired to digital pins.',
+  ssd1306: 'SSD1306 128x64 OLED over I2C. Use Adafruit_SSD1306 to draw.',
+  dht22: 'DHT22 temperature + humidity sensor. Sliders set the readings.',
+  hcSr04: 'HC-SR04 ultrasonic distance sensor. Slider sets the distance in cm.',
 }
 
 // Render the actual wokwi element as the preview so kids see the real
@@ -202,6 +205,24 @@ function Preview({ type }: { type: ComponentType }) {
       return (
         <div className={common} style={{ transform: 'scale(0.5)' }}>
           <wokwi-ky-040 />
+        </div>
+      )
+    case 'ssd1306':
+      return (
+        <div className={common} style={{ transform: 'scale(0.55)' }}>
+          <wokwi-ssd1306 />
+        </div>
+      )
+    case 'dht22':
+      return (
+        <div className={common} style={{ transform: 'scale(0.7)' }}>
+          <wokwi-dht22 />
+        </div>
+      )
+    case 'hcSr04':
+      return (
+        <div className={common} style={{ transform: 'scale(0.7)' }}>
+          <wokwi-hc-sr04 />
         </div>
       )
     default:

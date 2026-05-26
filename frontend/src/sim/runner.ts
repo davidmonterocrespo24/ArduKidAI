@@ -22,6 +22,7 @@ import { DIGITAL_PIN_LABELS, type DigitalPinLabel } from './pinState'
 import { I2CBus } from './i2cBus'
 import { PCF8574 } from './pcf8574'
 import { HD44780Backpack } from './hd44780'
+import { SSD1306Device } from './ssd1306'
 import {
   emptyPwmSnapshot,
   pwmSnapshotEquals,
@@ -68,6 +69,9 @@ export interface SimCallbacks {
   /** Called when a virtual I2C LCD updates its visible text. Two lines
    * joined by "\n", trailing blanks trimmed. */
   onLcdText?: (text: string) => void
+  /** Called when the virtual SSD1306 OLED repaints. The pixel buffer is
+   * 128 cols x 64 rows, 1-byte-per-pixel (1 = lit). */
+  onOledPixels?: (pixels: Uint8Array) => void
   /** Called once per frame if the PWM register snapshot changed.
    * Consumers (LED brightness, servo angle) project the relevant fields. */
   onPwmChange?: (snapshot: PwmSnapshot) => void
@@ -138,6 +142,13 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
   if (callbacks.onLcdText) {
     const lcd = new HD44780Backpack(callbacks.onLcdText)
     i2cBus.register(0x27, new PCF8574(lcd.onPort))
+  }
+  // SSD1306 OLED at the Adafruit default I2C addresses (0x3C and
+  // 0x3D, since some modules ship strapped to the second one).
+  if (callbacks.onOledPixels) {
+    const oled = new SSD1306Device(() => callbacks.onOledPixels!(oled.pixels))
+    i2cBus.register(0x3c, oled)
+    i2cBus.register(0x3d, oled)
   }
 
   // We buffer bytes ourselves instead of using usart.onLineTransmit so
