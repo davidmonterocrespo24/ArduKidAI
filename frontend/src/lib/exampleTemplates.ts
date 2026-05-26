@@ -24,6 +24,7 @@ import {
   lcdPrint,
   lcdSetCursor,
   loop,
+  noTone,
   num,
   pinMode,
   setVar,
@@ -1938,6 +1939,31 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('BZ1.1', 'UNO.D8'),
       w('BZ1.2', 'UNO.GND'),
     ],
+    blockly_xml: toXml(
+      setup({ type: 'ardukid_pin_mode', fields: { PIN: '8', MODE: 'OUTPUT' } }),
+      loop(
+        chain(
+          setVar('c', arduinoMap(analogRead('A0'), 0, 1023, -10, 60)),
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'GT' },
+              values: { A: getVar('c'), B: num(30) },
+            },
+            tone(8, 1200, 200),
+          ),
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'LTE' },
+              values: { A: getVar('c'), B: num(30) },
+            },
+            noTone(8),
+          ),
+          wait(100),
+        ),
+      ),
+    ),
     cpp_code: NTC_ALARM_CPP,
   },
   {
@@ -1996,6 +2022,38 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('RGB1.B', 'UNO.D11'),
       w('RGB1.COM', 'UNO.GND'),
     ],
+    blockly_xml: toXml(
+      setup(chain(pinMode(9, 'OUTPUT'), pinMode(10, 'OUTPUT'), pinMode(11, 'OUTPUT'))),
+      loop(
+        chain(
+          setVar('v', num(0)),
+          {
+            type: 'controls_whileUntil',
+            fields: { MODE: 'WHILE' },
+            values: {
+              BOOL: {
+                type: 'logic_compare',
+                fields: { OP: 'LT' },
+                values: { A: getVar('v'), B: num(256) },
+              },
+            },
+            statement: {
+              name: 'DO',
+              child: chain(
+                analogWrite(9, getVar('v')),
+                analogWrite(10, {
+                  type: 'math_arithmetic',
+                  fields: { OP: 'MINUS' },
+                  values: { A: num(255), B: getVar('v') },
+                }),
+                wait(8),
+                { type: 'math_change', fields: { VAR: 'v' }, values: { DELTA: num(1) } },
+              ),
+            },
+          },
+        ),
+      ),
+    ),
     cpp_code: RGB_CYCLE_CPP,
   },
   {
@@ -2035,6 +2093,44 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('P1.VCC', 'UNO.5V'),
       w('P1.SIG', 'UNO.A0'),
     ],
+    blockly_xml: (() => {
+      // For each of the 10 bar segments, light the pin if the pot
+      // level (0..10) is greater than its index. Unrolled for clarity
+      // - kids see ten "if level > i then write pin HIGH" rows side by
+      // side instead of a single math-heavy loop they cannot poke at.
+      const bars = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+      return toXml(
+        setup(chain(...bars.map((p) => pinMode(p, 'OUTPUT')))),
+        loop(
+          chain(
+            setVar('level', {
+              type: 'math_arithmetic',
+              fields: { OP: 'DIVIDE' },
+              values: { A: analogRead('A0'), B: num(102) },
+            }),
+            ...bars.flatMap((pin, i) => [
+              ifThen(
+                {
+                  type: 'logic_compare',
+                  fields: { OP: 'GT' },
+                  values: { A: getVar('level'), B: num(i) },
+                },
+                digitalWrite(pin, 'HIGH'),
+              ),
+              ifThen(
+                {
+                  type: 'logic_compare',
+                  fields: { OP: 'LTE' },
+                  values: { A: getVar('level'), B: num(i) },
+                },
+                digitalWrite(pin, 'LOW'),
+              ),
+            ]),
+            wait(40),
+          ),
+        ),
+      )
+    })(),
     cpp_code: BAR_GRAPH_POT_CPP,
   },
   {
@@ -2205,6 +2301,46 @@ void loop() {
       ...ledOnPin(1, 1, '12'),
       ...ledOnPin(2, 2, '13'),
     ],
+    blockly_xml: toXml(
+      setup(chain(pinMode(12, 'OUTPUT'), pinMode(13, 'OUTPUT'), pinMode(2, 'INPUT_PULLUP'))),
+      loop(
+        chain(
+          setVar('x', analogRead('A1')),
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'LT' },
+              values: { A: getVar('x'), B: num(300) },
+            },
+            digitalWrite(12, 'HIGH'),
+          ),
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'GTE' },
+              values: { A: getVar('x'), B: num(300) },
+            },
+            digitalWrite(12, 'LOW'),
+          ),
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'GT' },
+              values: { A: getVar('x'), B: num(700) },
+            },
+            digitalWrite(13, 'HIGH'),
+          ),
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'LTE' },
+              values: { A: getVar('x'), B: num(700) },
+            },
+            digitalWrite(13, 'LOW'),
+          ),
+        ),
+      ),
+    ),
     cpp_code: `void setup() {
   pinMode(12, OUTPUT);
   pinMode(13, OUTPUT);
@@ -2430,6 +2566,30 @@ void loop() {
       w('HBR1.OUT', 'UNO.A0'),
       ...ledOnPin(1, 1, '13'),
     ],
+    blockly_xml: toXml(
+      setup(pinMode(13, 'OUTPUT')),
+      loop(
+        chain(
+          setVar('v', analogRead('A0')),
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'GT' },
+              values: { A: getVar('v'), B: num(500) },
+            },
+            digitalWrite(13, 'HIGH'),
+          ),
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'LTE' },
+              values: { A: getVar('v'), B: num(500) },
+            },
+            digitalWrite(13, 'LOW'),
+          ),
+        ),
+      ),
+    ),
     cpp_code: `void setup() {
   pinMode(13, OUTPUT);
 }
