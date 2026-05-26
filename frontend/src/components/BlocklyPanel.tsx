@@ -48,24 +48,19 @@ export function BlocklyPanel() {
     // its display flipped to none.
     const reconcileScrollbars = () => {
       const flyouts = container.querySelectorAll<HTMLElement>('.blocklyFlyout')
-      const visibleRects: DOMRect[] = []
+      let anyVisible = false
       for (const fl of flyouts) {
         if (window.getComputedStyle(fl).display !== 'none') {
-          visibleRects.push(fl.getBoundingClientRect())
+          anyVisible = true
+          break
         }
       }
+      // Only intervene when the kid has closed every flyout. When at
+      // least one flyout is open we trust Blockly to manage its own
+      // scrollbar so we do not race against its show logic.
+      if (anyVisible) return
       const bars = container.querySelectorAll<HTMLElement>('.blocklyFlyoutScrollbar')
-      for (const b of bars) {
-        if (visibleRects.length === 0) {
-          b.style.display = 'none'
-          continue
-        }
-        const br = b.getBoundingClientRect()
-        const insideAny = visibleRects.some(
-          (r) => br.x >= r.x - 5 && br.x <= r.x + r.width + 5,
-        )
-        b.style.display = insideAny ? '' : 'none'
-      }
+      for (const b of bars) b.style.display = 'none'
     }
     const scrollObserver = new MutationObserver(reconcileScrollbars)
     scrollObserver.observe(container, {
