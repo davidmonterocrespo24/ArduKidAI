@@ -18,18 +18,6 @@ function getAdcChannelFromStore(channel: number): number {
       const raw = Number(c.props.value ?? 0)
       return clampVolts((raw / 1023) * 5)
     }
-    if (c.type === 'analogJoystick') {
-      // The joystick exposes VERT and HORZ separately. Pick whichever
-      // axis the matching pin maps to.
-      // resolveAnalogChannel only returns one channel; the joystick wires
-      // typically have VERT -> A0 (axis 0) and HORZ -> A1 (axis 1).
-      // Use the pin name lookup to figure out which axis goes to which.
-      // For simplicity here: if BOTH axes wire to A0/A1 in canonical order
-      // we already know the channel == 0 means VERT, channel == 1 means HORZ.
-      const axisIsY = channel === 0
-      const raw = Number((axisIsY ? c.props.yValue : c.props.xValue) ?? 512)
-      return clampVolts((raw / 1023) * 5)
-    }
     if (c.type === 'photoresistor') {
       const lux = Number(c.props.lux ?? 500)
       return clampVolts((lux / 1023) * 5)
@@ -42,7 +30,37 @@ function getAdcChannelFromStore(channel: number): number {
       return clampVolts(((t + 10) / 70) * 5)
     }
   }
+  // Analog joystick exposes two outputs (VERT/HORZ) so resolveAnalogChannel
+  // is not enough - VERT and HORZ may map to different ADC channels.
+  // Route per-axis instead.
+  for (const c of state.components) {
+    if (c.type !== 'analogJoystick') continue
+    if (channelMatchesPin(c.id, 'VERT', channel, state.wires)) {
+      const raw = Number(c.props.yValue ?? 512)
+      return clampVolts((raw / 1023) * 5)
+    }
+    if (channelMatchesPin(c.id, 'HORZ', channel, state.wires)) {
+      const raw = Number(c.props.xValue ?? 512)
+      return clampVolts((raw / 1023) * 5)
+    }
+  }
   return 0
+}
+
+function channelMatchesPin(
+  componentId: string,
+  pinName: string,
+  channel: number,
+  wires: Array<{ from_pin: string; to_pin: string }>,
+): boolean {
+  const ref = `${componentId}.${pinName}`
+  for (const w of wires) {
+    const other = w.from_pin === ref ? w.to_pin : w.to_pin === ref ? w.from_pin : null
+    if (!other) continue
+    const m = /^UNO\.A([0-5])$/.exec(other)
+    if (m && parseInt(m[1], 10) === channel) return true
+  }
+  return false
 }
 
 function clampVolts(v: number): number {
