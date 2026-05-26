@@ -46,8 +46,17 @@ export function WireOverlay({ hostRef }: Props) {
   const [hoveredWire, setHoveredWire] = useState<number | null>(null)
   const wireHoverTimerRef = useRef<number | null>(null)
 
-  // Active waypoint drag — populated on mousedown on a handle, cleared on mouseup.
-  const dragRef = useRef<{ wireIndex: number; waypointIndex: number } | null>(null)
+  // Active drag - either a single waypoint or a whole segment.
+  // - waypointIndex set: drag the waypoint to follow the cursor.
+  // - segment set: drag the segment perpendicular to its axis (vertical
+  //   segments go left/right, horizontal segments go up/down). On the
+  //   first drag we re-derive the wire's waypoints from the moved
+  //   polyline so the corner is persisted.
+  const dragRef = useRef<
+    | { kind: 'waypoint'; wireIndex: number; waypointIndex: number }
+    | { kind: 'segment'; wireIndex: number; segIndex: number; axis: 'horizontal' | 'vertical'; polyline: Array<{ x: number; y: number }> }
+    | null
+  >(null)
 
   function holdWireHover(i: number) {
     if (wireHoverTimerRef.current !== null) {
@@ -122,13 +131,24 @@ export function WireOverlay({ hostRef }: Props) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      if (wireInProgress) cancelWire()
-      if (selectedWireIndex !== null) selectWire(null)
+      // Don't steal keys when the kid is typing into a chat box,
+      // slider, blockly text field, etc.
+      const tgt = e.target as HTMLElement | null
+      const tag = tgt?.tagName?.toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tgt?.isContentEditable) return
+      if (e.key === 'Escape') {
+        if (wireInProgress) cancelWire()
+        if (selectedWireIndex !== null) selectWire(null)
+        return
+      }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedWireIndex !== null) {
+        e.preventDefault()
+        removeWire(selectedWireIndex)
+      }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [wireInProgress, cancelWire, selectedWireIndex, selectWire])
+  }, [wireInProgress, cancelWire, selectedWireIndex, selectWire, removeWire])
 
   useEffect(() => {
     if (!wireInProgress) return
@@ -197,7 +217,7 @@ export function WireOverlay({ hostRef }: Props) {
       const mx = e.clientX - rect.left
       const my = e.clientY - rect.top
       // While a waypoint is being dragged, route the move into the store.
-      if (dragRef.current) {
+      if (dragRef.current?.kind === 'waypoint') {
         const { wireIndex, waypointIndex } = dragRef.current
         const w = wires[wireIndex]
         const wp = [...(w?.waypoints ?? [])]
@@ -205,6 +225,18 @@ export function WireOverlay({ hostRef }: Props) {
           wp[waypointIndex] = { x: mx, y: my }
           setWireWaypoints(wireIndex, wp)
         }
+        return
+      }
+      // While a segment is being dragged, slide it perpendicular to its
+      // axis and persist the resulting polyline as the wire's waypoints.
+      if (dragRef.current?.kind === 'segment') {
+        const { wireIndex, segIndex, axis, polyline } = dragRef.current
+        const newValue = axis === 'horizontal' ? my : mx
+        const moved = moveSegment(polyline, segIndex, axis, newValue)
+        const simplified = simplifyOrthogonalPath(moved)
+        // strip the start/end endpoints (which match the pin positions)
+        // and store only the inner points as waypoints.
+        setWireWaypoints(wireIndex, simplified.slice(1, -1))
         return
       }
       let best = -1
@@ -377,6 +409,39 @@ export function WireOverlay({ hostRef }: Props) {
                 </text>
               </g>
             )}
+            {/* Segment midpoint handles - drag perpendicular to slide the segment. */}
+            {isSelected && polyline.length >= 2 && polyline.slice(0, -1).map((p1, si) => {
+              const p2 = polyline[si + 1]
+              if (p1.x === p2.x && p1.y === p2.y) return null
+              const axis: 'horizontal' | 'vertical' = p1.y === p2.y ? 'horizontal' : 'vertical'
+              const mx = (p1.x + p2.x) / 2
+              const my = (p1.y + p2.y) / 2
+              return (
+                <circle
+                  key={`seg-${si}`}
+                  cx={mx}
+                  cy={my}
+                  r={5}
+                  fill="white"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  style={{
+                    pointerEvents: 'all',
+                    cursor: axis === 'horizontal' ? 'ns-resize' : 'ew-resize',
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation()
+                    dragRef.current = {
+                      kind: 'segment',
+                      wireIndex: i,
+                      segIndex: si,
+                      axis,
+                      polyline: polyline.map((p) => ({ ...p })),
+                    }
+                  }}
+                />
+              )
+            })}
             {/* Waypoint handles - drag to bend, double-click to remove. */}
             {isSelected && waypoints.map((wp, wi) => (
               <circle
@@ -390,7 +455,7 @@ export function WireOverlay({ hostRef }: Props) {
                 style={{ pointerEvents: 'all', cursor: 'move' }}
                 onMouseDown={(e) => {
                   e.stopPropagation()
-                  dragRef.current = { wireIndex: i, waypointIndex: wi }
+                  dragRef.current = { kind: 'waypoint', wireIndex: i, waypointIndex: wi }
                 }}
                 onDoubleClick={(e) => {
                   e.stopPropagation()
@@ -528,4 +593,81 @@ function distanceToPolyline(px: number, py: number, pts: Array<{ x: number; y: n
     if (d < best) best = d
   }
   return best
+}
+
+/**
+ * Slide a segment of an orthogonal polyline perpendicular to its axis.
+ * Horizontal segments take a new Y (move up/down), vertical segments
+ * take a new X (move left/right). When the moved segment is the very
+ * first or last one, we insert connector points so the wire stays
+ * anchored at the original start / end pin position.
+ *
+ * Mirrors velxio's wireHitDetection.moveSegment so the on-canvas feel
+ * matches what the kid is used to from Wokwi-style editors.
+ */
+function moveSegment(
+  pts: Array<{ x: number; y: number }>,
+  segIndex: number,
+  axis: 'horizontal' | 'vertical',
+  newValue: number,
+): Array<{ x: number; y: number }> {
+  const n = pts.length
+  const numSegs = n - 1
+  const out = pts.map((p) => ({ ...p }))
+  if (axis === 'horizontal') {
+    if (segIndex === 0 && numSegs > 0) {
+      out.splice(1, 0, { x: out[0].x, y: newValue }, { x: out[1].x, y: newValue })
+      out.splice(3, 1)
+    } else if (segIndex === numSegs - 1 && numSegs > 0) {
+      const last = out[n - 1]
+      out.splice(n - 1, 0, { x: out[n - 2].x, y: newValue }, { x: last.x, y: newValue })
+    } else {
+      out[segIndex].y = newValue
+      out[segIndex + 1].y = newValue
+    }
+  } else {
+    if (segIndex === 0 && numSegs > 0) {
+      out.splice(1, 0, { x: newValue, y: out[0].y }, { x: newValue, y: out[1].y })
+      out.splice(3, 1)
+    } else if (segIndex === numSegs - 1 && numSegs > 0) {
+      const last = out[n - 1]
+      out.splice(n - 1, 0, { x: newValue, y: out[n - 2].y }, { x: last.x, y: newValue })
+    } else {
+      out[segIndex].x = newValue
+      out[segIndex + 1].x = newValue
+    }
+  }
+  return out
+}
+
+/**
+ * Drop duplicate points and collapse triples that share an axis (either
+ * collinear or U-turns) so the wire doesn't accumulate visible bumps
+ * after a chain of segment drags. Same simplifier velxio uses.
+ */
+function simplifyOrthogonalPath(
+  pts: Array<{ x: number; y: number }>,
+): Array<{ x: number; y: number }> {
+  if (pts.length <= 2) return pts.map((p) => ({ ...p }))
+  const dedup: Array<{ x: number; y: number }> = []
+  for (const p of pts) {
+    const last = dedup[dedup.length - 1]
+    if (!last || last.x !== p.x || last.y !== p.y) dedup.push({ ...p })
+  }
+  let result = dedup
+  let changed = true
+  while (changed && result.length > 2) {
+    changed = false
+    for (let i = 1; i < result.length - 1; i++) {
+      const prev = result[i - 1]
+      const curr = result[i]
+      const next = result[i + 1]
+      if ((prev.x === curr.x && curr.x === next.x) || (prev.y === curr.y && curr.y === next.y)) {
+        result = [...result.slice(0, i), ...result.slice(i + 1)]
+        changed = true
+        break
+      }
+    }
+  }
+  return result
 }
