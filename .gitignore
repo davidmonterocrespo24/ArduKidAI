@@ -1,3 +1,10 @@
+# Playwright MCP scratch (snapshots, console logs, screenshots saved at repo root)
+.playwright-mcp/
+/add-modal-*.png
+/audit-*.png
+/blockly-*.png
+/flyout-*.png
+
 # Node
 node_modules/
 dist/
