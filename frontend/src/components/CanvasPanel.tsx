@@ -16,6 +16,7 @@ export function CanvasPanel() {
   const components = useAppStore((s) => s.components)
   const wireInProgress = useAppStore((s) => s.wireInProgress)
   const cancelWire = useAppStore((s) => s.cancelWire)
+  const selectWire = useAppStore((s) => s.selectWire)
   const [wireOpen, setWireOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -63,9 +64,9 @@ export function CanvasPanel() {
         ref={canvasRef}
         className="relative min-h-0 flex-1 overflow-auto bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.06)_1px,transparent_0)] [background-size:20px_20px]"
         onClick={(e) => {
-          if (wireInProgress && e.target === e.currentTarget) {
-            cancelWire()
-          }
+          if (e.target !== e.currentTarget) return
+          if (wireInProgress) cancelWire()
+          selectWire(null)
         }}
       >
         <div className="relative" style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT }}>

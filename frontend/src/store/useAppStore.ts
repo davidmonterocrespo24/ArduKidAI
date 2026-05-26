@@ -67,6 +67,11 @@ export interface AppState {
   wires: Wire[]
   addWire: (w: Wire) => void
   removeWire: (index: number) => void
+  setWireWaypoints: (index: number, waypoints: Array<{ x: number; y: number }>) => void
+  insertWireWaypoint: (index: number, position: number, point: { x: number; y: number }) => void
+
+  selectedWireIndex: number | null
+  selectWire: (index: number | null) => void
 
   wireInProgress: { from_pin: string } | null
   startWire: (from_pin: string) => void
@@ -154,9 +159,32 @@ export const useAppStore = create<AppState>((set) => ({
     })),
 
   wires: [],
-  addWire: (w) => set((state) => ({ wires: [...state.wires, w], wireInProgress: null })),
+  addWire: (w) =>
+    set((state) => ({
+      wires: [...state.wires, { waypoints: [], ...w }],
+      wireInProgress: null,
+    })),
   removeWire: (index) =>
-    set((state) => ({ wires: state.wires.filter((_, i) => i !== index) })),
+    set((state) => ({
+      wires: state.wires.filter((_, i) => i !== index),
+      selectedWireIndex: null,
+    })),
+  setWireWaypoints: (index, waypoints) =>
+    set((state) => ({
+      wires: state.wires.map((w, i) => (i === index ? { ...w, waypoints } : w)),
+    })),
+  insertWireWaypoint: (index, position, point) =>
+    set((state) => ({
+      wires: state.wires.map((w, i) => {
+        if (i !== index) return w
+        const next = [...(w.waypoints ?? [])]
+        next.splice(position, 0, point)
+        return { ...w, waypoints: next }
+      }),
+    })),
+
+  selectedWireIndex: null,
+  selectWire: (index) => set({ selectedWireIndex: index }),
 
   wireInProgress: null,
   startWire: (from_pin) => set({ wireInProgress: { from_pin } }),
@@ -227,6 +255,7 @@ export const useAppStore = create<AppState>((set) => ({
       components: [],
       wires: [],
       wireInProgress: null,
+      selectedWireIndex: null,
       blocklyXml: DEFAULT_BLOCKLY_XML,
       cppCode: PLACEHOLDER_SKETCH,
       hexCode: null,

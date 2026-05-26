@@ -33,6 +33,11 @@ export function WireOverlay({ hostRef }: Props) {
 
   const removeWire = useAppStore((s) => s.removeWire)
 
+  const selectedWireIndex = useAppStore((s) => s.selectedWireIndex)
+  const selectWire = useAppStore((s) => s.selectWire)
+  const setWireWaypoints = useAppStore((s) => s.setWireWaypoints)
+  const insertWireWaypoint = useAppStore((s) => s.insertWireWaypoint)
+
   const overlayRef = useRef<SVGSVGElement>(null)
   const [pins, setPins] = useState<PositionedPin[]>([])
   const [size, setSize] = useState({ width: 0, height: 0 })
@@ -40,6 +45,9 @@ export function WireOverlay({ hostRef }: Props) {
   const [hoveredPin, setHoveredPin] = useState<string | null>(null)
   const [hoveredWire, setHoveredWire] = useState<number | null>(null)
   const wireHoverTimerRef = useRef<number | null>(null)
+
+  // Active waypoint drag — populated on mousedown on a handle, cleared on mouseup.
+  const dragRef = useRef<{ wireIndex: number; waypointIndex: number } | null>(null)
 
   function holdWireHover(i: number) {
     if (wireHoverTimerRef.current !== null) {
@@ -113,13 +121,14 @@ export function WireOverlay({ hostRef }: Props) {
   }, [recompute, hostRef])
 
   useEffect(() => {
-    if (!wireInProgress) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') cancelWire()
+      if (e.key !== 'Escape') return
+      if (wireInProgress) cancelWire()
+      if (selectedWireIndex !== null) selectWire(null)
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [wireInProgress, cancelWire])
+  }, [wireInProgress, cancelWire, selectedWireIndex, selectWire])
 
   useEffect(() => {
     if (!wireInProgress) return
@@ -187,6 +196,17 @@ export function WireOverlay({ hostRef }: Props) {
       const rect = overlay.getBoundingClientRect()
       const mx = e.clientX - rect.left
       const my = e.clientY - rect.top
+      // While a waypoint is being dragged, route the move into the store.
+      if (dragRef.current) {
+        const { wireIndex, waypointIndex } = dragRef.current
+        const w = wires[wireIndex]
+        const wp = [...(w?.waypoints ?? [])]
+        if (waypointIndex >= 0 && waypointIndex < wp.length) {
+          wp[waypointIndex] = { x: mx, y: my }
+          setWireWaypoints(wireIndex, wp)
+        }
+        return
+      }
       let best = -1
       let bestDist = Infinity
       for (let i = 0; i < wires.length; i++) {
@@ -194,8 +214,8 @@ export function WireOverlay({ hostRef }: Props) {
         const a = pinIndex.get(w.from_pin)
         const b = pinIndex.get(w.to_pin)
         if (!a || !b) continue
-        const ctrl = midPointSagged(a.x, a.y, b.x, b.y)
-        const d = distanceToQuadratic(mx, my, a.x, a.y, ctrl.x, ctrl.y, b.x, b.y)
+        const pts: Array<{ x: number; y: number }> = orthogonalPolyline(a, w.waypoints ?? [], b)
+        const d = distanceToPolyline(mx, my, pts)
         if (d < bestDist) {
           bestDist = d
           best = i
@@ -207,9 +227,14 @@ export function WireOverlay({ hostRef }: Props) {
         releaseWireHover(hoveredWire)
       }
     }
+    const onUp = () => { dragRef.current = null }
     host.addEventListener('mousemove', onMove)
-    return () => host.removeEventListener('mousemove', onMove)
-  }, [hostRef, wires, pinIndex, hoveredWire])
+    window.addEventListener('mouseup', onUp)
+    return () => {
+      host.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+  }, [hostRef, wires, pinIndex, hoveredWire, setWireWaypoints])
 
   function handlePinClick(componentId: string, pinName: string) {
     const ref = `${componentId}.${pinName}`
@@ -246,18 +271,67 @@ export function WireOverlay({ hostRef }: Props) {
         if (!a || !b) return null
         const colour = w.color ?? pickWireColor(w.from_pin, w.to_pin, i)
         const isHover = hoveredWire === i
-        const mid = midPointSagged(a.x, a.y, b.x, b.y)
+        const isSelected = selectedWireIndex === i
+        const waypoints = w.waypoints ?? []
+        const polyline = orthogonalPolyline(a, waypoints, b)
+        const pathD = polylineToPath(polyline)
+        const mid = polyline[Math.floor(polyline.length / 2)]
         return (
           <g key={`${w.from_pin}-${w.to_pin}-${i}`}>
+            {/* Selection halo under the wire */}
+            {isSelected && (
+              <path d={pathD} fill="none" stroke="#10b981" strokeWidth={6} strokeOpacity={0.3} strokeLinecap="round" pointerEvents="none" />
+            )}
             <path
-              d={curvedPath(a.x, a.y, b.x, b.y)}
+              d={pathD}
               fill="none"
               stroke={colour}
-              strokeWidth={isHover ? 3.5 : 2.5}
+              strokeWidth={isSelected ? 3 : isHover ? 3.5 : 2.5}
               strokeLinecap="round"
               pointerEvents="none"
             />
-            {isHover && (
+            {/* Wide invisible hit zone for click-to-select and double-click-to-add-waypoint.
+                It is pointer-events: stroke, not auto, so only the stroked area captures
+                events - lets clicks on bare canvas still pass through to the wrapper. */}
+            <path
+              d={pathD}
+              fill="none"
+              stroke="transparent"
+              strokeWidth={12}
+              strokeLinecap="round"
+              style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+              onClick={(e) => {
+                e.stopPropagation()
+                selectWire(i)
+              }}
+              onDoubleClick={(e) => {
+                e.stopPropagation()
+                // Insert a new waypoint at the click location, between the
+                // two polyline points it falls closest to.
+                const rect = overlayRef.current?.getBoundingClientRect()
+                if (!rect) return
+                const x = e.clientX - rect.left
+                const y = e.clientY - rect.top
+                // Find segment index of closest segment
+                let bestSeg = 0
+                let bestD = Infinity
+                for (let s = 0; s < polyline.length - 1; s++) {
+                  const d = distancePointToSegment(x, y, polyline[s].x, polyline[s].y, polyline[s + 1].x, polyline[s + 1].y)
+                  if (d < bestD) { bestD = d; bestSeg = s }
+                }
+                // Map polyline segment back to waypoint insertion index.
+                // polyline = [start, ...orthoCorners and waypoints..., end].
+                // Inserting at the end of the matching waypoint range keeps
+                // ordering stable enough for the simple case.
+                const insertAt = Math.min(waypoints.length, Math.max(0, bestSeg))
+                insertWireWaypoint(i, insertAt, { x, y })
+                selectWire(i)
+              }}
+              onMouseEnter={() => holdWireHover(i)}
+              onMouseLeave={() => releaseWireHover(i)}
+            />
+            {/* Hover delete badge */}
+            {(isHover || isSelected) && (
               <g
                 className="pointer-events-auto cursor-pointer"
                 onMouseEnter={() => holdWireHover(i)}
@@ -303,13 +377,35 @@ export function WireOverlay({ hostRef }: Props) {
                 </text>
               </g>
             )}
+            {/* Waypoint handles - drag to bend, double-click to remove. */}
+            {isSelected && waypoints.map((wp, wi) => (
+              <circle
+                key={`wp-${wi}`}
+                cx={wp.x}
+                cy={wp.y}
+                r={6}
+                fill="#10b981"
+                stroke="white"
+                strokeWidth={2}
+                style={{ pointerEvents: 'all', cursor: 'move' }}
+                onMouseDown={(e) => {
+                  e.stopPropagation()
+                  dragRef.current = { wireIndex: i, waypointIndex: wi }
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation()
+                  const next = waypoints.filter((_, idx) => idx !== wi)
+                  setWireWaypoints(i, next)
+                }}
+              />
+            ))}
           </g>
         )
       })}
 
       {inProgressPin && cursor && (
         <path
-          d={curvedPath(inProgressPin.x, inProgressPin.y, cursor.x, cursor.y)}
+          d={polylineToPath([{ x: inProgressPin.x, y: inProgressPin.y }, { x: cursor.x, y: cursor.y }])}
           fill="none"
           stroke="#10b981"
           strokeWidth={2}
@@ -375,40 +471,60 @@ export function WireOverlay({ hostRef }: Props) {
   )
 }
 
-function curvedPath(x1: number, y1: number, x2: number, y2: number): string {
-  const { x: midX, y: midY } = midPointSagged(x1, y1, x2, y2)
-  return `M ${x1} ${y1} Q ${midX} ${midY} ${x2} ${y2}`
+/**
+ * Build the polyline that an orthogonal wire follows: starting at `start`,
+ * detouring through each waypoint, and ending at `end`. Between any two
+ * consecutive control points we insert a corner (go horizontal first,
+ * then vertical) so the visible wire is always axis-aligned. Matches
+ * Wokwi / velxio routing style.
+ */
+function orthogonalPolyline(
+  start: { x: number; y: number },
+  waypoints: Array<{ x: number; y: number }>,
+  end: { x: number; y: number },
+): Array<{ x: number; y: number }> {
+  const ctrl = [start, ...waypoints, end]
+  const out: Array<{ x: number; y: number }> = [{ x: start.x, y: start.y }]
+  for (let i = 1; i < ctrl.length; i++) {
+    const prev = ctrl[i - 1]
+    const curr = ctrl[i]
+    if (prev.x !== curr.x && prev.y !== curr.y) {
+      // Corner: go horizontal first, then vertical.
+      out.push({ x: curr.x, y: prev.y })
+    }
+    out.push({ x: curr.x, y: curr.y })
+  }
+  return out
 }
 
-function midPointSagged(x1: number, y1: number, x2: number, y2: number): { x: number; y: number } {
+function polylineToPath(points: Array<{ x: number; y: number }>): string {
+  if (points.length === 0) return ''
+  let d = `M ${points[0].x} ${points[0].y}`
+  for (let i = 1; i < points.length; i++) d += ` L ${points[i].x} ${points[i].y}`
+  return d
+}
+
+function distancePointToSegment(
+  px: number, py: number,
+  x1: number, y1: number,
+  x2: number, y2: number,
+): number {
   const dx = x2 - x1
   const dy = y2 - y1
-  const dist = Math.hypot(dx, dy)
-  const sag = Math.min(40, dist * 0.18)
-  return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 + sag }
+  const len2 = dx * dx + dy * dy
+  if (len2 === 0) return Math.hypot(px - x1, py - y1)
+  let t = ((px - x1) * dx + (py - y1) * dy) / len2
+  if (t < 0) t = 0
+  else if (t > 1) t = 1
+  const cx = x1 + t * dx
+  const cy = y1 + t * dy
+  return Math.hypot(px - cx, py - cy)
 }
 
-// Min distance from (mx, my) to the quadratic Bezier defined by P0=(x0,y0),
-// P1=(cx,cy), P2=(x2,y2), approximated by sampling. 16 samples keeps the
-// per-mousemove cost negligible even with dozens of wires.
-function distanceToQuadratic(
-  mx: number,
-  my: number,
-  x0: number,
-  y0: number,
-  cx: number,
-  cy: number,
-  x2: number,
-  y2: number,
-): number {
+function distanceToPolyline(px: number, py: number, pts: Array<{ x: number; y: number }>): number {
   let best = Infinity
-  const STEPS = 16
-  for (let i = 0; i <= STEPS; i++) {
-    const t = i / STEPS
-    const u = 1 - t
-    const px = u * u * x0 + 2 * u * t * cx + t * t * x2
-    const py = u * u * y0 + 2 * u * t * cy + t * t * y2
-    const d = Math.hypot(mx - px, my - py)
+  for (let i = 0; i < pts.length - 1; i++) {
+    const d = distancePointToSegment(px, py, pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y)
     if (d < best) best = d
   }
   return best
