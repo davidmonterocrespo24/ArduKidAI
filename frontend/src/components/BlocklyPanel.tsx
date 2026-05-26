@@ -38,23 +38,43 @@ export function BlocklyPanel() {
     })
     observer.observe(container)
 
-    // Blockly 11 leaves the flyout's vertical scrollbar visible after
-    // the flyout itself is collapsed (clicking the same category twice).
-    // Patch the flyout's setVisible to also toggle the scrollbar SVG so
-    // the kid does not see a ghost scrollbar sitting in the workspace.
-    const flyout = workspace.getFlyout()
-    type FlyoutWithScrollbar = Blockly.IFlyout & {
-      scrollbar?: { setVisible?: (v: boolean) => void } | null
-      setVisible: (v: boolean) => void
-    }
-    const f = flyout as FlyoutWithScrollbar | null
-    if (f && typeof f.setVisible === 'function') {
-      const originalSetVisible = f.setVisible.bind(f)
-      f.setVisible = (visible: boolean) => {
-        originalSetVisible(visible)
-        f.scrollbar?.setVisible?.(visible)
+    // Blockly 11 leaves flyout scrollbar <svg>s sitting around at the
+    // edge of the workspace after the kid clicks different toolbox
+    // categories. The flyout container itself goes display:none, but
+    // its scrollbar SVG is a SIBLING (under injectionDiv), not a
+    // descendant, so it never inherits the hide. Watch every style
+    // mutation under the host and reconcile: any scrollbar whose
+    // nearest visible flyout does not contain its x position gets
+    // its display flipped to none.
+    const reconcileScrollbars = () => {
+      const flyouts = container.querySelectorAll<HTMLElement>('.blocklyFlyout')
+      const visibleRects: DOMRect[] = []
+      for (const fl of flyouts) {
+        if (window.getComputedStyle(fl).display !== 'none') {
+          visibleRects.push(fl.getBoundingClientRect())
+        }
+      }
+      const bars = container.querySelectorAll<HTMLElement>('.blocklyFlyoutScrollbar')
+      for (const b of bars) {
+        if (visibleRects.length === 0) {
+          b.style.display = 'none'
+          continue
+        }
+        const br = b.getBoundingClientRect()
+        const insideAny = visibleRects.some(
+          (r) => br.x >= r.x - 5 && br.x <= r.x + r.width + 5,
+        )
+        b.style.display = insideAny ? '' : 'none'
       }
     }
+    const scrollObserver = new MutationObserver(reconcileScrollbars)
+    scrollObserver.observe(container, {
+      attributes: true,
+      attributeFilter: ['style'],
+      subtree: true,
+    })
+    // Initial pass after Blockly has finished bootstrapping its DOM.
+    requestAnimationFrame(reconcileScrollbars)
 
     // Re-hydrate on mount if the store already has XML (e.g. user switched
     // away to the code tab and back). Without this the workspace would boot
@@ -90,6 +110,7 @@ export function BlocklyPanel() {
 
     return () => {
       observer.disconnect()
+      scrollObserver.disconnect()
       workspace.removeChangeListener(listener)
       workspace.dispose()
       workspaceRef.current = null
