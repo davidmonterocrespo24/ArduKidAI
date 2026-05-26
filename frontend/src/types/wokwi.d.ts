@@ -24,6 +24,13 @@ declare module 'react' {
       'wokwi-servo': WokwiElement<{ angle?: number }>
       'wokwi-potentiometer': WokwiElement<{ value?: number }>
       'wokwi-lcd1602': WokwiElement<{ text?: string; pins?: 'full' | 'i2c' | 'none' }>
+      'wokwi-lcd2004': WokwiElement<{ text?: string; pins?: 'full' | 'i2c' | 'none' }>
+      'wokwi-dip-switch-8': WokwiElement<{ values?: number[] }>
+      'wokwi-analog-joystick': WokwiElement<{
+        xValue?: number
+        yValue?: number
+        pressed?: boolean
+      }>
       'wokwi-7segment': WokwiElement<{ values?: number[] | string; color?: string }>
       'wokwi-pushbutton-6mm': WokwiElement<{ color?: string; pressed?: boolean }>
       'wokwi-slide-potentiometer': WokwiElement<{ value?: number; min?: number; max?: number }>

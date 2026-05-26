@@ -209,6 +209,65 @@ function Lcd1602({ instance }: { instance: ComponentInstance }) {
   return <wokwi-lcd1602 ref={ref} id={instance.id} pins="i2c" />
 }
 
+function Lcd2004({ instance }: { instance: ComponentInstance }) {
+  const text = (instance.props.text as string | undefined) ?? ''
+  const ref = useLiveProperty('text', text)
+  return <wokwi-lcd2004 ref={ref} id={instance.id} pins="i2c" />
+}
+
+function DipSwitch8({ instance }: { instance: ComponentInstance }) {
+  const wires = useAppStore((s) => s.wires)
+  const values = useMemo(
+    () => (instance.props.values as number[] | undefined) ?? [0, 0, 0, 0, 0, 0, 0, 0],
+    [instance.props.values],
+  )
+  const ref = useLiveProperty('values', values)
+  // Each switch a-side connects to a digital pin. When the switch is
+  // on (value === 1) we drive that pin LOW (closed to ground via the
+  // b-side); off leaves the pin HIGH (assumes INPUT_PULLUP wiring).
+  useEffect(() => {
+    for (let i = 0; i < 8; i++) {
+      const pin = resolveSingleWireToUno(`${instance.id}.${i + 1}a`, wires)
+      if (!pin) continue
+      driveInputPin(pin, values[i] !== 1)
+    }
+  }, [instance.id, wires, values])
+  return <wokwi-dip-switch-8 ref={ref} id={instance.id} />
+}
+
+function AnalogJoystick({ instance }: { instance: ComponentInstance }) {
+  const xValue = (instance.props.xValue as number | undefined) ?? 512
+  const yValue = (instance.props.yValue as number | undefined) ?? 512
+  const pressed = (instance.props.pressed as boolean | undefined) ?? false
+  const props = useMemo(() => ({ xValue, yValue, pressed }), [xValue, yValue, pressed])
+  const ref = useLiveProperties(props)
+  // SEL pin: when pressed, drives the connected digital pin LOW (the
+  // joystick's switch closes to GND).
+  const wires = useAppStore((s) => s.wires)
+  useEffect(() => {
+    const pin = resolveSingleWireToUno(`${instance.id}.SEL`, wires)
+    if (!pin) return
+    driveInputPin(pin, !pressed)
+  }, [instance.id, wires, pressed])
+  return <wokwi-analog-joystick ref={ref} id={instance.id} />
+}
+
+// Walk the wires for the exact `componentId.pinName` reference and
+// return the UNO digital pin it connects to (or null if it leads
+// somewhere else / nowhere).
+function resolveSingleWireToUno(
+  pinRef: string,
+  wires: Array<{ from_pin: string; to_pin: string }>,
+): import('../sim/pinState').DigitalPinLabel | null {
+  for (const w of wires) {
+    const other = w.from_pin === pinRef ? w.to_pin : w.to_pin === pinRef ? w.from_pin : null
+    if (!other) continue
+    const m = /^UNO\.(D\d+)$/.exec(other)
+    if (m) return m[1] as import('../sim/pinState').DigitalPinLabel
+  }
+  return null
+}
+
 // Segment ordering as wokwi expects: A B C D E F G DP. Each entry is a
 // flag for that segment being lit in common-cathode mode (pin HIGH ==
 // segment on). Sketches drive each segment over its own digital pin.
@@ -376,8 +435,14 @@ export function DynamicComponent({ instance }: { instance: ComponentInstance }) 
       return <SlideSwitch instance={instance} />
     case 'lcd1602':
       return <Lcd1602 instance={instance} />
+    case 'lcd2004':
+      return <Lcd2004 instance={instance} />
     case 'seg7':
       return <SevenSegment instance={instance} />
+    case 'dipSwitch8':
+      return <DipSwitch8 instance={instance} />
+    case 'analogJoystick':
+      return <AnalogJoystick instance={instance} />
     case 'photoresistor':
       return <Photoresistor instance={instance} />
     case 'ntcTemperature':

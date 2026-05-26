@@ -40,6 +40,8 @@ export function SensorControl({ instance }: Props) {
     'tiltSwitch',
     'pirMotion',
     'slideSwitch',
+    'dipSwitch8',
+    'analogJoystick',
   ].includes(instance.type)
   if (!hasControl) return null
 
@@ -109,6 +111,20 @@ export function SensorControl({ instance }: Props) {
             <SlidePositionControl
               value={Number(instance.props.value ?? 1)}
               onChange={(v) => updateComponentProps(instance.id, { value: v })}
+            />
+          ) : null}
+          {instance.type === 'dipSwitch8' ? (
+            <DipSwitchControl
+              values={(instance.props.values as number[] | undefined) ?? [0,0,0,0,0,0,0,0]}
+              onChange={(v) => updateComponentProps(instance.id, { values: v })}
+            />
+          ) : null}
+          {instance.type === 'analogJoystick' ? (
+            <JoystickControl
+              xValue={Number(instance.props.xValue ?? 512)}
+              yValue={Number(instance.props.yValue ?? 512)}
+              pressed={Boolean(instance.props.pressed)}
+              onChange={(p) => updateComponentProps(instance.id, p)}
             />
           ) : null}
         </div>
@@ -285,6 +301,96 @@ function SlidePositionControl({
             {p}
           </button>
         ))}
+      </div>
+    </div>
+  )
+}
+
+function DipSwitchControl({
+  values,
+  onChange,
+}: {
+  values: number[]
+  onChange: (v: number[]) => void
+}) {
+  return (
+    <div className="flex flex-col gap-1 text-[10px] text-slate-700">
+      <span className="font-medium">DIP switches</span>
+      <div className="flex justify-between gap-0.5">
+        {values.map((v, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => {
+              const next = [...values]
+              next[i] = v === 1 ? 0 : 1
+              onChange(next)
+            }}
+            className={
+              v === 1
+                ? 'h-6 w-5 rounded-sm border border-emerald-400 bg-emerald-500 text-[9px] font-mono text-white'
+                : 'h-6 w-5 rounded-sm border border-slate-300 bg-white text-[9px] font-mono text-slate-700 hover:bg-slate-50'
+            }
+            title={`Switch ${i + 1}`}
+          >
+            {i + 1}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function JoystickControl({
+  xValue,
+  yValue,
+  pressed,
+  onChange,
+}: {
+  xValue: number
+  yValue: number
+  pressed: boolean
+  onChange: (p: { xValue?: number; yValue?: number; pressed?: boolean }) => void
+}) {
+  return (
+    <div className="flex flex-col gap-1 text-[10px] text-slate-700">
+      <div className="flex items-center justify-between font-medium">
+        <span>X (HORZ)</span>
+        <span className="font-mono">{xValue}</span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={1023}
+        value={xValue}
+        onChange={(e) => onChange({ xValue: Number(e.target.value) })}
+        className="w-full accent-emerald-600"
+      />
+      <div className="flex items-center justify-between font-medium">
+        <span>Y (VERT)</span>
+        <span className="font-mono">{yValue}</span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={1023}
+        value={yValue}
+        onChange={(e) => onChange({ yValue: Number(e.target.value) })}
+        className="w-full accent-emerald-600"
+      />
+      <div className="flex items-center justify-between pt-1">
+        <span className="font-medium">Button</span>
+        <button
+          type="button"
+          onClick={() => onChange({ pressed: !pressed })}
+          className={
+            pressed
+              ? 'rounded border border-emerald-400 bg-emerald-500 px-2.5 py-1 text-white'
+              : 'rounded border border-slate-300 bg-white px-2.5 py-1 text-slate-700 hover:bg-slate-50'
+          }
+        >
+          {pressed ? 'PRESSED' : 'Release'}
+        </button>
       </div>
     </div>
   )

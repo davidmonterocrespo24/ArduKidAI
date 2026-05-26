@@ -24,7 +24,10 @@ const DESCRIPTIONS: Record<ComponentType, string> = {
   slidePotentiometer: 'Linear fader, same 0..1023 analog signal as the knob pot.',
   slideSwitch: 'SPDT 3-pin slide switch (left / middle / right).',
   lcd1602: '16x2 character LCD over I2C. Wire to A4/A5 + 5V/GND.',
+  lcd2004: '20x4 character LCD over I2C. Same wiring as the 16x2, bigger window.',
   seg7: 'Single-digit common-cathode 7-segment. Drives A..G + DP.',
+  dipSwitch8: '8-way DIP switch. Each switch ties its a-side pin LOW when ON.',
+  analogJoystick: 'Thumb joystick. X / Y feed two analog pins, SEL is a button.',
   photoresistor: 'Light sensor (LDR). Slider sets the lux while running.',
   ntcTemperature: 'NTC temperature sensor. Slider sets the C while running.',
   tiltSwitch: 'Tilt switch. Toggle to drive the output pin HIGH / LOW.',
@@ -139,6 +142,24 @@ function Preview({ type }: { type: ComponentType }) {
       return (
         <div className={common} style={{ transform: 'scale(0.7)' }}>
           <wokwi-led-bar-graph color="red" />
+        </div>
+      )
+    case 'lcd2004':
+      return (
+        <div className={common} style={{ transform: 'scale(0.45)' }}>
+          <wokwi-lcd2004 pins="i2c" />
+        </div>
+      )
+    case 'dipSwitch8':
+      return (
+        <div className={common} style={{ transform: 'scale(0.8)' }}>
+          <wokwi-dip-switch-8 />
+        </div>
+      )
+    case 'analogJoystick':
+      return (
+        <div className={common} style={{ transform: 'scale(0.5)' }}>
+          <wokwi-analog-joystick />
         </div>
       )
     default:

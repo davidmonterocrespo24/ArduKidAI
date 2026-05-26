@@ -580,7 +580,10 @@ const PREFIX: Record<ComponentType, string> = {
   slidePotentiometer: 'SP',
   slideSwitch: 'SW',
   lcd1602: 'LCD',
+  lcd2004: 'LCD',
   seg7: 'SEG',
+  dipSwitch8: 'DIP',
+  analogJoystick: 'JOY',
   photoresistor: 'LDR',
   ntcTemperature: 'NTC',
   tiltSwitch: 'TILT',
@@ -2027,5 +2030,186 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       w('P1.SIG', 'UNO.A0'),
     ],
     cpp_code: BAR_GRAPH_POT_CPP,
+  },
+  {
+    id: 'ex-040',
+    title: 'Hello world on 20x4 LCD',
+    intent_en: 'show a four-line greeting on a 20x4 I2C LCD',
+    intent_es: 'mostrar un saludo de 4 lineas en una pantalla LCD 20x4 por I2C',
+    tags: ['lcd', 'lcd2004', 'display'],
+    difficulty: 2,
+    components: layout([{ type: 'lcd2004' }]),
+    wires: [
+      w('LCD1.GND', 'UNO.GND'),
+      w('LCD1.VCC', 'UNO.5V'),
+      w('LCD1.SDA', 'UNO.A4'),
+      w('LCD1.SCL', 'UNO.A5'),
+    ],
+    blockly_xml: toXml(
+      setup(
+        chain(
+          lcdBegin(),
+          lcdSetCursor(0, 0),
+          lcdPrint('Hello, world!'),
+          lcdSetCursor(0, 1),
+          lcdPrint('Greetings from'),
+          lcdSetCursor(0, 2),
+          lcdPrint('the 20x4 display.'),
+        ),
+      ),
+      loop({ type: 'ardukid_pin_mode', fields: { PIN: '13', MODE: 'OUTPUT' } }),
+    ),
+    cpp_code: `#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+
+void setup() {
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0); lcd.print("Hello, world!");
+  lcd.setCursor(0, 1); lcd.print("Greetings from");
+  lcd.setCursor(0, 2); lcd.print("the 20x4 display.");
+}
+
+void loop() {}
+`,
+  },
+  {
+    id: 'ex-041',
+    title: 'DIP switches pick which LED',
+    intent_en: 'flip each DIP switch to light or turn off one of three LEDs',
+    intent_es: 'mover cada switch del DIP para prender o apagar uno de 3 LEDs',
+    tags: ['dip-switch', 'led', 'starter'],
+    difficulty: 2,
+    components: layout([
+      { type: 'dipSwitch8' },
+      { type: 'led', props: { color: 'red' } },
+      { type: 'led', props: { color: 'green' } },
+      { type: 'led', props: { color: 'blue' } },
+      { type: 'resistor', props: { value: '220' } },
+      { type: 'resistor', props: { value: '220' } },
+      { type: 'resistor', props: { value: '220' } },
+    ]),
+    wires: [
+      // switch a-sides go to D2/D3/D4 (with INPUT_PULLUP), b-sides to GND
+      w('DIP1.1a', 'UNO.D2'), w('DIP1.1b', 'UNO.GND'),
+      w('DIP1.2a', 'UNO.D3'), w('DIP1.2b', 'UNO.GND'),
+      w('DIP1.3a', 'UNO.D4'), w('DIP1.3b', 'UNO.GND'),
+      ...ledOnPin(1, 1, '11'),
+      ...ledOnPin(2, 2, '12'),
+      ...ledOnPin(3, 3, '13'),
+    ],
+    blockly_xml: toXml(
+      setup(
+        chain(
+          pinMode(2, 'INPUT_PULLUP'),
+          pinMode(3, 'INPUT_PULLUP'),
+          pinMode(4, 'INPUT_PULLUP'),
+          pinMode(11, 'OUTPUT'),
+          pinMode(12, 'OUTPUT'),
+          pinMode(13, 'OUTPUT'),
+        ),
+      ),
+      loop(
+        chain(
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'EQ' },
+              values: {
+                A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+                B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+              },
+            },
+            digitalWrite(11, 'HIGH'),
+          ),
+          ifThen(
+            { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+            digitalWrite(11, 'LOW'),
+          ),
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'EQ' },
+              values: {
+                A: { type: 'ardukid_digital_read', fields: { PIN: '3' } },
+                B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+              },
+            },
+            digitalWrite(12, 'HIGH'),
+          ),
+          ifThen(
+            { type: 'ardukid_digital_read', fields: { PIN: '3' } },
+            digitalWrite(12, 'LOW'),
+          ),
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'EQ' },
+              values: {
+                A: { type: 'ardukid_digital_read', fields: { PIN: '4' } },
+                B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+              },
+            },
+            digitalWrite(13, 'HIGH'),
+          ),
+          ifThen(
+            { type: 'ardukid_digital_read', fields: { PIN: '4' } },
+            digitalWrite(13, 'LOW'),
+          ),
+        ),
+      ),
+    ),
+    cpp_code: `void setup() {
+  pinMode(2, INPUT_PULLUP);
+  pinMode(3, INPUT_PULLUP);
+  pinMode(4, INPUT_PULLUP);
+  pinMode(11, OUTPUT);
+  pinMode(12, OUTPUT);
+  pinMode(13, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(11, digitalRead(2) == LOW ? HIGH : LOW);
+  digitalWrite(12, digitalRead(3) == LOW ? HIGH : LOW);
+  digitalWrite(13, digitalRead(4) == LOW ? HIGH : LOW);
+}
+`,
+  },
+  {
+    id: 'ex-042',
+    title: 'Joystick LEDs',
+    intent_en: 'light the left or right LED depending on which way the joystick is pushed',
+    intent_es: 'prender el LED izquierdo o derecho segun hacia donde se mueva el joystick',
+    tags: ['joystick', 'led', 'analog'],
+    difficulty: 3,
+    components: layout([
+      { type: 'analogJoystick' },
+      { type: 'led', props: { color: 'red' } },
+      { type: 'led', props: { color: 'green' } },
+      { type: 'resistor', props: { value: '220' } },
+      { type: 'resistor', props: { value: '220' } },
+    ]),
+    wires: [
+      w('JOY1.VCC', 'UNO.5V'),
+      w('JOY1.GND', 'UNO.GND'),
+      w('JOY1.VERT', 'UNO.A0'),
+      w('JOY1.HORZ', 'UNO.A1'),
+      w('JOY1.SEL', 'UNO.D2'),
+      ...ledOnPin(1, 1, '12'),
+      ...ledOnPin(2, 2, '13'),
+    ],
+    cpp_code: `void setup() {
+  pinMode(12, OUTPUT);
+  pinMode(13, OUTPUT);
+  pinMode(2, INPUT_PULLUP);
+}
+
+void loop() {
+  int x = analogRead(A1); // HORZ
+  digitalWrite(12, x < 300 ? HIGH : LOW); // pushed left -> LED 12
+  digitalWrite(13, x > 700 ? HIGH : LOW); // pushed right -> LED 13
+}
+`,
   },
 ]

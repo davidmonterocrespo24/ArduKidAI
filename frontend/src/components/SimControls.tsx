@@ -18,6 +18,18 @@ function getAdcChannelFromStore(channel: number): number {
       const raw = Number(c.props.value ?? 0)
       return clampVolts((raw / 1023) * 5)
     }
+    if (c.type === 'analogJoystick') {
+      // The joystick exposes VERT and HORZ separately. Pick whichever
+      // axis the matching pin maps to.
+      // resolveAnalogChannel only returns one channel; the joystick wires
+      // typically have VERT -> A0 (axis 0) and HORZ -> A1 (axis 1).
+      // Use the pin name lookup to figure out which axis goes to which.
+      // For simplicity here: if BOTH axes wire to A0/A1 in canonical order
+      // we already know the channel == 0 means VERT, channel == 1 means HORZ.
+      const axisIsY = channel === 0
+      const raw = Number((axisIsY ? c.props.yValue : c.props.xValue) ?? 512)
+      return clampVolts((raw / 1023) * 5)
+    }
     if (c.type === 'photoresistor') {
       const lux = Number(c.props.lux ?? 500)
       return clampVolts((lux / 1023) * 5)
@@ -44,7 +56,7 @@ function clampVolts(v: number): number {
 function pushLcdText(text: string): void {
   const state = useAppStore.getState()
   for (const c of state.components) {
-    if (c.type !== 'lcd1602') continue
+    if (c.type !== 'lcd1602' && c.type !== 'lcd2004') continue
     state.updateComponentProps(c.id, { text })
   }
 }
