@@ -65,3 +65,11 @@ wokwi-arduino-uno {
   vertical-align: top;
   line-height: 0;
 }
+
+/* Hide orphan flyout scrollbars left behind when all Blockly toolbox
+ * categories are closed. The reconciler in BlocklyPanel toggles this
+ * class on/off so Blockly's natural show logic still wins when a
+ * category re-opens. */
+.ardukid-hide-flyout-bar {
+  display: none !important;
+}

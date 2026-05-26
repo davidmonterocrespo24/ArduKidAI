@@ -55,12 +55,13 @@ export function BlocklyPanel() {
           break
         }
       }
-      // Only intervene when the kid has closed every flyout. When at
-      // least one flyout is open we trust Blockly to manage its own
-      // scrollbar so we do not race against its show logic.
-      if (anyVisible) return
+      // Toggle a class instead of setting inline display so Blockly's
+      // own show / position logic can put the scrollbar back when the
+      // next category opens. The CSS rule (see index.css) forces
+      // display: none !important when the class is on; removing it
+      // lets Blockly's display:block (set inline) win again.
       const bars = container.querySelectorAll<HTMLElement>('.blocklyFlyoutScrollbar')
-      for (const b of bars) b.style.display = 'none'
+      for (const b of bars) b.classList.toggle('ardukid-hide-flyout-bar', !anyVisible)
     }
     const scrollObserver = new MutationObserver(reconcileScrollbars)
     scrollObserver.observe(container, {
