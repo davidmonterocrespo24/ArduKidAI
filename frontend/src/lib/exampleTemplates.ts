@@ -2414,9 +2414,9 @@ void loop() {
   },
   {
     id: 'ex-047',
-    title: 'Heartbeat LED',
-    intent_en: 'blink an LED in time with the pulse sensor heartbeat',
-    intent_es: 'hacer parpadear un LED al ritmo del pulso del sensor',
+    title: 'Pulse-sensor heartbeat LED',
+    intent_en: 'flash an LED in sync with the pulse-sensor heartbeat reading',
+    intent_es: 'parpadear un LED al ritmo de los latidos que mide el sensor',
     tags: ['heart-beat', 'led', 'sensor'],
     difficulty: 3,
     components: layout([
