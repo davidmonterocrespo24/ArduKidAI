@@ -249,6 +249,15 @@ function SlidePotentiometer({ instance }: { instance: ComponentInstance }) {
 function SlideSwitch({ instance }: { instance: ComponentInstance }) {
   const value = (instance.props.value as number | undefined) ?? 1
   const ref = useLiveProperty('value', value)
+  const drivePin = useDrivePin(instance.id)
+  // Position 1 -> common tied to ground (LOW). Positions 2/3 -> common
+  // pulled high (HIGH). Without a real contact matrix this is the
+  // simplest mapping that matches the most common kid wiring: pin "2"
+  // to a digital pin, pin "1" to GND, pin "3" to VCC.
+  useEffect(() => {
+    if (!drivePin) return
+    driveInputPin(drivePin, value !== 1)
+  }, [drivePin, value])
   return <wokwi-slide-switch ref={ref} id={instance.id} />
 }
 

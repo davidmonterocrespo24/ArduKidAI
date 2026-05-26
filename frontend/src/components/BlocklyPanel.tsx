@@ -38,6 +38,24 @@ export function BlocklyPanel() {
     })
     observer.observe(container)
 
+    // Blockly 11 leaves the flyout's vertical scrollbar visible after
+    // the flyout itself is collapsed (clicking the same category twice).
+    // Patch the flyout's setVisible to also toggle the scrollbar SVG so
+    // the kid does not see a ghost scrollbar sitting in the workspace.
+    const flyout = workspace.getFlyout()
+    type FlyoutWithScrollbar = Blockly.IFlyout & {
+      scrollbar?: { setVisible?: (v: boolean) => void } | null
+      setVisible: (v: boolean) => void
+    }
+    const f = flyout as FlyoutWithScrollbar | null
+    if (f && typeof f.setVisible === 'function') {
+      const originalSetVisible = f.setVisible.bind(f)
+      f.setVisible = (visible: boolean) => {
+        originalSetVisible(visible)
+        f.scrollbar?.setVisible?.(visible)
+      }
+    }
+
     // Re-hydrate on mount if the store already has XML (e.g. user switched
     // away to the code tab and back). Without this the workspace would boot
     // empty even though the kid built blocks earlier.

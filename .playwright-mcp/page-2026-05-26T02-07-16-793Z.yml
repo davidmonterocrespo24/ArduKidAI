@@ -1,0 +1,126 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: A
+      - generic [ref=e7]:
+        - heading "ArduKid" [level=1] [ref=e8]
+        - paragraph [ref=e9]: An AI Arduino IDE for kids
+      - button "Examples" [ref=e10]
+      - button "Libraries" [ref=e11]
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - button "Run" [ref=e15]
+        - button "Compile & run" [ref=e16]
+        - button "Stop" [disabled] [ref=e17]
+        - button "Reset" [ref=e18]
+        - button "Save" [ref=e19]
+      - button "Sign in" [ref=e246]
+  - main [ref=e22]:
+    - generic [ref=e23]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - button "Blocks" [ref=e27]
+          - button "Arduino code" [ref=e28]
+        - generic [ref=e248]:
+          - tree [ref=e250]:
+            - treeitem "Arduino" [level=1] [ref=e251]:
+              - generic [ref=e252]:
+                - generic: Arduino
+            - treeitem "LCD" [level=1] [ref=e253]:
+              - generic [ref=e254]:
+                - generic: LCD
+            - treeitem "Logic" [level=1] [ref=e255]:
+              - generic [ref=e256]:
+                - generic: Logic
+            - treeitem "Loops" [level=1] [ref=e257]:
+              - generic [ref=e258]:
+                - generic: Loops
+            - treeitem "Math" [level=1] [ref=e259]:
+              - generic [ref=e260]:
+                - generic: Math
+            - treeitem "Variables" [level=1] [ref=e261]:
+              - generic [ref=e262]:
+                - generic: Variables
+          - img [ref=e263]:
+            - generic "Blockly Workspace" [ref=e264]:
+              - generic [ref=e269]:
+                - generic [ref=e270]:
+                  - generic [ref=e272]:
+                    - generic [ref=e275]: set pin
+                    - generic [ref=e278]: "13"
+                    - generic [ref=e281]: as
+                    - generic [ref=e284]: OUTPUT
+                  - generic [ref=e287]: when Arduino starts
+                - generic [ref=e288]:
+                  - generic [ref=e290]:
+                    - generic [ref=e292]:
+                      - generic [ref=e297]: "500"
+                      - generic [ref=e298]:
+                        - generic [ref=e300]:
+                          - generic [ref=e305]: "500"
+                          - generic [ref=e307]: wait
+                          - generic [ref=e309]: ms
+                        - generic [ref=e311]: write pin
+                        - generic [ref=e314]: "13"
+                        - generic [ref=e317]: =
+                        - generic [ref=e320]: LOW
+                      - generic [ref=e323]: wait
+                      - generic [ref=e325]: ms
+                    - generic [ref=e327]: write pin
+                    - generic [ref=e330]: "13"
+                    - generic [ref=e333]: =
+                    - generic [ref=e336]: HIGH
+                  - generic [ref=e339]: forever
+          - img [ref=e347]
+          - img [ref=e348]
+          - img
+          - img
+      - separator [ref=e31]
+      - generic [ref=e34]:
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - button "Add component" [ref=e39]
+            - button "dropdown wire" [ref=e40]
+          - generic [ref=e42]:
+            - generic [ref=e43]:
+              - img [ref=e45]:
+                - generic [ref=e95]: "false"
+                - generic [ref=e97]: "ON"
+                - generic [ref=e98]: "false"
+                - generic [ref=e100]: "false"
+                - generic [ref=e102]: "false"
+                - generic [ref=e104]: L TX RX
+                - generic [ref=e106]: DIGITAL (PWM ~)
+                - generic [ref=e107]: AREF GND 13 12 ~11 ~10 ~9 8 7 ~6 ~5 4 ~3 2 TX→1 RX←0
+                - generic [ref=e110]: POWER ANALOG IN
+                - generic [ref=e111]: IOREF RESET 3.3V 5V GND GND Vin A0 A1 A2 A3 A4 A5
+                - generic [ref=e114]: ARDUINO
+                - generic [ref=e116]: UNO
+              - generic [ref=e117]: UNO (pinned)
+            - generic [ref=e118]: Use the Add buttons above, or ask the agent.
+            - img "circuit wires overlay"
+        - separator [ref=e212]
+        - generic [ref=e215]:
+          - generic [ref=e216]:
+            - button "Compile output" [ref=e217]
+            - button "Serial monitor" [ref=e218]
+          - generic [ref=e220]:
+            - generic [ref=e221]:
+              - generic [ref=e222]: No compile output yet
+              - button "Clear" [disabled] [ref=e223]
+            - paragraph [ref=e225]: Click Compile & run in the top bar. The arduino-cli output appears here.
+      - separator [ref=e226]
+      - complementary [ref=e229]:
+        - generic [ref=e230]:
+          - heading "Talk to the agent" [level=2] [ref=e231]
+          - paragraph [ref=e232]: Type what you want to build. The agent picks parts, wires them, writes the program, and runs the simulator.
+        - generic [ref=e235]:
+          - paragraph [ref=e236]: "Try one of these:"
+          - generic [ref=e237]:
+            - button "Quiero encender un LED" [ref=e238]
+            - button "Un botón que prende una luz" [ref=e239]
+            - button "Quiero un semáforo" [ref=e240]
+            - button "Tocá una melodía con el buzzer" [ref=e241]
+        - generic [ref=e243]:
+          - textbox "What do you want to build?" [ref=e244]
+          - button "Send" [disabled] [ref=e245]

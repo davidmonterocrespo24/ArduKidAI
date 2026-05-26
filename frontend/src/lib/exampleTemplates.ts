@@ -1133,6 +1133,199 @@ void loop() {
 `
 
 // ---------------------------------------------------------------------------
+// New-component starter sketches
+// ---------------------------------------------------------------------------
+
+const SLIDE_POT_DIM_CPP = `void setup() {
+  pinMode(9, OUTPUT);
+}
+
+void loop() {
+  int v = analogRead(A0) / 4;
+  analogWrite(9, v);
+}
+`
+
+const SLIDE_SWITCH_CPP = `void setup() {
+  pinMode(2, INPUT_PULLUP);
+  pinMode(13, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(13, digitalRead(2) == HIGH ? HIGH : LOW);
+}
+`
+
+const LDR_NIGHTLIGHT_CPP = `// Light a LED when the room gets dark.
+void setup() {
+  pinMode(13, OUTPUT);
+}
+
+void loop() {
+  int lux = analogRead(A0);
+  digitalWrite(13, lux < 400 ? HIGH : LOW);
+}
+`
+
+const NTC_ALARM_CPP = `// Beep when the NTC sensor reads above 30 C.
+void setup() {
+  pinMode(8, OUTPUT);
+}
+
+void loop() {
+  int reading = analogRead(A0);            // 0..1023 -> -10..60 C
+  int celsius = map(reading, 0, 1023, -10, 60);
+  if (celsius > 30) tone(8, 1200, 200);
+  else              noTone(8);
+  delay(100);
+}
+`
+
+const TILT_BUZZER_CPP = `void setup() {
+  pinMode(2, INPUT_PULLUP);
+  pinMode(8, OUTPUT);
+}
+
+void loop() {
+  if (digitalRead(2) == HIGH) tone(8, 880, 80);
+  delay(40);
+}
+`
+
+const PIR_LIGHT_CPP = `void setup() {
+  pinMode(2, INPUT);
+  pinMode(13, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(13, digitalRead(2));
+}
+`
+
+const RGB_CYCLE_CPP = `void setup() {
+  pinMode(9, OUTPUT);
+  pinMode(10, OUTPUT);
+  pinMode(11, OUTPUT);
+}
+
+void loop() {
+  for (int v = 0; v < 256; v++) {
+    analogWrite(9, v);
+    analogWrite(10, 255 - v);
+    analogWrite(11, (v * 2) % 256);
+    delay(8);
+  }
+}
+`
+
+const BAR_GRAPH_POT_CPP = `int bars[10] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+
+void setup() {
+  for (int i = 0; i < 10; i++) pinMode(bars[i], OUTPUT);
+}
+
+void loop() {
+  int level = analogRead(A0) / 102; // 0..10
+  for (int i = 0; i < 10; i++) digitalWrite(bars[i], i < level ? HIGH : LOW);
+  delay(40);
+}
+`
+
+const SLIDE_POT_DIM_BLOCKS = toXml(
+  setup(pinMode(9, 'OUTPUT')),
+  loop(
+    analogWrite(9, {
+      type: 'math_arithmetic',
+      fields: { OP: 'DIVIDE' },
+      values: { A: analogRead('A0'), B: num(4) },
+    }),
+  ),
+)
+
+const SLIDE_SWITCH_BLOCKS = toXml(
+  setup(chain(pinMode(2, 'INPUT_PULLUP'), pinMode(13, 'OUTPUT'))),
+  loop(
+    chain(
+      ifThen(
+        { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+        digitalWrite(13, 'HIGH'),
+      ),
+      ifThen(
+        {
+          type: 'logic_compare',
+          fields: { OP: 'EQ' },
+          values: {
+            A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+            B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+          },
+        },
+        digitalWrite(13, 'LOW'),
+      ),
+    ),
+  ),
+)
+
+const LDR_NIGHTLIGHT_BLOCKS = toXml(
+  setup(pinMode(13, 'OUTPUT')),
+  loop(
+    chain(
+      ifThen(
+        {
+          type: 'logic_compare',
+          fields: { OP: 'LT' },
+          values: { A: analogRead('A0'), B: num(400) },
+        },
+        digitalWrite(13, 'HIGH'),
+      ),
+      ifThen(
+        {
+          type: 'logic_compare',
+          fields: { OP: 'GTE' },
+          values: { A: analogRead('A0'), B: num(400) },
+        },
+        digitalWrite(13, 'LOW'),
+      ),
+    ),
+  ),
+)
+
+const TILT_BUZZER_BLOCKS = toXml(
+  setup(chain(pinMode(2, 'INPUT_PULLUP'), pinMode(8, 'OUTPUT'))),
+  loop(
+    chain(
+      ifThen(
+        { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+        tone(8, 880, 80),
+      ),
+      wait(40),
+    ),
+  ),
+)
+
+const PIR_LIGHT_BLOCKS = toXml(
+  setup(chain(pinMode(2, 'INPUT'), pinMode(13, 'OUTPUT'))),
+  loop(
+    chain(
+      ifThen(
+        { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+        digitalWrite(13, 'HIGH'),
+      ),
+      ifThen(
+        {
+          type: 'logic_compare',
+          fields: { OP: 'EQ' },
+          values: {
+            A: { type: 'ardukid_digital_read', fields: { PIN: '2' } },
+            B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } },
+          },
+        },
+        digitalWrite(13, 'LOW'),
+      ),
+    ),
+  ),
+)
+
+// ---------------------------------------------------------------------------
 // Examples (titles + intent + tags from the original seed_data.py)
 // ---------------------------------------------------------------------------
 
@@ -1638,5 +1831,201 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     ],
     blockly_xml: GREETING_BLOCKS,
     cpp_code: GREETING_CPP,
+  },
+  {
+    id: 'ex-031',
+    title: 'Tiny button blinks LED',
+    intent_en: 'press a 6 mm tactile button to turn an LED on while held',
+    intent_es: 'apretar un boton chico de 6 mm para encender un LED mientras se mantiene',
+    tags: ['button', 'led', 'starter', '6mm'],
+    difficulty: 1,
+    components: layout([
+      { type: 'pushbutton6mm', props: { color: 'red' } },
+      { type: 'led', props: { color: 'red' } },
+      { type: 'resistor', props: { value: '220' } },
+    ]),
+    wires: [...buttonOnPin(1, '2'), ...ledOnPin(1, 1, '13')],
+    blockly_xml: BUTTON_PRESS_BLOCKS,
+    cpp_code: BUTTON_LED_PRESS_CPP,
+  },
+  {
+    id: 'ex-032',
+    title: 'Fader dims an LED',
+    intent_en: 'use a slide potentiometer to fade an LED brighter and dimmer',
+    intent_es: 'usar un potenciometro deslizable para variar el brillo de un LED',
+    tags: ['fader', 'led', 'pwm'],
+    difficulty: 2,
+    components: layout([
+      { type: 'slidePotentiometer' },
+      { type: 'led', props: { color: 'yellow' } },
+      { type: 'resistor', props: { value: '220' } },
+    ]),
+    wires: [
+      w('SP1.VCC', 'UNO.5V'),
+      w('SP1.GND', 'UNO.GND'),
+      w('SP1.SIG', 'UNO.A0'),
+      ...ledOnPin(1, 1, '9'),
+    ],
+    blockly_xml: SLIDE_POT_DIM_BLOCKS,
+    cpp_code: SLIDE_POT_DIM_CPP,
+  },
+  {
+    id: 'ex-033',
+    title: 'Slide switch turns LED on',
+    intent_en: 'slide a switch to turn an LED on and off',
+    intent_es: 'mover un slide switch para prender y apagar un LED',
+    tags: ['switch', 'led'],
+    difficulty: 1,
+    components: layout([
+      { type: 'slideSwitch' },
+      { type: 'led', props: { color: 'green' } },
+      { type: 'resistor', props: { value: '220' } },
+    ]),
+    wires: [
+      w('SW1.1', 'UNO.GND'),
+      w('SW1.2', 'UNO.D2'),
+      w('SW1.3', 'UNO.5V'),
+      ...ledOnPin(1, 1, '13'),
+    ],
+    blockly_xml: SLIDE_SWITCH_BLOCKS,
+    cpp_code: SLIDE_SWITCH_CPP,
+  },
+  {
+    id: 'ex-034',
+    title: 'Light sensor nightlight',
+    intent_en: 'light a LED when the room gets dark (LDR reading is low)',
+    intent_es: 'prender un LED cuando esta oscuro (el sensor de luz baja)',
+    tags: ['ldr', 'light-sensor', 'led'],
+    difficulty: 2,
+    components: layout([
+      { type: 'photoresistor' },
+      { type: 'led', props: { color: 'red' } },
+      { type: 'resistor', props: { value: '220' } },
+    ]),
+    wires: [
+      w('LDR1.VCC', 'UNO.5V'),
+      w('LDR1.GND', 'UNO.GND'),
+      w('LDR1.AO', 'UNO.A0'),
+      ...ledOnPin(1, 1, '13'),
+    ],
+    blockly_xml: LDR_NIGHTLIGHT_BLOCKS,
+    cpp_code: LDR_NIGHTLIGHT_CPP,
+  },
+  {
+    id: 'ex-035',
+    title: 'Hot-temperature alarm',
+    intent_en: 'beep with a buzzer whenever the NTC sensor reads above 30 C',
+    intent_es: 'sonar un buzzer cuando el sensor NTC marque mas de 30 grados',
+    tags: ['ntc', 'temperature', 'buzzer'],
+    difficulty: 3,
+    components: layout([
+      { type: 'ntcTemperature' },
+      { type: 'buzzer' },
+    ]),
+    wires: [
+      w('NTC1.GND', 'UNO.GND'),
+      w('NTC1.VCC', 'UNO.5V'),
+      w('NTC1.OUT', 'UNO.A0'),
+      w('BZ1.1', 'UNO.D8'),
+      w('BZ1.2', 'UNO.GND'),
+    ],
+    cpp_code: NTC_ALARM_CPP,
+  },
+  {
+    id: 'ex-036',
+    title: 'Tilt switch beeps',
+    intent_en: 'beep every time the tilt switch is tilted',
+    intent_es: 'sonar un beep cada vez que el sensor de inclinacion se mueve',
+    tags: ['tilt', 'buzzer'],
+    difficulty: 2,
+    components: layout([
+      { type: 'tiltSwitch' },
+      { type: 'buzzer' },
+    ]),
+    wires: [
+      w('TILT1.GND', 'UNO.GND'),
+      w('TILT1.VCC', 'UNO.5V'),
+      w('TILT1.OUT', 'UNO.D2'),
+      w('BZ1.1', 'UNO.D8'),
+      w('BZ1.2', 'UNO.GND'),
+    ],
+    blockly_xml: TILT_BUZZER_BLOCKS,
+    cpp_code: TILT_BUZZER_CPP,
+  },
+  {
+    id: 'ex-037',
+    title: 'Motion lights up an LED',
+    intent_en: 'turn on a LED while the PIR sensor sees motion',
+    intent_es: 'prender un LED mientras el sensor PIR detecta movimiento',
+    tags: ['pir', 'motion', 'led'],
+    difficulty: 2,
+    components: layout([
+      { type: 'pirMotion' },
+      { type: 'led', props: { color: 'red' } },
+      { type: 'resistor', props: { value: '220' } },
+    ]),
+    wires: [
+      w('PIR1.VCC', 'UNO.5V'),
+      w('PIR1.GND', 'UNO.GND'),
+      w('PIR1.OUT', 'UNO.D2'),
+      ...ledOnPin(1, 1, '13'),
+    ],
+    blockly_xml: PIR_LIGHT_BLOCKS,
+    cpp_code: PIR_LIGHT_CPP,
+  },
+  {
+    id: 'ex-038',
+    title: 'RGB LED color cycle',
+    intent_en: 'fade an RGB LED through red, green and blue colors',
+    intent_es: 'mezclar colores rojo, verde y azul en un LED RGB',
+    tags: ['rgb', 'led', 'pwm', 'color'],
+    difficulty: 3,
+    components: layout([{ type: 'rgbLed' }]),
+    wires: [
+      w('RGB1.R', 'UNO.D9'),
+      w('RGB1.G', 'UNO.D10'),
+      w('RGB1.B', 'UNO.D11'),
+      w('RGB1.COM', 'UNO.GND'),
+    ],
+    cpp_code: RGB_CYCLE_CPP,
+  },
+  {
+    id: 'ex-039',
+    title: 'LED bar graph from a pot',
+    intent_en: 'light up the 10-segment LED bar in proportion to the potentiometer',
+    intent_es: 'prender mas LEDs del bar graph segun gira el potenciometro',
+    tags: ['bar-graph', 'potentiometer', 'led'],
+    difficulty: 3,
+    components: layout([
+      { type: 'ledBarGraph' },
+      { type: 'potentiometer' },
+    ]),
+    wires: [
+      // each anode A1..A10 to D2..D11, all cathodes to GND
+      w('BAR1.A1', 'UNO.D2'),
+      w('BAR1.A2', 'UNO.D3'),
+      w('BAR1.A3', 'UNO.D4'),
+      w('BAR1.A4', 'UNO.D5'),
+      w('BAR1.A5', 'UNO.D6'),
+      w('BAR1.A6', 'UNO.D7'),
+      w('BAR1.A7', 'UNO.D8'),
+      w('BAR1.A8', 'UNO.D9'),
+      w('BAR1.A9', 'UNO.D10'),
+      w('BAR1.A10', 'UNO.D11'),
+      w('BAR1.C1', 'UNO.GND'),
+      w('BAR1.C2', 'UNO.GND'),
+      w('BAR1.C3', 'UNO.GND'),
+      w('BAR1.C4', 'UNO.GND'),
+      w('BAR1.C5', 'UNO.GND'),
+      w('BAR1.C6', 'UNO.GND'),
+      w('BAR1.C7', 'UNO.GND'),
+      w('BAR1.C8', 'UNO.GND'),
+      w('BAR1.C9', 'UNO.GND'),
+      w('BAR1.C10', 'UNO.GND'),
+      w('P1.GND', 'UNO.GND'),
+      w('P1.VCC', 'UNO.5V'),
+      w('P1.SIG', 'UNO.A0'),
+    ],
+    cpp_code: BAR_GRAPH_POT_CPP,
   },
 ]
