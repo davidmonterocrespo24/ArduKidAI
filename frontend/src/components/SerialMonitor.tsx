@@ -48,10 +48,10 @@ export function SerialMonitor() {
       </div>
       <pre
         ref={ref}
-        className="min-h-0 flex-1 overflow-auto bg-slate-950 p-3 font-mono text-[12px] leading-snug text-emerald-300"
+        className="min-h-0 flex-1 overflow-auto bg-slate-950 p-3 font-mono text-[12px] leading-snug text-brand-300"
       >
         {serial.length === 0 ? (
-          <span className="text-emerald-700">
+          <span className="text-brand-700">
             {'// Anything the sketch sends with Serial.print()/println() shows up here.\n// Try Serial.println("hello") in setup().'}
           </span>
         ) : (
@@ -75,7 +75,7 @@ export function SerialMonitor() {
               : 'Start the sim to send data'
           }
           disabled={simStatus !== 'running'}
-          className="min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none disabled:bg-slate-100"
+          className="min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none disabled:bg-slate-100"
         />
         <select
           value={ending}
@@ -90,7 +90,7 @@ export function SerialMonitor() {
         <button
           type="submit"
           disabled={!canSend}
-          className="rounded border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+          className="rounded border border-brand-300 bg-brand-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-600 disabled:opacity-50"
         >
           Send
         </button>

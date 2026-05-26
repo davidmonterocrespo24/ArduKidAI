@@ -161,7 +161,7 @@ export function LibrariesModal({ open, onClose }: Props) {
                       className={
                         isInstalled
                           ? 'rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50'
-                          : 'rounded border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-600 disabled:opacity-50'
+                          : 'rounded border border-brand-300 bg-brand-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-600 disabled:opacity-50'
                       }
                     >
                       {busyName === c.name
@@ -233,7 +233,7 @@ export function LibrariesModal({ open, onClose }: Props) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="library name (e.g. DHT)"
-                className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm focus:border-emerald-500 focus:outline-none"
+                className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm focus:border-brand-500 focus:outline-none"
               />
               <button
                 type="submit"
@@ -272,7 +272,7 @@ export function LibrariesModal({ open, onClose }: Props) {
                         className={
                           isInstalled
                             ? 'rounded border border-slate-300 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500'
-                            : 'rounded border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-600 disabled:opacity-50'
+                            : 'rounded border border-brand-300 bg-brand-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-600 disabled:opacity-50'
                         }
                       >
                         {isInstalled

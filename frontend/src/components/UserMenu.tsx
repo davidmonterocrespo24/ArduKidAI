@@ -56,7 +56,7 @@ export function UserMenu() {
       <button
         type="button"
         onClick={() => setDialogOpen(true)}
-        className="rounded-md border border-emerald-200 px-3 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-200 dark:hover:bg-emerald-950/30"
+        className="rounded-md border border-brand-200 px-3 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50 dark:border-brand-800 dark:text-brand-200 dark:hover:bg-brand-950/30"
       >
         Sign in
       </button>

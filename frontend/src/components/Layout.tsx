@@ -7,16 +7,16 @@ import { TopBar } from './TopBar'
 
 function HHandle() {
   return (
-    <PanelResizeHandle className="group mx-1 flex w-1.5 cursor-col-resize items-center justify-center bg-transparent transition hover:bg-emerald-300/40">
-      <div className="h-10 w-0.5 rounded bg-slate-300 transition group-hover:bg-emerald-500" />
+    <PanelResizeHandle className="group mx-1 flex w-1.5 cursor-col-resize items-center justify-center bg-transparent transition hover:bg-brand-300/40">
+      <div className="h-10 w-0.5 rounded bg-slate-300 transition group-hover:bg-brand-500" />
     </PanelResizeHandle>
   )
 }
 
 function VHandle() {
   return (
-    <PanelResizeHandle className="group my-1 flex h-1.5 cursor-row-resize items-center justify-center bg-transparent transition hover:bg-emerald-300/40">
-      <div className="h-0.5 w-10 rounded bg-slate-300 transition group-hover:bg-emerald-500" />
+    <PanelResizeHandle className="group my-1 flex h-1.5 cursor-row-resize items-center justify-center bg-transparent transition hover:bg-brand-300/40">
+      <div className="h-0.5 w-10 rounded bg-slate-300 transition group-hover:bg-brand-500" />
     </PanelResizeHandle>
   )
 }

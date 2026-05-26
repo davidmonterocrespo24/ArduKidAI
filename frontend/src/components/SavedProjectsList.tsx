@@ -81,7 +81,7 @@ export function SavedProjectsList({ refreshKey }: Props) {
             key={p.id}
             type="button"
             onClick={() => void open(p.id, p.name)}
-            className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-800 hover:border-emerald-400 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/30"
+            className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-800 hover:border-brand-400 hover:bg-brand-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-brand-500 dark:hover:bg-brand-950/30"
           >
             <span className="truncate">{p.name}</span>
             <span className="ml-2 shrink-0 font-mono text-[10px] text-slate-400">

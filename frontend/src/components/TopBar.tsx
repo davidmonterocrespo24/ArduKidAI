@@ -13,7 +13,7 @@ export function TopBar() {
       <div className="flex items-center gap-3">
         <span
           aria-hidden="true"
-          className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500 font-bold text-white"
+          className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-500 font-bold text-white"
         >
           A
         </span>
@@ -24,7 +24,7 @@ export function TopBar() {
         <button
           type="button"
           onClick={() => setExamplesOpen(true)}
-          className="ml-2 rounded-md border border-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+          className="ml-2 rounded-md border border-brand-200 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
         >
           Examples
         </button>

@@ -4,14 +4,14 @@ import { cn } from '../lib/cn'
 
 const TYPE_STYLES: Record<string, string> = {
   info: 'text-slate-700',
-  success: 'text-emerald-700',
+  success: 'text-brand-700',
   warn: 'text-amber-700',
   error: 'text-rose-700',
 }
 
 const TYPE_DOT: Record<string, string> = {
   info: 'bg-slate-400',
-  success: 'bg-emerald-500',
+  success: 'bg-brand-500',
   warn: 'bg-amber-500',
   error: 'bg-rose-500',
 }

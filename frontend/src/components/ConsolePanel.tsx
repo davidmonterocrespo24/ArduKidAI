@@ -28,7 +28,7 @@ export function ConsolePanel() {
               className={cn(
                 'flex items-center gap-2 px-3 py-2 text-sm font-semibold',
                 active
-                  ? 'border-b-2 border-emerald-500 text-emerald-600'
+                  ? 'border-b-2 border-brand-500 text-brand-600'
                   : 'text-slate-500 hover:text-slate-700',
               )}
             >
@@ -37,7 +37,7 @@ export function ConsolePanel() {
                 <span
                   className={cn(
                     'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-                    active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600',
+                    active ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-600',
                   )}
                 >
                   {badge}

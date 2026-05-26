@@ -65,7 +65,7 @@ export function AuthDialog({ open, onClose }: Props) {
               className={cn(
                 'pb-2 text-sm font-semibold',
                 mode === m
-                  ? 'border-b-2 border-emerald-500 text-emerald-600'
+                  ? 'border-b-2 border-brand-500 text-brand-600'
                   : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300',
               )}
             >
@@ -87,7 +87,7 @@ export function AuthDialog({ open, onClose }: Props) {
           autoComplete="email"
           onChange={(e) => setEmail(e.target.value)}
           disabled={busy}
-          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
         />
         <label className="mt-3 block text-xs font-medium text-slate-600 dark:text-slate-300">
           Password
@@ -99,7 +99,7 @@ export function AuthDialog({ open, onClose }: Props) {
           onChange={(e) => setPassword(e.target.value)}
           disabled={busy}
           minLength={8}
-          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
         />
         {mode === 'signup' && (
           <p className="mt-1 text-[11px] text-slate-500">At least 8 characters.</p>
@@ -117,7 +117,7 @@ export function AuthDialog({ open, onClose }: Props) {
           <button
             type="submit"
             disabled={busy}
-            className="rounded-md bg-emerald-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+            className="rounded-md bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
           >
             {busy ? 'Please wait...' : mode === 'signin' ? 'Sign in' : 'Sign up'}
           </button>

@@ -52,7 +52,7 @@ export function ChatPanel() {
                     type="button"
                     onClick={() => submit(s)}
                     disabled={isStreaming}
-                    className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm text-slate-700 transition hover:border-emerald-400 hover:bg-emerald-50 disabled:opacity-50"
+                    className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm text-slate-700 transition hover:border-brand-400 hover:bg-brand-50 disabled:opacity-50"
                   >
                     {s}
                   </button>
@@ -68,7 +68,7 @@ export function ChatPanel() {
             key={msg.id}
             className={cn(
               'rounded-md px-3 py-2 text-sm',
-              msg.role === 'user' && 'bg-emerald-100 text-emerald-900',
+              msg.role === 'user' && 'bg-brand-100 text-brand-900',
               msg.role === 'agent' && 'bg-slate-100 text-slate-900',
               msg.role === 'system' && 'bg-amber-50 text-amber-800 text-xs font-mono',
             )}
@@ -95,12 +95,12 @@ export function ChatPanel() {
           onChange={(e) => setValue(e.target.value)}
           disabled={isStreaming}
           placeholder="What do you want to build?"
-          className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none disabled:opacity-60"
+          className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none disabled:opacity-60"
         />
         <button
           type="submit"
           disabled={isStreaming || !value.trim()}
-          className="rounded-md bg-emerald-500 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+          className="rounded-md bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
         >
           Send
         </button>

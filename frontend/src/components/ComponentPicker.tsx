@@ -28,7 +28,7 @@ export function ComponentPicker() {
           key={meta.type}
           type="button"
           onClick={() => add(meta)}
-          className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:border-emerald-400 hover:bg-emerald-50"
+          className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:border-brand-400 hover:bg-brand-50"
           title={`Add ${meta.label}`}
         >
           {meta.label}

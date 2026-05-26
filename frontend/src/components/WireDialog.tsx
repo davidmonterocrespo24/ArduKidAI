@@ -118,7 +118,7 @@ export function WireDialog({ open, onClose }: Props) {
           <button
             type="submit"
             disabled={!fromPin || !toPin || fromPin === toPin}
-            className="rounded-md bg-emerald-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+            className="rounded-md bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
           >
             Add wire
           </button>

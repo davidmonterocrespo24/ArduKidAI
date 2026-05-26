@@ -271,10 +271,10 @@ export function AddComponentModal({ open, onClose }: Props) {
               key={meta.type}
               type="button"
               onClick={() => pick(meta)}
-              className="group flex flex-col items-stretch rounded-lg border border-slate-200 bg-white p-3 text-left transition hover:border-emerald-400 hover:bg-emerald-50"
+              className="group flex flex-col items-stretch rounded-lg border border-slate-200 bg-white p-3 text-left transition hover:border-brand-400 hover:bg-brand-50"
             >
               <Preview type={meta.type} />
-              <div className="mt-2 text-sm font-semibold text-slate-800 group-hover:text-emerald-700">
+              <div className="mt-2 text-sm font-semibold text-slate-800 group-hover:text-brand-700">
                 {meta.label}
               </div>
               <div className="mt-1 text-[11px] leading-snug text-slate-500">

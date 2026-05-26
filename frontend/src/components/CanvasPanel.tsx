@@ -40,12 +40,12 @@ export function CanvasPanel() {
           <button
             type="button"
             onClick={() => setAddOpen(true)}
-            className="rounded-md border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-emerald-600"
+            className="rounded-md border border-brand-300 bg-brand-500 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-brand-600"
           >
             Add component
           </button>
           {wireInProgress && (
-            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+            <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-medium text-brand-700">
               Wiring from <code className="font-mono">{wireInProgress.from_pin}</code> - click a second pin or press Esc
             </span>
           )}

@@ -47,7 +47,7 @@ export function registerArduinoBlocks(): void {
       ],
       previousStatement: null,
       nextStatement: null,
-      colour: 200,
+      colour: '#00979d',
       tooltip: 'Configures a digital pin as input or output.',
     },
     {
@@ -66,7 +66,7 @@ export function registerArduinoBlocks(): void {
       ],
       previousStatement: null,
       nextStatement: null,
-      colour: 200,
+      colour: '#00979d',
       tooltip: 'Sets a digital pin HIGH (on) or LOW (off).',
     },
     {
@@ -79,21 +79,21 @@ export function registerArduinoBlocks(): void {
       inputsInline: true,
       previousStatement: null,
       nextStatement: null,
-      colour: 200,
+      colour: '#00979d',
     },
     {
       type: 'ardukid_digital_read',
       message0: 'read pin %1',
       args0: [{ type: 'field_dropdown', name: 'PIN', options: DIGITAL_PINS.map((p) => [p, p]) }],
       output: 'Boolean',
-      colour: 200,
+      colour: '#00979d',
     },
     {
       type: 'ardukid_analog_read',
       message0: 'read analog %1',
       args0: [{ type: 'field_dropdown', name: 'PIN', options: ANALOG_PINS.map((p) => [p, p]) }],
       output: 'Number',
-      colour: 200,
+      colour: '#00979d',
     },
     {
       type: 'ardukid_delay',
@@ -218,7 +218,7 @@ export const ARDUINO_TOOLBOX_CATEGORIES = [
   {
     kind: 'category',
     name: 'Arduino',
-    colour: '200',
+    colour: '#00979d',
     contents: [
       { kind: 'block', type: 'ardukid_setup' },
       { kind: 'block', type: 'ardukid_loop' },

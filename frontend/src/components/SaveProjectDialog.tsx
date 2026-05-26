@@ -70,7 +70,7 @@ export function SaveProjectDialog({ open, onClose, onSaved }: Props) {
           placeholder="my-traffic-light"
           maxLength={80}
           disabled={busy}
-          className="mt-3 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+          className="mt-3 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
         />
         {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
         <div className="mt-4 flex justify-end gap-2">
@@ -85,7 +85,7 @@ export function SaveProjectDialog({ open, onClose, onSaved }: Props) {
           <button
             type="submit"
             disabled={busy || !name.trim()}
-            className="rounded-md bg-emerald-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+            className="rounded-md bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
           >
             {busy ? 'Saving...' : 'Save'}
           </button>

@@ -37,7 +37,7 @@ export function RightTabs() {
             className={cn(
               'flex-1 px-3 py-2 text-sm font-semibold',
               tab === t.id
-                ? 'border-b-2 border-emerald-500 text-emerald-600'
+                ? 'border-b-2 border-brand-500 text-brand-600'
                 : 'text-slate-500 hover:text-slate-700',
             )}
           >

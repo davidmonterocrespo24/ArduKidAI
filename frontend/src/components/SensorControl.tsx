@@ -57,7 +57,7 @@ export function SensorControl({ instance }: Props) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         title="Control sensor"
-        className="rounded border border-emerald-300 bg-white/90 px-1.5 text-[10px] font-medium text-emerald-700 transition hover:bg-emerald-50"
+        className="rounded border border-brand-300 bg-white/90 px-1.5 text-[10px] font-medium text-brand-700 transition hover:bg-brand-50"
       >
         control
       </button>
@@ -216,7 +216,7 @@ function PotControl({
         step={1}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-emerald-600"
+        className="w-full accent-brand-600"
       />
       <div className="flex justify-between text-[9px] text-slate-400">
         <span>0 V</span>
@@ -261,7 +261,7 @@ function SliderControl({
         step={1}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-emerald-600"
+        className="w-full accent-brand-600"
       />
       <div className="flex justify-between text-[9px] text-slate-400">
         <span>{min}</span>
@@ -288,7 +288,7 @@ function BoolControl({
         onClick={() => onChange(!value)}
         className={
           value
-            ? 'rounded border border-emerald-400 bg-emerald-500 px-2.5 py-1 text-white hover:bg-emerald-600'
+            ? 'rounded border border-brand-400 bg-brand-500 px-2.5 py-1 text-white hover:bg-brand-600'
             : 'rounded border border-slate-300 bg-white px-2.5 py-1 text-slate-700 hover:bg-slate-50'
         }
       >
@@ -325,7 +325,7 @@ function PirControl({
         type="button"
         onClick={trigger}
         disabled={!pin}
-        className="rounded border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-white hover:bg-emerald-600 disabled:opacity-40"
+        className="rounded border border-brand-300 bg-brand-500 px-2.5 py-1 text-white hover:bg-brand-600 disabled:opacity-40"
       >
         Trigger
       </button>
@@ -351,7 +351,7 @@ function SlidePositionControl({
             onClick={() => onChange(p)}
             className={
               value === p
-                ? 'flex-1 rounded border border-emerald-400 bg-emerald-500 px-2 py-1 text-white'
+                ? 'flex-1 rounded border border-brand-400 bg-brand-500 px-2 py-1 text-white'
                 : 'flex-1 rounded border border-slate-300 bg-white px-2 py-1 text-slate-700 hover:bg-slate-50'
             }
           >
@@ -385,7 +385,7 @@ function DipSwitchControl({
             }}
             className={
               v === 1
-                ? 'h-6 w-5 rounded-sm border border-emerald-400 bg-emerald-500 text-[9px] font-mono text-white'
+                ? 'h-6 w-5 rounded-sm border border-brand-400 bg-brand-500 text-[9px] font-mono text-white'
                 : 'h-6 w-5 rounded-sm border border-slate-300 bg-white text-[9px] font-mono text-slate-700 hover:bg-slate-50'
             }
             title={`Switch ${i + 1}`}
@@ -421,7 +421,7 @@ function JoystickControl({
         max={1023}
         value={xValue}
         onChange={(e) => onChange({ xValue: Number(e.target.value) })}
-        className="w-full accent-emerald-600"
+        className="w-full accent-brand-600"
       />
       <div className="flex items-center justify-between font-medium">
         <span>Y (VERT)</span>
@@ -433,7 +433,7 @@ function JoystickControl({
         max={1023}
         value={yValue}
         onChange={(e) => onChange({ yValue: Number(e.target.value) })}
-        className="w-full accent-emerald-600"
+        className="w-full accent-brand-600"
       />
       <div className="flex items-center justify-between pt-1">
         <span className="font-medium">Button</span>
@@ -442,7 +442,7 @@ function JoystickControl({
           onClick={() => onChange({ pressed: !pressed })}
           className={
             pressed
-              ? 'rounded border border-emerald-400 bg-emerald-500 px-2.5 py-1 text-white'
+              ? 'rounded border border-brand-400 bg-brand-500 px-2.5 py-1 text-white'
               : 'rounded border border-slate-300 bg-white px-2.5 py-1 text-slate-700 hover:bg-slate-50'
           }
         >
@@ -539,7 +539,7 @@ function ButtonControl({
           type="button"
           onClick={pulse}
           disabled={!pin}
-          className="flex-1 rounded border border-emerald-300 bg-emerald-50 px-1.5 py-1 text-[10px] font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-40"
+          className="flex-1 rounded border border-brand-300 bg-brand-50 px-1.5 py-1 text-[10px] font-medium text-brand-700 transition hover:bg-brand-100 disabled:opacity-40"
         >
           Pulse
         </button>

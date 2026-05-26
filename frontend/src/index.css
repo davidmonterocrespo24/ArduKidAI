@@ -5,6 +5,25 @@
  * the dark variants stay inert. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Brand palette anchored at Arduino's official teal (~#00979D - the colour
+ * of the UNO PCB). All call-to-action buttons, active tabs, sensor
+ * control accents, and the Arduino Blockly category use this scale so the
+ * whole app reads as one product instead of an emerald patchwork. Scales
+ * are tuned to keep ~AA contrast on white for 500+ shades. */
+@theme {
+  --color-brand-50:  #ecfafb;
+  --color-brand-100: #cff3f4;
+  --color-brand-200: #a7e6e8;
+  --color-brand-300: #6ed1d6;
+  --color-brand-400: #2bb1b8;
+  --color-brand-500: #00979d;
+  --color-brand-600: #007e83;
+  --color-brand-700: #00646a;
+  --color-brand-800: #015052;
+  --color-brand-900: #074145;
+  --color-brand-950: #022a2e;
+}
+
 :root {
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;

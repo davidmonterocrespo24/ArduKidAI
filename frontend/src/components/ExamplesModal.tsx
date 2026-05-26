@@ -8,7 +8,7 @@ interface Props {
 }
 
 const DIFFICULTY_DOT: Record<number, string> = {
-  1: 'bg-emerald-500',
+  1: 'bg-brand-500',
   2: 'bg-amber-500',
   3: 'bg-rose-500',
 }
@@ -98,7 +98,7 @@ export function ExamplesModal({ open, onClose }: Props) {
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filter: led, button, servo, melody..."
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm focus:border-emerald-500 focus:outline-none"
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm focus:border-brand-500 focus:outline-none"
           />
         </div>
 
@@ -112,7 +112,7 @@ export function ExamplesModal({ open, onClose }: Props) {
                   key={ex.id}
                   type="button"
                   onClick={() => pick(ex)}
-                  className="flex h-full flex-col rounded-md border border-slate-200 bg-white p-3 text-left transition hover:border-emerald-400 hover:bg-emerald-50"
+                  className="flex h-full flex-col rounded-md border border-slate-200 bg-white p-3 text-left transition hover:border-brand-400 hover:bg-brand-50"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-semibold text-slate-900">{ex.title}</p>

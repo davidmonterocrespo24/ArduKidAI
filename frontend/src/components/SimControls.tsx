@@ -213,7 +213,7 @@ export function SimControls() {
   const isRunning = simStatus === 'running'
   const statusDot =
     simStatus === 'running'
-      ? 'bg-emerald-500'
+      ? 'bg-brand-500'
       : simStatus === 'error'
       ? 'bg-rose-500'
       : 'bg-slate-300'
@@ -233,8 +233,8 @@ export function SimControls() {
         className={cn(
           'rounded-md px-2.5 py-1 text-xs font-medium text-white',
           isRunning
-            ? 'cursor-not-allowed bg-emerald-500/50'
-            : 'bg-emerald-500 hover:bg-emerald-600',
+            ? 'cursor-not-allowed bg-brand-500/50'
+            : 'bg-brand-500 hover:bg-brand-600',
         )}
       >
         Run
@@ -244,7 +244,7 @@ export function SimControls() {
         onClick={() => void compileAndRun()}
         disabled={isRunning}
         title="POST current C++ to /api/compile and load the returned HEX"
-        className="rounded-md border border-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+        className="rounded-md border border-brand-200 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-50"
       >
         Compile &amp; run
       </button>
@@ -273,7 +273,7 @@ export function SimControls() {
         type="button"
         onClick={() => setSaveOpen(true)}
         title="Save the current circuit as a named project"
-        className="rounded-md border border-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+        className="rounded-md border border-brand-200 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
       >
         Save
       </button>
