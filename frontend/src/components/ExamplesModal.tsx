@@ -48,7 +48,9 @@ export function ExamplesModal({ open, onClose }: Props) {
   function pick(ex: ExampleTemplate) {
     onClose()
     // Wipe whatever was on the canvas first - examples are stand-alone
-    // starter circuits, not additions to the current one.
+    // starter circuits, not additions to the current one. resetCircuit
+    // also flips simStatus -> 'idle', which the SimControls effect
+    // catches and tears the running AVR handle down.
     resetCircuit()
     // Drop the template's components and wires straight into the store.
     for (const c of ex.components) addComponent(c)

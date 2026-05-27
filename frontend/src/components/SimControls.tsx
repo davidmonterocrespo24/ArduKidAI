@@ -192,6 +192,17 @@ export function SimControls() {
     }
   }, [])
 
+  // Tear down any running sim handle when the store flips to idle (a
+  // new example was loaded, or the kid hit Reset). Without this, the
+  // previous handle keeps ticking in the background and the next
+  // Compile & run silently fights it for port listeners.
+  useEffect(() => {
+    if (simStatus === 'idle' && simRef.current) {
+      simRef.current.stop()
+      simRef.current = null
+    }
+  }, [simStatus])
+
   function startWithCurrent() {
     if (simRef.current) return
     simRef.current = startSim(
