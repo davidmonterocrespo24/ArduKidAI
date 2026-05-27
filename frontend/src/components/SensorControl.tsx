@@ -9,65 +9,48 @@ interface Props {
 }
 
 /**
- * Tiny "control" popover shown next to a sensor while the sim is running.
- * For a potentiometer the kid can slide the knob 0..1023. For a pushbutton
- * we offer "Hold" (sticky LOW) and "Pulse" (LOW for 200 ms). Components
- * with no live input (LEDs, LCDs, ...) do not render this control at all.
+ * Inner panel for the sensor control popover. The panel itself does not
+ * own positioning - DraggablePart anchors it at the canvas top-right and
+ * handles open/close. Pots get a slider, buttons get Hold/Pulse, every
+ * other sensor gets the slider that matches its prop (lux, celsius,
+ * flame, ...).
  */
-export function SensorControl({ instance }: Props) {
+export function SensorControlPanel({ instance, onClose }: Props & { onClose: () => void }) {
   const updateComponentProps = useAppStore((s) => s.updateComponentProps)
   const wires = useAppStore((s) => s.wires)
-  const [open, setOpen] = useState(false)
   const popRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!open) return
     function onDoc(e: MouseEvent) {
       if (!popRef.current) return
-      if (!popRef.current.contains(e.target as Node)) setOpen(false)
+      if (popRef.current.contains(e.target as Node)) return
+      // Ignore clicks landing on the host part - the part toggles us
+      // open/closed itself, double-closing would feel broken.
+      const target = e.target as Element | null
+      if (target?.closest(`[data-component-id="${instance.id}"]`)) return
+      onClose()
     }
     document.addEventListener('mousedown', onDoc)
     return () => document.removeEventListener('mousedown', onDoc)
-  }, [open])
-
-  const hasControl = [
-    'potentiometer',
-    'slidePotentiometer',
-    'pushbutton',
-    'pushbutton6mm',
-    'photoresistor',
-    'ntcTemperature',
-    'tiltSwitch',
-    'pirMotion',
-    'slideSwitch',
-    'dipSwitch8',
-    'analogJoystick',
-    'soundSensor',
-    'smallSoundSensor',
-    'flameSensor',
-    'gasSensor',
-    'heartBeatSensor',
-    'rotaryEncoder',
-    'dht22',
-    'hcSr04',
-  ].includes(instance.type)
-  if (!hasControl) return null
+  }, [instance.id, onClose])
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        title="Control sensor"
-        className="rounded border border-brand-300 bg-white/90 px-1.5 text-[10px] font-medium text-brand-700 transition hover:bg-brand-50"
-      >
-        control
-      </button>
-      {open ? (
-        <div
-          ref={popRef}
-          className="absolute left-1/2 top-full z-50 mt-1 w-44 -translate-x-1/2 rounded-md border border-slate-200 bg-white p-2 shadow-lg"
+    <div
+      ref={popRef}
+      className="w-56 rounded-md border border-slate-200 bg-white p-3 shadow-lg"
+    >
+      <div className="mb-2 flex items-center justify-between border-b border-slate-100 pb-1.5">
+        <span className="text-xs font-semibold text-slate-700">{instance.id}</span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="rounded px-1 text-xs text-slate-400 hover:bg-slate-100 hover:text-slate-600"
         >
+          x
+        </button>
+      </div>
+      <div>
           {instance.type === 'potentiometer' || instance.type === 'slidePotentiometer' ? (
             <PotControl
               instance={instance}
@@ -196,8 +179,6 @@ export function SensorControl({ instance }: Props) {
             />
           ) : null}
           {instance.type === 'hcSr04' ? (
-            // HC-SR04's echo pulse isn't simulated yet; the slider sets
-            // the prop for future pulseIn() emulation.
             <SliderControl
               label="Distance (cm)"
               min={2}
@@ -209,8 +190,7 @@ export function SensorControl({ instance }: Props) {
               unit=" cm"
             />
           ) : null}
-        </div>
-      ) : null}
+      </div>
     </div>
   )
 }
@@ -626,9 +606,6 @@ function Dht22Control({
           className="w-full accent-brand-600"
         />
       </div>
-      <p className="text-[9px] leading-snug text-slate-400">
-        1-wire timing not simulated yet — readings will time out in code.
-      </p>
     </div>
   )
 }

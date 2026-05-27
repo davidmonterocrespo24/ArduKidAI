@@ -62,6 +62,7 @@ export function CanvasPanel() {
 
       <div
         ref={canvasRef}
+        data-canvas-scroller
         className="relative min-h-0 flex-1 overflow-auto bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.06)_1px,transparent_0)] [background-size:20px_20px]"
         onClick={(e) => {
           if (e.target !== e.currentTarget) return

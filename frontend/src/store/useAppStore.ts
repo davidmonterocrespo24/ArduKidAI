@@ -242,8 +242,14 @@ export const useAppStore = create<AppState>((set) => ({
   appendSerial: (text) =>
     set((state) => {
       const next = state.serialOutput + text
-      // Keep at most 16 KB so the panel does not balloon.
-      return { serialOutput: next.length > 16_000 ? next.slice(-16_000) : next }
+      // First serial line of a session pops the Serial monitor tab open
+      // so the kid notices it. Subsequent writes keep whatever tab the
+      // kid chose - we never steal focus repeatedly.
+      const focusedSerial = state.serialOutput.length > 0 || state.bottomTab === 'serial'
+      return {
+        serialOutput: next.length > 16_000 ? next.slice(-16_000) : next,
+        bottomTab: focusedSerial ? state.bottomTab : 'serial',
+      }
     }),
   clearSerial: () => set({ serialOutput: '' }),
 

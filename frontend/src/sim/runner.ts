@@ -23,6 +23,7 @@ import { I2CBus } from './i2cBus'
 import { PCF8574 } from './pcf8574'
 import { HD44780Backpack } from './hd44780'
 import { SSD1306Device } from './ssd1306'
+import { DHT22Sim } from './dht22'
 import {
   emptyPwmSnapshot,
   pwmSnapshotEquals,
@@ -72,6 +73,11 @@ export interface SimCallbacks {
   /** Called when the virtual SSD1306 OLED repaints. The pixel buffer is
    * 128 cols x 64 rows, 1-byte-per-pixel (1 = lit). */
   onOledPixels?: (pixels: Uint8Array) => void
+  /** One entry per DHT22 wired into the simulator. The runner installs
+   * a 1-wire DHT22 device on each pin and the library reads return the
+   * values returned by `getValues()` at the moment of the read. */
+  dhtSensors?: Array<{ pin: DigitalPinLabel; getValues: () => { celsius: number; humidity: number } }>
+
   /** Called once per frame if the PWM register snapshot changed.
    * Consumers (LED brightness, servo angle) project the relevant fields. */
   onPwmChange?: (snapshot: PwmSnapshot) => void
@@ -238,6 +244,21 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
     }
   }
   registerInputBridge(setter)
+
+  // DHT22 sensors: one virtual device per kid-wired pin. The sim
+  // reads the slider values fresh from the closure on each response,
+  // so dragging the panel sliders changes the next library read.
+  if (callbacks.dhtSensors && callbacks.dhtSensors.length > 0) {
+    for (const sensor of callbacks.dhtSensors) {
+      const portdEntry = PORTD_MAP.find(([l]) => l === sensor.pin)
+      const portbEntry = PORTB_MAP.find(([l]) => l === sensor.pin)
+      if (portdEntry) {
+        new DHT22Sim(cpu, portD, portdEntry[1], sensor.getValues)
+      } else if (portbEntry) {
+        new DHT22Sim(cpu, portB, portbEntry[1], sensor.getValues)
+      }
+    }
+  }
 
   let stopped = false
   let lastPwm: PwmSnapshot = emptyPwmSnapshot()

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { startSim, type SimHandle } from '../sim/runner'
-import { resolveAnalogChannel } from '../sim/wireTrace'
+import { resolveAllDrivePins, resolveAnalogChannel } from '../sim/wireTrace'
+import type { DigitalPinLabel } from '../sim/pinState'
 import { postJson } from '../lib/api'
 import { cn } from '../lib/cn'
 import { SaveProjectDialog } from './SaveProjectDialog'
@@ -95,6 +96,42 @@ function pushLcdText(text: string): void {
   }
 }
 
+// Walk the live store for every DHT22 component and return the
+// `dhtSensors` payload the runner expects: one entry per sensor whose
+// data pin is wired to a digital pin. The getValues closure reads the
+// live store every time the runner calls it, so dragging the panel
+// sliders changes the very next library read.
+function buildDhtSensorsFromStore(): Array<{
+  pin: DigitalPinLabel
+  getValues: () => { celsius: number; humidity: number }
+}> {
+  const state = useAppStore.getState()
+  const out: Array<{
+    pin: DigitalPinLabel
+    getValues: () => { celsius: number; humidity: number }
+  }> = []
+  for (const c of state.components) {
+    if (c.type !== 'dht22') continue
+    const pins = resolveAllDrivePins(c.id, useAppStore.getState().wires)
+    // wokwi-dht22 names the data pin "SDA" (it's a one-wire device,
+    // but that is the label the SVG ships with).
+    const dataPin = pins.SDA
+    if (!dataPin) continue
+    const componentId = c.id
+    out.push({
+      pin: dataPin,
+      getValues: () => {
+        const fresh = useAppStore.getState().components.find((x) => x.id === componentId)
+        return {
+          celsius: Number(fresh?.props.celsius ?? 22),
+          humidity: Number(fresh?.props.humidity ?? 50),
+        }
+      },
+    })
+  }
+  return out
+}
+
 // SSD1306 frame buffer bridge: copy the 128x64 monochrome buffer the
 // runner produced into every wokwi-ssd1306 on the canvas. Done by
 // addressing the element directly (it owns the canvas inside its
@@ -165,6 +202,7 @@ export function SimControls() {
         onLcdText: pushLcdText,
         onOledPixels: pushOledPixels,
         onPwmChange: (snap) => setPwmSnapshot(snap),
+        dhtSensors: buildDhtSensorsFromStore(),
       },
     )
     setSimStatus('running')
@@ -194,6 +232,7 @@ export function SimControls() {
             onLcdText: pushLcdText,
             onOledPixels: pushOledPixels,
             onPwmChange: (snap) => setPwmSnapshot(snap),
+            dhtSensors: buildDhtSensorsFromStore(),
           },
         )
         setSimStatus('running')

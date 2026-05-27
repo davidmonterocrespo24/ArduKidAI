@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { ComponentInstance } from '../types/circuit'
 import { useAppStore } from '../store/useAppStore'
 import { DynamicComponent } from './DynamicComponent'
-import { SensorControl } from './SensorControl'
+import { SensorControlPanel } from './SensorControl'
+import { hasSensorControl } from './sensorControlPredicate'
 
 interface Props {
   instance: ComponentInstance
@@ -31,12 +33,42 @@ function isOnInteractiveSurface(target: EventTarget | null): boolean {
   return false
 }
 
+// Pin a `position: fixed` rectangle to the top-right of the canvas
+// scroll container's bounding rect. Re-measure on scroll / resize so
+// the panel never drifts away from the canvas frame. Returns null on
+// the server.
+function useCanvasAnchor(active: boolean): { top: number; right: number } | null {
+  const [rect, setRect] = useState<{ top: number; right: number } | null>(null)
+  useEffect(() => {
+    if (!active) return
+    const scroller = document.querySelector('[data-canvas-scroller]') as HTMLElement | null
+    if (!scroller) return
+    function update() {
+      const r = scroller!.getBoundingClientRect()
+      setRect({ top: r.top + 8, right: window.innerWidth - r.right + 8 })
+    }
+    update()
+    window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, true)
+    return () => {
+      window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update, true)
+    }
+  }, [active])
+  return rect
+}
+
 /**
  * Wraps a wokwi component so the kid can drag it around the canvas.
  * Passive parts (LED, resistor, LCD, ...) drag from anywhere on the
  * body. Interactive parts (pushbutton, pot) only drag from the small
  * id-badge below the part, so clicks on the button or knob reach the
  * wokwi element's own pointerdown. The Arduino UNO is NOT wrapped.
+ *
+ * While the simulator runs, clicking the body of a controllable sensor
+ * (NTC, photoresistor, slider switch, DHT, ...) opens its control
+ * panel anchored at the top-right of the canvas. Buttons / pots keep
+ * their direct interaction (they have built-in pointer handlers).
  */
 export function DraggablePart({ instance }: Props) {
   const updatePosition = useAppStore((s) => s.updateComponentPosition)
@@ -49,6 +81,11 @@ export function DraggablePart({ instance }: Props) {
     originY: number
   } | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [panelOpenWhileRunning, setPanelOpenWhileRunning] = useState(false)
+  // Derived: only show the panel while the sim is running. Stopping
+  // the sim implicitly closes it without needing a setState in effect.
+  const panelOpen = simStatus === 'running' && panelOpenWhileRunning
+  const setPanelOpen = setPanelOpenWhileRunning
 
   useEffect(() => {
     if (!dragging) return
@@ -83,10 +120,18 @@ export function DraggablePart({ instance }: Props) {
 
   function onWrapperMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) return
-    // While the sim is running the kid is interacting with sensor
-    // controls (sliders, buttons, popovers). Dragging the part would
-    // hijack the slider drag, so block all drag-initiating clicks.
-    if (simStatus === 'running') return
+    if (simStatus === 'running') {
+      // During sim, clicking the body of a controllable sensor toggles
+      // its control panel. Clicks on a wokwi element that owns its
+      // pointer (pushbutton, pot) fall through so the kid can press /
+      // rotate it directly.
+      if (isOnInteractiveSurface(e.target)) return
+      if (hasSensorControl(instance.type)) {
+        e.stopPropagation()
+        setPanelOpen((v) => !v)
+      }
+      return
+    }
     if (isOnInteractiveSurface(e.target)) return
     startDrag(e.clientX, e.clientY)
   }
@@ -101,24 +146,32 @@ export function DraggablePart({ instance }: Props) {
     startDrag(e.clientX, e.clientY)
   }
 
+  const anchor = useCanvasAnchor(panelOpen)
+
   return (
     <div
+      data-component-id={instance.id}
       onMouseDown={onWrapperMouseDown}
       style={{
         position: 'absolute',
         left: instance.x,
         top: instance.y,
-        cursor: simStatus === 'running' ? 'default' : dragging ? 'grabbing' : 'grab',
+        cursor:
+          simStatus === 'running'
+            ? hasSensorControl(instance.type)
+              ? 'pointer'
+              : 'default'
+            : dragging
+            ? 'grabbing'
+            : 'grab',
         userSelect: 'none',
         touchAction: 'none',
       }}
       className="group inline-block"
     >
       <DynamicComponent instance={instance} />
-      {/* Absolutely positioned so widening it (e.g. mounting the
-          SensorControl popover when sim starts) cannot shift the
-          wokwi element above. Without this the part jumps sideways
-          on Run and the wires no longer meet its pins. */}
+      {/* Absolutely positioned so adding child elements does not shift
+          the wokwi element above and break the wire pin positions. */}
       <div
         className="absolute left-1/2 top-full flex -translate-x-1/2 items-center gap-2 pt-1"
       >
@@ -130,7 +183,6 @@ export function DraggablePart({ instance }: Props) {
         >
           {instance.id}
         </span>
-        {simStatus === 'running' ? <SensorControl instance={instance} /> : null}
         <button
           type="button"
           onMouseDown={(e) => e.stopPropagation()}
@@ -141,6 +193,16 @@ export function DraggablePart({ instance }: Props) {
           remove
         </button>
       </div>
+      {panelOpen && anchor
+        ? createPortal(
+            <div
+              style={{ position: 'fixed', top: anchor.top, right: anchor.right, zIndex: 60 }}
+            >
+              <SensorControlPanel instance={instance} onClose={() => setPanelOpen(false)} />
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   )
 }
