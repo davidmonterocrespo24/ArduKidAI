@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
+import { isActive } from '../sim/pinState'
 import { AddComponentModal } from './AddComponentModal'
 import { DraggablePart } from './DraggablePart'
 import { WireDialog } from './WireDialog'
@@ -12,6 +13,35 @@ const STAGE_WIDTH = 1400
 const STAGE_HEIGHT = 1000
 const UNO_LEFT = 240
 const UNO_TOP = 60
+
+// Render the wokwi-arduino-uno with its built-in LED indicators bound
+// to the live sim: the L LED follows pin D13, RX/TX flicker on USART
+// pin activity, ledPower stays on while the sim is running. Without
+// this binding the SVG ships dark even though D13 is being toggled.
+function ArduinoUnoBoard() {
+  const ref = useRef<HTMLElement>(null)
+  const pinLevels = useAppStore((s) => s.pinLevels)
+  const pinActivity = useAppStore((s) => s.pinActivity)
+  const simStatus = useAppStore((s) => s.simStatus)
+  const props = useMemo(
+    () => ({
+      led13: !!pinLevels.D13,
+      // D0 = USART RX, D1 = USART TX. We do not own a real serial RX
+      // signal, so RX stays dark; TX flickers on D1 toggles which the
+      // pin-activity heartbeat already tracks.
+      ledTX: isActive('D1', pinActivity, 200),
+      ledRX: false,
+      ledPower: simStatus === 'running',
+    }),
+    [pinLevels.D13, pinActivity, simStatus],
+  )
+  useEffect(() => {
+    if (!ref.current) return
+    const el = ref.current as unknown as Record<string, unknown>
+    for (const [k, v] of Object.entries(props)) el[k] = v
+  }, [props])
+  return <wokwi-arduino-uno ref={ref} id="UNO" />
+}
 
 export function CanvasPanel() {
   const components = useAppStore((s) => s.components)
@@ -78,7 +108,7 @@ export function CanvasPanel() {
             style={{ position: 'absolute', left: UNO_LEFT, top: UNO_TOP, userSelect: 'none' }}
             className="flex flex-col items-center gap-1"
           >
-            <wokwi-arduino-uno id="UNO" />
+            <ArduinoUnoBoard />
             <span className="rounded bg-white/80 px-1 font-mono text-[10px] text-slate-600 shadow-sm">
               UNO (pinned)
             </span>

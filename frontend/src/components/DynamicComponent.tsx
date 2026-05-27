@@ -220,11 +220,29 @@ function Lcd2004({ instance }: { instance: ComponentInstance }) {
 function DipSwitch8({ instance }: { instance: ComponentInstance }) {
   const wires = useAppStore((s) => s.wires)
   const simStatus = useAppStore((s) => s.simStatus)
+  const updateComponentProps = useAppStore((s) => s.updateComponentProps)
   const values = useMemo(
     () => (instance.props.values as number[] | undefined) ?? [0, 0, 0, 0, 0, 0, 0, 0],
     [instance.props.values],
   )
   const ref = useLiveProperty('values', values)
+  // wokwi-dip-switch-8 fires `switch-change` with the toggled index in
+  // event.detail when the kid clicks a tiny switch. Mirror it back so
+  // the store reflects the new state and the drive-pin effect below
+  // re-evaluates.
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const handler = (e: Event) => {
+      const idx = Number((e as CustomEvent<number>).detail)
+      if (!Number.isFinite(idx) || idx < 0 || idx > 7) return
+      const next = values.slice()
+      next[idx] = next[idx] === 1 ? 0 : 1
+      updateComponentProps(instance.id, { values: next })
+    }
+    el.addEventListener('switch-change', handler)
+    return () => el.removeEventListener('switch-change', handler)
+  }, [ref, values, instance.id, updateComponentProps])
   // Each switch a-side connects to a digital pin. When the switch is
   // on (value === 1) we drive that pin LOW (closed to ground via the
   // b-side); off leaves the pin HIGH (assumes INPUT_PULLUP wiring).
@@ -336,14 +354,30 @@ function FlameSensor({ instance }: { instance: ComponentInstance }) {
 }
 
 function RotaryEncoder({ instance }: { instance: ComponentInstance }) {
-  // KY-040 quadrature emulation: when the kid rotates (control panel
-  // +/- buttons set props.angle), we fire a CLK pulse on the wired
-  // CLK pin and a phase-shifted DT pulse so the sketch's interrupt or
-  // quadrature decoder sees direction-encoded rising edges.
+  // KY-040 quadrature emulation: when the kid rotates (either via the
+  // control panel +/- buttons, or by spinning the knob directly on
+  // canvas which wokwi-ky-040 reports as `rotate-cw` / `rotate-ccw`),
+  // we bump props.angle and fire CLK/DT pulses in the next effect.
   const wires = useAppStore((s) => s.wires)
+  const updateComponentProps = useAppStore((s) => s.updateComponentProps)
   const angle = (instance.props.angle as number | undefined) ?? 0
   const pressed = (instance.props.pressed as boolean | undefined) ?? false
   const ref = useLiveProperty('angle', angle)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const onCw = () => updateComponentProps(instance.id, { angle: angle + 1 })
+    const onCcw = () => updateComponentProps(instance.id, { angle: angle - 1 })
+    const onPress = () => updateComponentProps(instance.id, { pressed: true })
+    el.addEventListener('rotate-cw', onCw)
+    el.addEventListener('rotate-ccw', onCcw)
+    el.addEventListener('button-press', onPress)
+    return () => {
+      el.removeEventListener('rotate-cw', onCw)
+      el.removeEventListener('rotate-ccw', onCcw)
+      el.removeEventListener('button-press', onPress)
+    }
+  }, [ref, instance.id, angle, updateComponentProps])
   const lastAngle = useRef(angle)
   useEffect(() => {
     if (angle === lastAngle.current) return
