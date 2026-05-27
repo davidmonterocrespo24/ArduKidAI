@@ -37,7 +37,7 @@ export const COMPONENT_CATALOG: ComponentMeta[] = [
   { type: 'gasSensor',          label: 'Gas sensor (MQ-2)',    pins: ['AOUT', 'DOUT', 'GND', 'VCC'],                  defaultProps: { gas: 200, threshold: 600 } },
   { type: 'heartBeatSensor',    label: 'Heart-beat sensor',    pins: ['GND', 'VCC', 'OUT'],                           defaultProps: { bpm: 60 } },
   { type: 'rotaryEncoder',      label: 'Rotary encoder (KY-040)', pins: ['CLK', 'DT', 'SW', 'VCC', 'GND'],            defaultProps: { angle: 0 } },
-  { type: 'ssd1306',            label: 'OLED 128x64 (SSD1306 I2C)', pins: ['GND', 'VIN', '3V3', 'CS', 'RST', 'DC', 'CLK', 'DATA'], defaultProps: {} },
+  { type: 'ssd1306',            label: 'OLED 128x64 (SSD1306 I2C)', pins: ['DATA', 'CLK', 'DC', 'RST', 'CS', '3V3', 'VIN', 'GND'], defaultProps: {} },
   { type: 'dht22',              label: 'DHT22 temp + humidity', pins: ['VCC', 'SDA', 'NC', 'GND'],                   defaultProps: { celsius: 22, humidity: 50 } },
   { type: 'hcSr04',             label: 'HC-SR04 ultrasonic',   pins: ['VCC', 'TRIG', 'ECHO', 'GND'],                  defaultProps: { distanceCm: 25 } },
   { type: 'seg7',               label: '7-segment',            pins: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'DP', 'COM'], defaultProps: { color: 'red' } },

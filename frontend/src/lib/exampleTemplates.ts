@@ -2854,4 +2854,110 @@ void loop() {
 }
 `,
   },
+  {
+    id: 'ex-049',
+    title: 'OLED hello world (SSD1306)',
+    intent_en: 'show "Hello, kid!" on the 128x64 SSD1306 OLED over I2C',
+    intent_es: 'mostrar "Hello, kid!" en la pantalla OLED SSD1306 128x64 por I2C',
+    tags: ['oled', 'ssd1306', 'i2c', 'display'],
+    difficulty: 2,
+    components: layout([{ type: 'ssd1306' }]),
+    wires: [
+      w('OLED1.VIN', 'UNO.5V'),
+      w('OLED1.GND', 'UNO.GND'),
+      w('OLED1.DATA', 'UNO.A4'),
+      w('OLED1.CLK', 'UNO.A5'),
+    ],
+    // No Blockly tree: SSD1306 needs Adafruit_GFX / Adafruit_SSD1306
+    // calls we do not have blocks for yet. Kid sees the C++ source.
+    cpp_code: `#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+Adafruit_SSD1306 display(128, 64, &Wire, -1);
+
+void setup() {
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 8);
+  display.println("Hello,");
+  display.println("kid!");
+  display.display();
+}
+
+void loop() {
+}
+`,
+  },
+  {
+    id: 'ex-050',
+    title: 'DHT22 to Serial',
+    intent_en: 'read temperature and humidity from a DHT22 and print to Serial every second',
+    intent_es: 'leer la temperatura y la humedad de un DHT22 e imprimirlas en el monitor serie cada segundo',
+    tags: ['dht22', 'sensor', 'serial', 'temperature', 'humidity'],
+    difficulty: 2,
+    components: layout([{ type: 'dht22' }]),
+    wires: [
+      w('DHT1.VCC', 'UNO.5V'),
+      w('DHT1.GND', 'UNO.GND'),
+      w('DHT1.SDA', 'UNO.D2'),
+    ],
+    cpp_code: `#include <DHT.h>
+
+#define DHTPIN 2
+#define DHTTYPE DHT22
+DHT dht(DHTPIN, DHTTYPE);
+
+void setup() {
+  Serial.begin(9600);
+  dht.begin();
+}
+
+void loop() {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+  Serial.print("T="); Serial.print(t); Serial.print(" C  ");
+  Serial.print("H="); Serial.print(h); Serial.println(" %");
+  delay(1000);
+}
+`,
+  },
+  {
+    id: 'ex-051',
+    title: 'Ultrasonic distance (HC-SR04)',
+    intent_en: 'measure distance with an HC-SR04 ultrasonic sensor and print the centimetres to Serial',
+    intent_es: 'medir distancia con un sensor ultrasonico HC-SR04 e imprimir los centimetros en el monitor serie',
+    tags: ['ultrasonic', 'hc-sr04', 'sensor', 'serial', 'distance'],
+    difficulty: 2,
+    components: layout([{ type: 'hcSr04' }]),
+    wires: [
+      w('US1.VCC', 'UNO.5V'),
+      w('US1.GND', 'UNO.GND'),
+      w('US1.TRIG', 'UNO.D9'),
+      w('US1.ECHO', 'UNO.D10'),
+    ],
+    cpp_code: `const int TRIG = 9;
+const int ECHO = 10;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(TRIG, OUTPUT);
+  pinMode(ECHO, INPUT);
+}
+
+void loop() {
+  digitalWrite(TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG, LOW);
+  long duration = pulseIn(ECHO, HIGH, 30000UL);
+  long cm = duration / 58;
+  Serial.print("dist="); Serial.print(cm); Serial.println(" cm");
+  delay(250);
+}
+`,
+  },
 ]
