@@ -377,8 +377,33 @@ function AnalogJoystick({ instance }: { instance: ComponentInstance }) {
   const pressed = (instance.props.pressed as boolean | undefined) ?? false
   const props = useMemo(() => ({ xValue, yValue, pressed }), [xValue, yValue, pressed])
   const ref = useLiveProperties(props)
+  const updateComponentProps = useAppStore((s) => s.updateComponentProps)
   const wires = useAppStore((s) => s.wires)
   const simStatus = useAppStore((s) => s.simStatus)
+  // Mirror the kid's drag of the joystick thumb back into the store
+  // so analogRead sees the live xValue / yValue, and the SEL button
+  // toggles when the kid presses the stick.
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const onInput = () => {
+      const e = el as unknown as { xValue: number; yValue: number; pressed: boolean }
+      updateComponentProps(instance.id, {
+        xValue: e.xValue,
+        yValue: e.yValue,
+      })
+    }
+    const onPress = () => updateComponentProps(instance.id, { pressed: true })
+    const onRelease = () => updateComponentProps(instance.id, { pressed: false })
+    el.addEventListener('input', onInput)
+    el.addEventListener('button-press', onPress)
+    el.addEventListener('button-release', onRelease)
+    return () => {
+      el.removeEventListener('input', onInput)
+      el.removeEventListener('button-press', onPress)
+      el.removeEventListener('button-release', onRelease)
+    }
+  }, [instance.id, updateComponentProps, ref])
   useEffect(() => {
     if (simStatus !== 'running') return
     const pin = resolveSingleWireToUno(`${instance.id}.SEL`, wires)
@@ -440,21 +465,43 @@ function Pushbutton6mm({ instance }: { instance: ComponentInstance }) {
 function SlidePotentiometer({ instance }: { instance: ComponentInstance }) {
   const value = (instance.props.value as number | undefined) ?? 0
   const ref = useLiveProperty('value', value)
+  const updateComponentProps = useAppStore((s) => s.updateComponentProps)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const handler = () => {
+      const next = (el as unknown as { value: number }).value
+      updateComponentProps(instance.id, { value: next })
+    }
+    el.addEventListener('input', handler)
+    return () => el.removeEventListener('input', handler)
+  }, [instance.id, updateComponentProps, ref])
   return <wokwi-slide-potentiometer ref={ref} id={instance.id} />
 }
 
 function SlideSwitch({ instance }: { instance: ComponentInstance }) {
-  const value = (instance.props.value as number | undefined) ?? 1
+  // wokwi-slide-switch toggles between 0 and 1 on click. We mirror
+  // its `input` event back into the store so the slider position
+  // (kid clicked it) drives the wired digital pin.
+  const value = (instance.props.value as number | undefined) ?? 0
   const ref = useLiveProperty('value', value)
+  const updateComponentProps = useAppStore((s) => s.updateComponentProps)
   const drivePin = useDrivePin(instance.id)
   const simStatus = useAppStore((s) => s.simStatus)
-  // Position 1 -> common tied to ground (LOW). Positions 2/3 -> common
-  // pulled high (HIGH). Without a real contact matrix this is the
-  // simplest mapping that matches the most common kid wiring: pin "2"
-  // to a digital pin, pin "1" to GND, pin "3" to VCC.
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const handler = () => {
+      const next = (el as unknown as { value: number }).value
+      updateComponentProps(instance.id, { value: next })
+    }
+    el.addEventListener('input', handler)
+    return () => el.removeEventListener('input', handler)
+  }, [instance.id, updateComponentProps, ref])
   useEffect(() => {
     if (!drivePin || simStatus !== 'running') return
-    driveInputPin(drivePin, value !== 1)
+    // Drive the wired pin HIGH when the switch is at position 1.
+    driveInputPin(drivePin, value === 1)
   }, [drivePin, value, simStatus])
   return <wokwi-slide-switch ref={ref} id={instance.id} />
 }

@@ -124,12 +124,12 @@ function statementBlockToCpp(block: Blockly.Block): string {
     case 'ardukid_oled_show':
       return 'display.display();\n'
     case 'variables_set': {
-      const name = block.getFieldValue('VAR') ?? 'v'
+      const name = varNameOf(block)
       const value = valueOf(block, 'VALUE', '0')
       return `${cVarName(name)} = ${value};\n`
     }
     case 'math_change': {
-      const name = block.getFieldValue('VAR') ?? 'v'
+      const name = varNameOf(block)
       const delta = valueOf(block, 'DELTA', '1')
       return `${cVarName(name)} += ${delta};\n`
     }
@@ -232,12 +232,27 @@ function expressionToCpp(block: Blockly.Block): string {
     case 'text':
       return `"${String(block.getFieldValue('TEXT') ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
     case 'variables_get': {
-      const name = block.getFieldValue('VAR') ?? 'v'
+      const name = varNameOf(block)
       return cVarName(name)
     }
     default:
       return '/* unsupported expression */ 0'
   }
+}
+
+// Resolve the human-readable name of a variable referenced by a block's
+// `VAR` field. Blockly 11 stores the variable ID (auto-generated, e.g.
+// "rFbRI_jdP5g_8s47__zB") in that field, NOT the kid-visible name, so
+// using getFieldValue directly emits garbage identifiers that do not
+// match the global declarations the emitter walks from getAllVariables.
+function varNameOf(block: Blockly.Block): string {
+  const idOrName = block.getFieldValue('VAR') ?? 'v'
+  const ws = block.workspace as unknown as {
+    getVariableById?: (id: string) => { name: string } | null
+    getVariableMap?: () => { getVariableById?: (id: string) => { name: string } | null }
+  }
+  const v = ws.getVariableById?.(idOrName) ?? ws.getVariableMap?.().getVariableById?.(idOrName)
+  return v?.name ?? idOrName
 }
 
 // Sanitize a Blockly variable name into a valid C identifier. Blockly
