@@ -17,23 +17,36 @@ import {
   analogWrite,
   arduinoMap,
   chain,
+  digitalRead,
   digitalWrite,
+  dhtHumidity,
+  dhtTemperature,
   getVar,
   ifThen,
   lcdBegin,
   lcdPrint,
   lcdSetCursor,
   loop,
+  millis,
   noTone,
   num,
+  oledBegin,
+  oledPrintln,
+  oledSetCursor,
+  oledShow,
+  oledTextSize,
   pinMode,
   randomFromTo,
+  serialBegin,
+  serialPrint,
+  serialPrintln,
   servoAttach,
   servoWrite,
   setVar,
   setup,
   tone,
   toXml,
+  ultrasonicCm,
   wait,
   type BlockNode,
 } from './blocklyXml'
@@ -1732,6 +1745,39 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
       { type: 'pushbutton' },
     ]),
     wires: [...ledOnPin(1, 1, '13'), ...buttonOnPin(1, '2')],
+    blockly_xml: toXml(
+      setup(
+        chain(
+          pinMode(2, 'INPUT_PULLUP'),
+          pinMode(13, 'OUTPUT'),
+          serialBegin(9600),
+        ),
+      ),
+      loop(
+        chain(
+          // Random wait 1-5 seconds, then light the LED.
+          wait(randomFromTo(1000, 5000)),
+          digitalWrite(13, 'HIGH'),
+          setVar('start', millis()),
+          // Spin until the button is pressed (active-LOW), then
+          // print the elapsed milliseconds and reset.
+          {
+            type: 'controls_whileUntil',
+            fields: { MODE: 'WHILE' },
+            values: { BOOL: digitalRead(2) },
+            statement: { name: 'DO', child: wait(1) },
+          },
+          digitalWrite(13, 'LOW'),
+          serialPrint('reaction='),
+          serialPrint({
+            type: 'math_arithmetic',
+            fields: { OP: 'MINUS' },
+            values: { A: millis(), B: getVar('start') },
+          }),
+          serialPrintln(' ms'),
+        ),
+      ),
+    ),
     cpp_code: REACTION_CPP,
   },
   {
@@ -2700,6 +2746,80 @@ void loop() {
   delay(20);
 }
 `,
+    // Poll-based block tree (no attachInterrupt block exists yet):
+    // remember last CLK reading; on a HIGH -> LOW edge, step `level`
+    // by +/- 8 based on DT. Pushing the knob (D4 low) resets to 0.
+    blockly_xml: toXml(
+      setup(
+        chain(
+          pinMode(2, 'INPUT_PULLUP'),
+          pinMode(3, 'INPUT_PULLUP'),
+          pinMode(4, 'INPUT_PULLUP'),
+          pinMode(9, 'OUTPUT'),
+          setVar('level', num(128)),
+        ),
+      ),
+      loop(
+        chain(
+          // CLK went HIGH last tick and is LOW now -> step.
+          ifThen(
+            {
+              type: 'logic_operation',
+              fields: { OP: 'AND' },
+              values: {
+                A: getVar('lastClk'),
+                B: {
+                  type: 'logic_compare',
+                  fields: { OP: 'EQ' },
+                  values: { A: digitalRead(2), B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } } },
+                },
+              },
+            },
+            chain(
+              ifThen(
+                digitalRead(3),
+                setVar('level', {
+                  type: 'math_arithmetic',
+                  fields: { OP: 'ADD' },
+                  values: { A: getVar('level'), B: num(8) },
+                }),
+              ),
+              ifThen(
+                {
+                  type: 'logic_compare',
+                  fields: { OP: 'EQ' },
+                  values: { A: digitalRead(3), B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } } },
+                },
+                setVar('level', {
+                  type: 'math_arithmetic',
+                  fields: { OP: 'MINUS' },
+                  values: { A: getVar('level'), B: num(8) },
+                }),
+              ),
+            ),
+          ),
+          setVar('lastClk', digitalRead(2)),
+          ifThen(
+            { type: 'logic_compare', fields: { OP: 'LT' }, values: { A: getVar('level'), B: num(0) } },
+            setVar('level', num(0)),
+          ),
+          ifThen(
+            { type: 'logic_compare', fields: { OP: 'GT' }, values: { A: getVar('level'), B: num(255) } },
+            setVar('level', num(255)),
+          ),
+          ifThen(
+            {
+              type: 'logic_compare',
+              fields: { OP: 'EQ' },
+              values: { A: digitalRead(4), B: { type: 'logic_boolean', fields: { BOOL: 'FALSE' } } },
+            },
+            setVar('level', num(0)),
+          ),
+          analogWrite(9, getVar('level')),
+          wait(5),
+        ),
+      ),
+    ),
   },
   {
     id: 'ex-046',
@@ -2868,8 +2988,19 @@ void loop() {
       w('OLED1.DATA', 'UNO.A4'),
       w('OLED1.CLK', 'UNO.A5'),
     ],
-    // No Blockly tree: SSD1306 needs Adafruit_GFX / Adafruit_SSD1306
-    // calls we do not have blocks for yet. Kid sees the C++ source.
+    blockly_xml: toXml(
+      setup(
+        chain(
+          oledBegin(),
+          oledTextSize(2),
+          oledSetCursor(0, 8),
+          oledPrintln('Hello,'),
+          oledPrintln('kid!'),
+          oledShow(),
+        ),
+      ),
+      loop(wait(1000)),
+    ),
     cpp_code: `#include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -2904,6 +3035,19 @@ void loop() {
       w('DHT1.GND', 'UNO.GND'),
       w('DHT1.SDA', 'UNO.D2'),
     ],
+    blockly_xml: toXml(
+      setup(serialBegin(9600)),
+      loop(
+        chain(
+          serialPrint('T='),
+          serialPrint(dhtTemperature(2)),
+          serialPrint(' C  H='),
+          serialPrint(dhtHumidity(2)),
+          serialPrintln(' %'),
+          wait(1000),
+        ),
+      ),
+    ),
     cpp_code: `#include <DHT.h>
 
 #define DHTPIN 2
@@ -2938,6 +3082,17 @@ void loop() {
       w('US1.TRIG', 'UNO.D9'),
       w('US1.ECHO', 'UNO.D10'),
     ],
+    blockly_xml: toXml(
+      setup(serialBegin(9600)),
+      loop(
+        chain(
+          serialPrint('dist='),
+          serialPrint(ultrasonicCm(9, 10)),
+          serialPrintln(' cm'),
+          wait(250),
+        ),
+      ),
+    ),
     cpp_code: `const int TRIG = 9;
 const int ECHO = 10;
 

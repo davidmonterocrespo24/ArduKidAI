@@ -19,6 +19,10 @@ RUN apt-get update \
        "LiquidCrystal I2C" \
        "Servo" \
        "Adafruit NeoPixel" \
+       "DHT sensor library" \
+       "Adafruit Unified Sensor" \
+       "Adafruit GFX Library" \
+       "Adafruit SSD1306" \
     && arduino-cli version
 
 WORKDIR /app

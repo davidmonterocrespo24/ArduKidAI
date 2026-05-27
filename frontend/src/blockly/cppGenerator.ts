@@ -86,6 +86,43 @@ function statementBlockToCpp(block: Blockly.Block): string {
       const angle = valueOf(block, 'ANGLE', '90')
       return `_servo_${pin}.write(${angle});\n`
     }
+    case 'ardukid_serial_begin': {
+      const baud = block.getFieldValue('BAUD') || '9600'
+      return `Serial.begin(${baud});\n`
+    }
+    case 'ardukid_serial_print': {
+      const value = valueOf(block, 'VALUE', '""')
+      return `Serial.print(${value});\n`
+    }
+    case 'ardukid_serial_println': {
+      const value = valueOf(block, 'VALUE', '""')
+      return `Serial.println(${value});\n`
+    }
+    case 'ardukid_oled_begin':
+      // Init returns false on hardware failure; we just ignore it so the
+      // sketch keeps running, then clear the screen.
+      return 'display.begin(SSD1306_SWITCHCAPVCC, 0x3C);\ndisplay.clearDisplay();\ndisplay.setTextColor(SSD1306_WHITE);\n'
+    case 'ardukid_oled_clear':
+      return 'display.clearDisplay();\n'
+    case 'ardukid_oled_text_size': {
+      const size = block.getFieldValue('SIZE') || '1'
+      return `display.setTextSize(${size});\n`
+    }
+    case 'ardukid_oled_set_cursor': {
+      const x = valueOf(block, 'X', '0')
+      const y = valueOf(block, 'Y', '0')
+      return `display.setCursor(${x}, ${y});\n`
+    }
+    case 'ardukid_oled_print': {
+      const value = valueOf(block, 'VALUE', '""')
+      return `display.print(${value});\n`
+    }
+    case 'ardukid_oled_println': {
+      const value = valueOf(block, 'VALUE', '""')
+      return `display.println(${value});\n`
+    }
+    case 'ardukid_oled_show':
+      return 'display.display();\n'
     case 'variables_set': {
       const name = block.getFieldValue('VAR') ?? 'v'
       const value = valueOf(block, 'VALUE', '0')
@@ -177,6 +214,21 @@ function expressionToCpp(block: Blockly.Block): string {
       const max = valueOf(block, 'MAX', '10')
       return `random(${min}, ${max})`
     }
+    case 'ardukid_millis':
+      return 'millis()'
+    case 'ardukid_dht_temperature': {
+      const pin = block.getFieldValue('PIN') || '2'
+      return `_dht_${pin}.readTemperature()`
+    }
+    case 'ardukid_dht_humidity': {
+      const pin = block.getFieldValue('PIN') || '2'
+      return `_dht_${pin}.readHumidity()`
+    }
+    case 'ardukid_ultrasonic_cm': {
+      const trig = block.getFieldValue('TRIG') || '9'
+      const echo = block.getFieldValue('ECHO') || '10'
+      return `_ardukidUltrasonicCm(${trig}, ${echo})`
+    }
     case 'text':
       return `"${String(block.getFieldValue('TEXT') ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
     case 'variables_get': {
@@ -208,6 +260,23 @@ function walkServoPins(block: Blockly.Block | null, out: Set<string>) {
     for (const input of b.inputList) {
       const child = input.connection?.targetBlock() ?? null
       if (child) walkServoPins(child, out)
+    }
+    b = b.getNextBlock()
+  }
+}
+
+// Same idea for DHT22 blocks: each unique data pin gets one global
+// `DHT _dht_<pin>(<pin>, DHT22)` instance.
+function walkDhtPins(block: Blockly.Block | null, out: Set<string>) {
+  let b: Blockly.Block | null = block
+  while (b) {
+    if (b.type === 'ardukid_dht_temperature' || b.type === 'ardukid_dht_humidity') {
+      const pin = b.getFieldValue('PIN')
+      if (pin) out.add(String(pin))
+    }
+    for (const input of b.inputList) {
+      const child = input.connection?.targetBlock() ?? null
+      if (child) walkDhtPins(child, out)
     }
     b = b.getNextBlock()
   }
@@ -280,6 +349,42 @@ export function generateCpp(workspace: Blockly.Workspace): string {
   if (servoPins.size > 0) {
     includes += '#include <Servo.h>\n'
     for (const pin of servoPins) globals += `Servo _servo_${pin};\n`
+  }
+
+  // SSD1306 OLED: any OLED block triggers the Adafruit_SSD1306 wiring.
+  if ([...allBlockTypes].some((t) => t.startsWith('ardukid_oled_'))) {
+    includes +=
+      '#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>\n'
+    globals += 'Adafruit_SSD1306 display(128, 64, &Wire, -1);\n'
+  }
+
+  // DHT22 sensor: each unique pin gets its own DHT instance. The DHT
+  // library does not accept dynamic pins, so we generate one global
+  // per pin the workspace references.
+  const dhtPins = new Set<string>()
+  for (const top of workspace.getTopBlocks(false)) {
+    walkDhtPins(top, dhtPins)
+  }
+  if (dhtPins.size > 0) {
+    includes += '#include <DHT.h>\n'
+    for (const pin of dhtPins) globals += `DHT _dht_${pin}(${pin}, DHT22);\n`
+  }
+
+  // HC-SR04: bundle one inline helper that does the TRIG/ECHO dance.
+  // The block compiles to a call into this function so kids only see
+  // a one-line expression on the canvas. pulseIn returns 0 if no echo
+  // came back within 30 ms, which maps to 0 cm.
+  if (allBlockTypes.has('ardukid_ultrasonic_cm')) {
+    globals +=
+      'long _ardukidUltrasonicCm(int trig, int echo) {\n' +
+      '  pinMode(trig, OUTPUT);\n' +
+      '  pinMode(echo, INPUT);\n' +
+      '  digitalWrite(trig, LOW); delayMicroseconds(2);\n' +
+      '  digitalWrite(trig, HIGH); delayMicroseconds(10);\n' +
+      '  digitalWrite(trig, LOW);\n' +
+      '  long d = pulseIn(echo, HIGH, 30000UL);\n' +
+      '  return d / 58;\n' +
+      '}\n'
   }
 
   const preamble = [

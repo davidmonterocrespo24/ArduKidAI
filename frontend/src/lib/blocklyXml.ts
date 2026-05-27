@@ -143,6 +143,56 @@ export const getVar = (name: string): BlockNode => ({
   fields: { VAR: name },
 })
 
+export const serialBegin = (baud: number = 9600): BlockNode => ({
+  type: 'ardukid_serial_begin',
+  fields: { BAUD: String(baud) },
+})
+export const serialPrint = (value: string | BlockNode): BlockNode => ({
+  type: 'ardukid_serial_print',
+  values: { VALUE: typeof value === 'string' ? text(value) : value },
+})
+export const serialPrintln = (value: string | BlockNode): BlockNode => ({
+  type: 'ardukid_serial_println',
+  values: { VALUE: typeof value === 'string' ? text(value) : value },
+})
+export const millis = (): BlockNode => ({ type: 'ardukid_millis' })
+
+export const dhtTemperature = (pin: number | string): BlockNode => ({
+  type: 'ardukid_dht_temperature',
+  fields: { PIN: String(pin) },
+})
+export const dhtHumidity = (pin: number | string): BlockNode => ({
+  type: 'ardukid_dht_humidity',
+  fields: { PIN: String(pin) },
+})
+export const ultrasonicCm = (trig: number | string, echo: number | string): BlockNode => ({
+  type: 'ardukid_ultrasonic_cm',
+  fields: { TRIG: String(trig), ECHO: String(echo) },
+})
+
+export const oledBegin = (): BlockNode => ({ type: 'ardukid_oled_begin' })
+export const oledClear = (): BlockNode => ({ type: 'ardukid_oled_clear' })
+export const oledTextSize = (size: 1 | 2 | 3 | 4): BlockNode => ({
+  type: 'ardukid_oled_text_size',
+  fields: { SIZE: String(size) },
+})
+export const oledSetCursor = (x: number | BlockNode, y: number | BlockNode): BlockNode => ({
+  type: 'ardukid_oled_set_cursor',
+  values: {
+    X: typeof x === 'number' ? num(x) : x,
+    Y: typeof y === 'number' ? num(y) : y,
+  },
+})
+export const oledPrint = (value: string | BlockNode): BlockNode => ({
+  type: 'ardukid_oled_print',
+  values: { VALUE: typeof value === 'string' ? text(value) : value },
+})
+export const oledPrintln = (value: string | BlockNode): BlockNode => ({
+  type: 'ardukid_oled_println',
+  values: { VALUE: typeof value === 'string' ? text(value) : value },
+})
+export const oledShow = (): BlockNode => ({ type: 'ardukid_oled_show' })
+
 export const num = (n: number): BlockNode => ({
   type: 'math_number',
   fields: { NUM: n },
