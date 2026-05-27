@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchCurrentUser, signout } from '../auth/api'
 import { useAppStore } from '../store/useAppStore'
 import { AuthDialog } from './AuthDialog'
+import { IconUser } from './Icons'
 
 export function UserMenu() {
   const currentUser = useAppStore((s) => s.currentUser)
@@ -56,8 +57,9 @@ export function UserMenu() {
       <button
         type="button"
         onClick={() => setDialogOpen(true)}
-        className="rounded-md border border-brand-200 px-3 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50 dark:border-brand-800 dark:text-brand-200 dark:hover:bg-brand-950/30"
+        className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50 dark:border-brand-800 dark:text-brand-200 dark:hover:bg-brand-950/30"
       >
+        <IconUser />
         Sign in
       </button>
       <AuthDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />

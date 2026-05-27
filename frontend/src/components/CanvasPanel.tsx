@@ -4,6 +4,7 @@ import { AddComponentModal } from './AddComponentModal'
 import { DraggablePart } from './DraggablePart'
 import { WireDialog } from './WireDialog'
 import { WireOverlay } from './WireOverlay'
+import { IconPlus } from './Icons'
 
 // Stage size big enough to spread out the catalog. The container is
 // scrollable so smaller screens can pan.
@@ -40,8 +41,9 @@ export function CanvasPanel() {
           <button
             type="button"
             onClick={() => setAddOpen(true)}
-            className="rounded-md border border-brand-300 bg-brand-500 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-brand-600"
+            className="inline-flex items-center gap-2 rounded-md border border-brand-300 bg-brand-500 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-600"
           >
+            <IconPlus />
             Add component
           </button>
           {wireInProgress && (

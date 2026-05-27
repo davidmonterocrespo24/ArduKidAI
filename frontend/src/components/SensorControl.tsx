@@ -37,7 +37,14 @@ export function SensorControlPanel({ instance, onClose }: Props & { onClose: () 
   return (
     <div
       ref={popRef}
-      className="w-56 rounded-md border border-slate-200 bg-white p-3 shadow-lg"
+      // The panel is rendered into a React portal, so React still
+      // bubbles synthetic events to its rendered-tree parent
+      // (DraggablePart), whose onMouseDown toggles the panel open/
+      // closed. Stop the bubble here so clicking the slider thumb
+      // does not close the panel mid-drag.
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+      className="w-60 rounded-md border border-slate-200 bg-white p-3 shadow-lg"
     >
       <div className="mb-2 flex items-center justify-between border-b border-slate-100 pb-1.5">
         <span className="text-xs font-semibold text-slate-700">{instance.id}</span>

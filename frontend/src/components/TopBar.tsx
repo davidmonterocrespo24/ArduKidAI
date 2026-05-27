@@ -3,6 +3,7 @@ import { ExamplesModal } from './ExamplesModal'
 import { LibrariesModal } from './LibrariesModal'
 import { SimControls } from './SimControls'
 import { UserMenu } from './UserMenu'
+import { IconBook, IconLibrary } from './Icons'
 
 export function TopBar() {
   const [examplesOpen, setExamplesOpen] = useState(false)
@@ -13,7 +14,7 @@ export function TopBar() {
       <div className="flex items-center gap-3">
         <span
           aria-hidden="true"
-          className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-500 font-bold text-white"
+          className="flex h-9 w-9 items-center justify-center rounded-md bg-brand-500 font-bold text-white"
         >
           A
         </span>
@@ -24,16 +25,18 @@ export function TopBar() {
         <button
           type="button"
           onClick={() => setExamplesOpen(true)}
-          className="ml-2 rounded-md border border-brand-200 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
+          className="ml-2 inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
         >
+          <IconBook />
           Examples
         </button>
         <button
           type="button"
           onClick={() => setLibrariesOpen(true)}
-          className="rounded-md border border-brand-200 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
+          className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
           title="Install Arduino libraries (LCD, NeoPixel, ...)"
         >
+          <IconLibrary />
           Libraries
         </button>
       </div>

@@ -6,6 +6,7 @@ import type { DigitalPinLabel } from '../sim/pinState'
 import { postJson } from '../lib/api'
 import { cn } from '../lib/cn'
 import { SaveProjectDialog } from './SaveProjectDialog'
+import { IconBolt, IconPlay, IconReset, IconSave, IconStop } from './Icons'
 
 // Walks the live store on every frame: any sensor whose analog output is
 // wired to UNO.A<channel> contributes a voltage (0..5 V) on that ADC channel.
@@ -289,7 +290,7 @@ export function SimControls() {
     <div className="flex items-center gap-2">
       <span
         aria-hidden="true"
-        className={cn('h-2 w-2 rounded-full', statusDot)}
+        className={cn('h-2.5 w-2.5 rounded-full', statusDot)}
         title={`sim ${simStatus}`}
       />
       <button
@@ -298,12 +299,13 @@ export function SimControls() {
         disabled={isRunning}
         title="Run the loaded program (or compile first if needed)"
         className={cn(
-          'rounded-md px-2.5 py-1 text-xs font-medium text-white',
+          'inline-flex items-center gap-2 rounded-md px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm',
           isRunning
             ? 'cursor-not-allowed bg-brand-500/50'
             : 'bg-brand-500 hover:bg-brand-600',
         )}
       >
+        <IconPlay />
         Run
       </button>
       <button
@@ -311,8 +313,9 @@ export function SimControls() {
         onClick={() => void compileAndRun()}
         disabled={isRunning}
         title="POST current C++ to /api/compile and load the returned HEX"
-        className="rounded-md border border-brand-200 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50 disabled:opacity-50"
       >
+        <IconBolt />
         Compile &amp; run
       </button>
       <button
@@ -320,28 +323,31 @@ export function SimControls() {
         onClick={stopSim}
         disabled={!isRunning}
         className={cn(
-          'rounded-md px-2.5 py-1 text-xs font-medium',
+          'inline-flex items-center gap-2 rounded-md px-3.5 py-1.5 text-sm font-semibold shadow-sm',
           isRunning
             ? 'bg-slate-200 text-slate-900 hover:bg-slate-300'
             : 'cursor-not-allowed bg-slate-100 text-slate-400',
         )}
       >
+        <IconStop />
         Stop
       </button>
       <button
         type="button"
         onClick={reset}
         title="Clear circuit, blocks, code, sim state"
-        className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+        className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100"
       >
+        <IconReset />
         Reset
       </button>
       <button
         type="button"
         onClick={() => setSaveOpen(true)}
         title="Save the current circuit as a named project"
-        className="rounded-md border border-brand-200 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
+        className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
       >
+        <IconSave />
         Save
       </button>
 
