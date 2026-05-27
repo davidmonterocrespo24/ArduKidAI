@@ -900,7 +900,7 @@ const MORSE_SOS_CPP = `int dot = 200;
 int dash = 600;
 int gap = 200;
 int letter = 600;
-int word = 1400;
+int wordGap = 1400; // "word" is reserved (Arduino type alias)
 
 void blink(int ms) {
   digitalWrite(13, HIGH); delay(ms);
@@ -912,7 +912,7 @@ void setup() { pinMode(13, OUTPUT); }
 void loop() {
   blink(dot); blink(dot); blink(dot); delay(letter); // S
   blink(dash); blink(dash); blink(dash); delay(letter); // O
-  blink(dot); blink(dot); blink(dot); delay(word); // S
+  blink(dot); blink(dot); blink(dot); delay(wordGap); // S
 }
 `
 
