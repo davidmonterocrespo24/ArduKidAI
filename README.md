@@ -8,6 +8,8 @@ in-browser AVR simulation - no real hardware required.
 Built for the [Google Cloud Rapid Agent Hackathon](https://rapid-agent.devpost.com/),
 MongoDB partner track.
 
+**Live demo:** https://ardukid-626067361949.us-central1.run.app
+
 ## What it does
 
 A kid types `"I want a traffic light"`. The agent, in one turn:
