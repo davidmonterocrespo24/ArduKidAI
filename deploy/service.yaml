@@ -1,0 +1,83 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: ardukid
+  labels:
+    cloud.googleapis.com/location: us-central1
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/startup-cpu-boost: 'true'
+        autoscaling.knative.dev/maxScale: '10'
+        run.googleapis.com/container-dependencies: '{"backend":["mcp"]}'
+    spec:
+      containerConcurrency: 8
+      timeoutSeconds: 600
+      serviceAccountName: 626067361949-compute@developer.gserviceaccount.com
+      containers:
+      - name: backend
+        image: us-central1-docker.pkg.dev/ardukid-ai/ardukid/ardukid:v1
+        ports:
+        - containerPort: 8080
+          name: http1
+        env:
+        - name: ARDUKID_AGENT_MODE
+          value: real
+        - name: GOOGLE_CLOUD_PROJECT
+          value: ardukid-ai
+        - name: GOOGLE_CLOUD_LOCATION
+          value: us-central1
+        - name: ARDUKID_GEMINI_MODEL
+          value: gemini-3-flash-preview
+        - name: ARDUKID_GEMINI_LOCATION
+          value: global
+        - name: MONGODB_DB
+          value: ardukid
+        - name: MCP_ENABLED
+          value: 'true'
+        - name: MCP_SERVER_URL
+          value: http://localhost:3030
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: ardukid-mongodb-uri
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: ardukid-jwt-secret
+        resources:
+          limits:
+            cpu: '2'
+            memory: 2Gi
+        startupProbe:
+          tcpSocket:
+            port: 8080
+          periodSeconds: 240
+          timeoutSeconds: 240
+          failureThreshold: 1
+      - name: mcp
+        image: us-central1-docker.pkg.dev/ardukid-ai/ardukid/mcp:v1
+        env:
+        - name: MDB_MCP_CONNECTION_STRING
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: ardukid-mongodb-uri
+        resources:
+          limits:
+            cpu: '1'
+            memory: 512Mi
+        startupProbe:
+          tcpSocket:
+            port: 3030
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+  traffic:
+  - latestRevision: true
+    percent: 100
