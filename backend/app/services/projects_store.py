@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 
 from ..db.client import COLLECTION_PROJECTS, get_db
 from ..schemas import CircuitState, ProjectDetail, ProjectSummary
+from . import mcp_client
 
 
 class _MemoryEntry:
@@ -38,6 +39,21 @@ def _matches_user(entry_user: str | None, query_user: str | None) -> bool:
 
 
 async def list_all(user_id: str | None = None) -> list[ProjectSummary]:
+    if mcp_client.mcp_enabled():
+        docs = await mcp_client.find(
+            COLLECTION_PROJECTS,
+            filter={"user_id": user_id},
+            projection={"circuit": 0},
+            sort={"created_at": -1},
+        )
+        return [
+            ProjectSummary(
+                id=str(doc.get("_id")),
+                name=doc.get("name", ""),
+                created_at=doc.get("created_at", ""),
+            )
+            for doc in docs
+        ]
     db = get_db()
     if db is None:
         entries = [
@@ -66,6 +82,19 @@ async def list_all(user_id: str | None = None) -> list[ProjectSummary]:
 
 
 async def get(project_id: str, user_id: str | None = None) -> ProjectDetail | None:
+    if mcp_client.mcp_enabled():
+        docs = await mcp_client.find(
+            COLLECTION_PROJECTS, filter={"_id": project_id, "user_id": user_id}, limit=1
+        )
+        if not docs:
+            return None
+        doc = docs[0]
+        return ProjectDetail(
+            id=str(doc["_id"]),
+            name=doc.get("name", ""),
+            created_at=doc.get("created_at", ""),
+            circuit=CircuitState.model_validate(doc.get("circuit", {})),
+        )
     db = get_db()
     if db is None:
         entry = _MEMORY.get(project_id)
@@ -92,6 +121,19 @@ async def save(
     project_id = _project_id()
     created_at = _now()
     detail = ProjectDetail(id=project_id, name=name, created_at=created_at, circuit=circuit)
+
+    if mcp_client.mcp_enabled():
+        await mcp_client.insert_one(
+            COLLECTION_PROJECTS,
+            {
+                "_id": project_id,
+                "name": name,
+                "created_at": created_at,
+                "circuit": circuit.model_dump(),
+                "user_id": user_id,
+            },
+        )
+        return detail
 
     db = get_db()
     if db is None:

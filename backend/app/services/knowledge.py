@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from ..db.client import COLLECTION_KNOWLEDGE, get_db
+from . import mcp_client
 from .embeddings import cosine, embed_text
 from .pdf_chunker import TextChunk, chunk_pdf_bytes, chunk_pdf_path
 
@@ -99,18 +100,8 @@ async def index_plain_text(text: str, source: str) -> int:
     return await _index_chunks(source, chunks)
 
 
-async def search_docs(query: str, limit: int = 4) -> list[KnowledgeHit]:
-    if not query.strip():
-        return []
-    query_vector = await embed_text(query)
-    db = get_db()
-    if db is None:
-        return _memory_search(query_vector, limit)
-    return await _atlas_search(db, query_vector, limit)
-
-
-async def _atlas_search(db, query_vector, limit: int) -> list[KnowledgeHit]:
-    pipeline = [
+def _pipeline(query_vector: list[float], limit: int) -> list[dict]:
+    return [
         {
             "$vectorSearch": {
                 "index": KNOWLEDGE_VECTOR_INDEX,
@@ -130,17 +121,35 @@ async def _atlas_search(db, query_vector, limit: int) -> list[KnowledgeHit]:
             }
         },
     ]
+
+
+def _to_hit(doc: dict) -> KnowledgeHit:
+    return KnowledgeHit(
+        id=str(doc.get("_id", "")),
+        source=doc.get("source", ""),
+        page=int(doc.get("page", 0)),
+        text=doc.get("text", ""),
+        score=float(doc.get("score", 0.0)),
+    )
+
+
+async def search_docs(query: str, limit: int = 4) -> list[KnowledgeHit]:
+    if not query.strip():
+        return []
+    query_vector = await embed_text(query)
+    if mcp_client.mcp_enabled():
+        docs = await mcp_client.aggregate(COLLECTION_KNOWLEDGE, _pipeline(query_vector, limit))
+        return [_to_hit(doc) for doc in docs]
+    db = get_db()
+    if db is None:
+        return _memory_search(query_vector, limit)
+    return await _atlas_search(db, query_vector, limit)
+
+
+async def _atlas_search(db, query_vector, limit: int) -> list[KnowledgeHit]:
     out: list[KnowledgeHit] = []
-    async for doc in db[COLLECTION_KNOWLEDGE].aggregate(pipeline):
-        out.append(
-            KnowledgeHit(
-                id=str(doc.get("_id", "")),
-                source=doc.get("source", ""),
-                page=int(doc.get("page", 0)),
-                text=doc.get("text", ""),
-                score=float(doc.get("score", 0.0)),
-            )
-        )
+    async for doc in db[COLLECTION_KNOWLEDGE].aggregate(_pipeline(query_vector, limit)):
+        out.append(_to_hit(doc))
     return out
 
 
