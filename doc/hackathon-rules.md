@@ -259,7 +259,7 @@ Questions: support@devpost.com.
 - [x] LLM: Gemini 3 via Google Cloud Agent Builder only (no OpenAI / Anthropic / others).
 - [x] Partner integration: MongoDB MCP server with Atlas Vector Search.
 - [ ] All commits within Contest Period (May 5 - June 11, 2026).
-- [ ] $100 credit form submitted by **June 4, 2026** (do not miss this).
+- [x] $100 credit form submitted and credit received in Google Cloud.
 - [ ] Public hosted HTTPS URL live throughout judging period (through July 6, 2026).
 - [ ] 3-minute YouTube/Vimeo video, English or English subtitles.
 - [ ] Devpost submission filed before June 11, 2026 14:00 PT.

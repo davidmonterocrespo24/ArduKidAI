@@ -8,15 +8,15 @@ Update the status column as items complete. When a step produces an artifact Cla
 
 | # | Task | URL | Deadline | Output Claude needs | Status |
 | --- | --- | --- | --- | --- | --- |
-| M1 | Sign up / sign in to Devpost and register for the hackathon | https://rapid-agent.devpost.com/ | open | Devpost username | [ ] |
-| M2 | Confirm a Google Cloud account (free trial or existing) | https://cloud.google.com/free | open | - | [ ] |
-| M3 | Submit the $100 GCP credit request form | https://forms.gle/xfv9vQzfRfNCCVbG7 | **2026-06-04** | confirmation email | [ ] |
-| M4 | Create a new GCP project for ArduKid | https://console.cloud.google.com/projectcreate | before Phase 2 | project ID (paste in `backend/.env.example`) | [ ] |
-| M5 | Enable APIs in the GCP project: Vertex AI, Cloud Run, Cloud Build, Artifact Registry, Secret Manager | https://console.cloud.google.com/apis/library | before Phase 2 | - | [ ] |
-| M6 | Sign up for MongoDB Atlas, create an M0 cluster, create a database user | https://www.mongodb.com/cloud/atlas/register | before Phase 4 | connection string -> Secret Manager | [ ] |
-| M7 | Configure Atlas network access (allow Cloud Run egress, or 0.0.0.0/0 for dev) | Atlas console | before Phase 4 | - | [ ] |
-| M8 | Create the Atlas Vector Search index on `examples.intent_embedding` (768 dims, cosine) | Atlas console (or skip - the seeder creates it) | before Phase 4 | - | [ ] |
-| M8b | Run the seeder once after Atlas is up: `cd backend && MONGODB_URI=... uv run python -m scripts.seed_db` | local shell | before Phase 5 | confirmation log "seeded 9 components and 30 examples" | [ ] |
+| M1 | Sign up / sign in to Devpost and register for the hackathon | https://rapid-agent.devpost.com/ | open | Devpost username | [x] |
+| M2 | Confirm a Google Cloud account (free trial or existing) | https://cloud.google.com/free | open | - | [x] |
+| M3 | Submit the $100 GCP credit request form | https://forms.gle/xfv9vQzfRfNCCVbG7 | **2026-06-04** | confirmation email | [x] (credit received) |
+| M4 | Create a new GCP project for ArduKid | https://console.cloud.google.com/projectcreate | before Phase 2 | project ID (paste in `backend/.env.example`) | [x] project: `ardukid-ai` |
+| M5 | Enable APIs in the GCP project: Vertex AI, Cloud Run, Cloud Build, Artifact Registry, Secret Manager | https://console.cloud.google.com/apis/library | before Phase 2 | - | [x] Vertex AI confirmed (embeddings call OK); re-verify run/build/artifactregistry/secretmanager before deploy |
+| M6 | Sign up for MongoDB Atlas, create an M0 cluster, create a database user | https://www.mongodb.com/cloud/atlas/register | before Phase 4 | connection string -> Secret Manager | [x] M0 on GCP, cluster0.llkmqjs, user davidmonterocrespo24_db_user |
+| M7 | Configure Atlas network access (allow Cloud Run egress, or 0.0.0.0/0 for dev) | Atlas console | before Phase 4 | - | [x] ping OK from local; add 0.0.0.0/0 before Cloud Run deploy |
+| M8 | Create the Atlas Vector Search index on `examples.intent_embedding` (768 dims, cosine) | Atlas console (or skip - the seeder creates it) | before Phase 4 | - | [x] index `intent_embedding_vector` READY |
+| M8b | Run the seeder once after Atlas is up: `cd backend && MONGODB_URI=... uv run python -m scripts.seed_db` | local shell | before Phase 5 | confirmation log "seeded 9 components and 30 examples" | [x] seeded 9 components + 30 examples (real Gemini embeddings) |
 | M8c | (optional) Index a PDF into the RAG store: `cd backend && MONGODB_URI=... uv run python -m scripts.index_pdf path/to/file.pdf --source "Arduino UNO Guide"` | local shell | any time | confirmation log "indexed N chunks" | [ ] |
 
 ## Dev deploy (moontero.com)
