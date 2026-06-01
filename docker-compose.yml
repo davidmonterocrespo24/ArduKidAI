@@ -24,7 +24,8 @@ services:
       ARDUKID_AGENT_MODE: ${ARDUKID_AGENT_MODE:-mock}
       GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
       GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-us-central1}
-      ARDUKID_GEMINI_MODEL: ${ARDUKID_GEMINI_MODEL:-gemini-3-pro}
+      ARDUKID_GEMINI_MODEL: ${ARDUKID_GEMINI_MODEL:-gemini-3-flash-preview}
+      ARDUKID_GEMINI_LOCATION: ${ARDUKID_GEMINI_LOCATION:-global}
       ARDUKID_FQBN: ${ARDUKID_FQBN:-arduino:avr:uno}
       ARDUKID_ARDUINO_CLI: /usr/local/bin/arduino-cli
       ARDUKID_CORS_ORIGINS: ${ARDUKID_CORS_ORIGINS:-https://ArduKidAI.moontero.com,http://localhost:5173}
