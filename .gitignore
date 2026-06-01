@@ -82,3 +82,6 @@ temp/
 /wires-*.png
 /branding-*.png
 /audit-*.png
+
+# Local knowledge-base source assets (indexed via scripts/index_sources.py, not source code)
+data/
