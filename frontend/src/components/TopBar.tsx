@@ -16,8 +16,8 @@ export function TopBar() {
   const setBoard = useAppStore((s) => s.setBoard)
 
   return (
-    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2">
-      <div className="flex items-center gap-3">
+    <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-4 py-2">
+      <div className="flex items-center gap-2">
         <span
           aria-hidden="true"
           className="flex h-9 w-9 items-center justify-center rounded-md bg-brand-500 font-bold text-white"
@@ -31,7 +31,7 @@ export function TopBar() {
         <button
           type="button"
           onClick={() => setExamplesOpen(true)}
-          className="ml-2 inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
+          className="ml-2 inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
         >
           <IconBook />
           Examples
@@ -39,7 +39,7 @@ export function TopBar() {
         <button
           type="button"
           onClick={() => setLibrariesOpen(true)}
-          className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
+          className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
           title="Install Arduino libraries (LCD, NeoPixel, ...)"
         >
           <IconLibrary />
@@ -48,7 +48,7 @@ export function TopBar() {
         <button
           type="button"
           onClick={() => setKnowledgeOpen(true)}
-          className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
+          className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
           title="Manage what the agent knows (PDFs, links, notes, images)"
         >
           <IconBrain />
@@ -70,7 +70,7 @@ export function TopBar() {
           </select>
         </label>
       </div>
-      <div className="ml-auto flex flex-wrap items-center gap-4">
+      <div className="ml-auto flex flex-wrap items-center gap-2">
         <SimControls />
         <div className="h-6 w-px bg-slate-200" aria-hidden="true" />
         <UserMenu />

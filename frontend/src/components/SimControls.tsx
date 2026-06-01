@@ -319,7 +319,7 @@ export function SimControls() {
       : 'bg-slate-300'
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <span
         aria-hidden="true"
         className={cn('h-2.5 w-2.5 rounded-full', statusDot)}
@@ -331,7 +331,7 @@ export function SimControls() {
         disabled={isRunning}
         title="Run the loaded program (or compile first if needed)"
         className={cn(
-          'inline-flex items-center gap-2 rounded-md px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm',
+          'inline-flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm',
           isRunning
             ? 'cursor-not-allowed bg-brand-500/50'
             : 'bg-brand-500 hover:bg-brand-600',
@@ -345,7 +345,7 @@ export function SimControls() {
         onClick={() => void compileAndRun()}
         disabled={isRunning}
         title="POST current C++ to /api/compile and load the returned HEX"
-        className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50 disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50 disabled:opacity-50"
       >
         <IconBolt />
         Compile &amp; run
@@ -355,7 +355,7 @@ export function SimControls() {
         onClick={stopSim}
         disabled={!isRunning}
         className={cn(
-          'inline-flex items-center gap-2 rounded-md px-3.5 py-1.5 text-sm font-semibold shadow-sm',
+          'inline-flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-semibold shadow-sm',
           isRunning
             ? 'bg-slate-200 text-slate-900 hover:bg-slate-300'
             : 'cursor-not-allowed bg-slate-100 text-slate-400',
@@ -368,7 +368,7 @@ export function SimControls() {
         type="button"
         onClick={reset}
         title="Clear circuit, blocks, code, sim state"
-        className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100"
+        className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100"
       >
         <IconReset />
         Reset
@@ -377,7 +377,7 @@ export function SimControls() {
         type="button"
         onClick={() => setSaveOpen(true)}
         title="Save the current circuit as a named project"
-        className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
+        className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
       >
         <IconSave />
         Save
