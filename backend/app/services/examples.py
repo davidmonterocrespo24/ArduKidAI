@@ -59,8 +59,13 @@ async def search_similar(query: str, limit: int = 5) -> list[ExampleHit]:
         return []
     query_vector = await embed_text(query)
     if mcp_client.mcp_enabled():
-        docs = await mcp_client.aggregate(COLLECTION_EXAMPLES, _pipeline(query_vector, limit))
-        return [_to_hit(doc) for doc in docs]
+        try:
+            docs = await mcp_client.aggregate(COLLECTION_EXAMPLES, _pipeline(query_vector, limit))
+            return [_to_hit(doc) for doc in docs]
+        except Exception:
+            # MCP sidecar unreachable: fall back to the direct Atlas driver so
+            # recall keeps working (same Atlas Vector Search query).
+            pass
     db = get_db()
     if db is None:
         return await _fallback_search(query_vector, limit)

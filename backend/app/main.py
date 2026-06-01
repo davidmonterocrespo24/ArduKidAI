@@ -1,5 +1,9 @@
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -35,6 +39,13 @@ def create_app() -> FastAPI:
     app.include_router(examples.router, prefix="/api/examples", tags=["examples"])
     app.include_router(libraries.router, prefix="/api/libraries", tags=["libraries"])
     app.include_router(knowledge.router, prefix="/api/knowledge", tags=["knowledge"])
+
+    # Serve the built single-page app when it is bundled into the image
+    # (single-service Cloud Run deploy). Mounted last so it never shadows the
+    # /api/* routers or /health. No-op in local dev where the dir is absent.
+    static_dir = os.environ.get("ARDUKID_STATIC_DIR", "")
+    if static_dir and Path(static_dir).is_dir():
+        app.mount("/", StaticFiles(directory=static_dir, html=True), name="spa")
 
     return app
 

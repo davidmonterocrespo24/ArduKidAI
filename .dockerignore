@@ -1,0 +1,14 @@
+# Keep the Cloud Build context small and fast.
+.git
+**/node_modules
+**/dist
+backend/.venv
+backend/.env
+**/__pycache__
+**/*.pyc
+data/
+*.md
+doc/
+project/
+deploy/
+.claude/

@@ -213,8 +213,12 @@ async def search_docs(query: str, limit: int = 4) -> list[KnowledgeHit]:
         return []
     query_vector = await embed_text(query, task_type="RETRIEVAL_QUERY")
     if mcp_client.mcp_enabled():
-        docs = await mcp_client.aggregate(COLLECTION_KNOWLEDGE, _pipeline(query_vector, limit))
-        return [_to_hit(doc) for doc in docs]
+        try:
+            docs = await mcp_client.aggregate(COLLECTION_KNOWLEDGE, _pipeline(query_vector, limit))
+            return [_to_hit(doc) for doc in docs]
+        except Exception:
+            # MCP sidecar unreachable: fall back to the direct Atlas driver.
+            pass
     db = get_db()
     if db is None:
         return _memory_search(query_vector, limit)
