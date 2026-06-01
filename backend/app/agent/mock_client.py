@@ -37,12 +37,12 @@ class MockAgentClient:
     ) -> AsyncIterator[SSEEvent]:
         msg = _normalize(user_message)
 
-        if _matches(msg, "semaforo", "semáforo", "traffic light", "christmas", "police", "knight rider", "binary counter"):
+        if _matches(msg, "traffic light", "christmas", "police", "knight rider", "binary counter"):
             async for ev in self._traffic_light(session):
                 yield ev
             return
 
-        if _matches(msg, "potentiometer", "pot ", "potenciometro", "dimmer", "dim ", "knob", "thermometer", "termometro"):
+        if _matches(msg, "potentiometer", "pot ", "dimmer", "dim ", "knob", "thermometer"):
             async for ev in self._pot_and_led(session):
                 yield ev
             return
@@ -67,24 +67,24 @@ class MockAgentClient:
                 yield ev
             return
 
-        if _matches(msg, "boton", "botón", "button", "reaction"):
+        if _matches(msg, "button", "reaction"):
             async for ev in self._button_and_led(session):
                 yield ev
             return
 
-        if _matches(msg, "componente", "components", "que puedo"):
+        if _matches(msg, "components", "what can you", "list parts"):
             yield SSEEvent(
                 type="agent_text",
-                data={"content": "Te muestro la lista de partes que tengo."},
+                data={"content": "Here are the parts I have."},
             )
             async for ev in self._call_tool("list_available_components", {}, session):
                 yield ev
             return
 
-        if _matches(msg, "parecido", "similar", "find me", "buscame"):
+        if _matches(msg, "similar", "find me", "find a"):
             yield SSEEvent(
                 type="agent_text",
-                data={"content": "Voy a buscar algo parecido en la biblioteca de ejemplos."},
+                data={"content": "I will look for a similar example in the library."},
             )
             async for ev in self._call_tool(
                 "find_similar_example", {"query": user_message, "limit": 3}, session
@@ -92,19 +92,19 @@ class MockAgentClient:
                 yield ev
             return
 
-        if _matches(msg, "mis proyectos", "saved projects", "guardados"):
+        if _matches(msg, "saved projects", "my projects"):
             yield SSEEvent(
                 type="agent_text",
-                data={"content": "Te muestro tus proyectos guardados."},
+                data={"content": "Here are your saved projects."},
             )
             async for ev in self._call_tool("list_saved_projects", {}, session):
                 yield ev
             return
 
-        if _matches(msg, "documentacion", "documentación", "documentation", "manual", "docs", "doc:"):
+        if _matches(msg, "documentation", "manual", "docs", "doc:"):
             yield SSEEvent(
                 type="agent_text",
-                data={"content": "Voy a buscar en los PDFs indexados."},
+                data={"content": "I will search the indexed docs."},
             )
             async for ev in self._call_tool(
                 "search_docs", {"query": user_message, "limit": 4}, session
@@ -112,7 +112,7 @@ class MockAgentClient:
                 yield ev
             return
 
-        if _matches(msg, "led", "luz", "light", "lampara", "lámpara", "blink", "fade", "heartbeat"):
+        if _matches(msg, "led", "light", "lamp", "blink", "fade", "heartbeat"):
             async for ev in self._single_led(session):
                 yield ev
             return
@@ -123,7 +123,7 @@ class MockAgentClient:
             type="agent_text",
             data={
                 "content": (
-                    "[mock] No reconozco la consigna exacta, te armo un LED para que tengas un punto de partida."
+                    "[mock] I did not recognize the exact request, so I will add an LED as a starting point."
                 ),
             },
         )
@@ -136,7 +136,7 @@ class MockAgentClient:
         idx = self._next_led_index(session)
         yield SSEEvent(
             type="agent_text",
-            data={"content": "Voy a poner un LED rojo y conectarlo al pin 13 con un resistor."},
+            data={"content": "I will add a red LED and connect it to pin 13 through a resistor."},
         )
         async for ev in self._call_tool("add_component", {"type": "led", "props": {"color": "red"}}, session):
             yield ev
@@ -155,7 +155,7 @@ class MockAgentClient:
         ridx = self._next_resistor_index(session)
         yield SSEEvent(
             type="agent_text",
-            data={"content": "Voy a agregar un botón en el pin 2 y un LED en el pin 13."},
+            data={"content": "I will add a button on pin 2 and an LED on pin 13."},
         )
         async for ev in self._call_tool("add_component", {"type": "pushbutton"}, session):
             yield ev
@@ -177,7 +177,7 @@ class MockAgentClient:
     async def _traffic_light(self, session: SessionState) -> AsyncIterator[SSEEvent]:
         yield SSEEvent(
             type="agent_text",
-            data={"content": "Voy a armar un circuito con tres LEDs (rojo, amarillo, verde) en los pines 11, 12 y 13."},
+            data={"content": "I will build a circuit with three LEDs (red, yellow, green) on pins 11, 12, and 13."},
         )
         start_led = self._next_led_index(session)
         start_res = self._next_resistor_index(session)
@@ -200,7 +200,7 @@ class MockAgentClient:
         bzidx = self._next_buzzer_index(session)
         yield SSEEvent(
             type="agent_text",
-            data={"content": "Voy a poner un buzzer en el pin 8 para que toque tonos."},
+            data={"content": "I will add a buzzer on pin 8 to play tones."},
         )
         async for ev in self._call_tool("add_component", {"type": "buzzer"}, session):
             yield ev
@@ -213,7 +213,7 @@ class MockAgentClient:
         sidx = self._next_servo_index(session)
         yield SSEEvent(
             type="agent_text",
-            data={"content": "Voy a poner un servo en el pin 9 (PWM) y conectarlo a 5V."},
+            data={"content": "I will add a servo on pin 9 (PWM) and connect it to 5V."},
         )
         async for ev in self._call_tool("add_component", {"type": "servo"}, session):
             yield ev
@@ -230,7 +230,7 @@ class MockAgentClient:
         ridx = self._next_resistor_index(session)
         yield SSEEvent(
             type="agent_text",
-            data={"content": "Voy a poner un potenciómetro en A0 y un LED en el pin 9 (PWM) para regular el brillo."},
+            data={"content": "I will add a potentiometer on A0 and an LED on pin 9 (PWM) to control the brightness."},
         )
         async for ev in self._call_tool("add_component", {"type": "potentiometer"}, session):
             yield ev
@@ -255,7 +255,7 @@ class MockAgentClient:
         lcdidx = self._next_lcd_index(session)
         yield SSEEvent(
             type="agent_text",
-            data={"content": "Voy a conectar un LCD 16x2 por I2C usando A4 (SDA) y A5 (SCL)."},
+            data={"content": "I will connect a 16x2 LCD over I2C using A4 (SDA) and A5 (SCL)."},
         )
         async for ev in self._call_tool("add_component", {"type": "lcd1602"}, session):
             yield ev
@@ -272,7 +272,7 @@ class MockAgentClient:
         sidx = self._next_seg_index(session)
         yield SSEEvent(
             type="agent_text",
-            data={"content": "Voy a poner un display de 7 segmentos cableado a los pines 2 a 9."},
+            data={"content": "I will add a 7-segment display wired to pins 2 through 9."},
         )
         async for ev in self._call_tool("add_component", {"type": "seg7"}, session):
             yield ev

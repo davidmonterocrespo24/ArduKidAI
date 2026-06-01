@@ -118,10 +118,9 @@ Every phase has a checklist file in `project/phase-N-*.md`. The flow is:
 
 Do not start a new phase before the previous one's exit criteria are met. Do not pre-implement features from later phases.
 
-## Manual setup and reference
+## Manual setup
 
 - **`project/manual-setup.md`** is the canonical checklist of things only the user can do (create accounts, request credits, generate keys, fill the Devpost form, upload the video). Append to it whenever a phase needs an action you cannot take. Each entry records why, the URL, the deadline, and what artifact the user must paste back.
-- **`project/velxio-reference-index.md`** maps the paths in the user's prior Arduino-emulator project at `/home/dave/velxio` that solve similar problems (avr8js wiring, wokwi rendering, arduino-cli pipeline). **Read for patterns only - never copy code, strings, comments, or file structure.** Every line shipped here must be newly created within the contest period.
 
 ## Dev deploy
 

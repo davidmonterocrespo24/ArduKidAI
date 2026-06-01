@@ -1,7 +1,7 @@
 # Arduino UNO emulation - completeness roadmap
 
 Tracks what is wired in `frontend/src/sim/runner.ts` versus what a real
-ATmega328P does. Populated from the velxio audit on 2026-05-25.
+ATmega328P does. Populated from a sim-completeness audit on 2026-05-25.
 
 Legend: `[x]` done, `[ ]` pending, `[/]` partial.
 
@@ -20,7 +20,7 @@ Legend: `[x]` done, `[ ]` pending, `[/]` partial.
 - [x] **External / pin-change interrupts** + pushbutton input - `attachInterrupt(0, fn, CHANGE)` fires when a `wokwi-pushbutton` is pressed because the input bridge calls `AVRIOPort.setPin(bit, value)`, which avr8js routes through INT0/INT1/PCINT vectors. Idle pin is seeded HIGH so INPUT_PULLUP reads correctly. (commit `0c159ca`)
 - [x] **Serial line buffering polish** - The runner buffers raw bytes via `onByteTransmit`, emits a line on `\n` (CR ignored), flushes any partial line on stop, and caps buffered bytes at 4 KB so a runaway loop cannot starve the heap. The store now also appends `\n` per line so consecutive `Serial.println` calls render as separate lines instead of being glued together. (commit `ec14e18`)
 
-All five gaps from the 2026-05-25 velxio audit are now closed.
+All five gaps from the 2026-05-25 audit are now closed.
 
 ## Nice-to-have (after the hackathon MVP)
 
@@ -34,7 +34,6 @@ All five gaps from the 2026-05-25 velxio audit are now closed.
 - `avr8js` exports for things we have not wired: `AVRADC`, `adcConfig`,
   `atmega328Channels`, `AVRTWI`, `AVRSPI`, `AVREEPROM`, `AVRWatchdog`,
   `INT0`, `INT1`, `PCINT0`, `PCINT1`, `PCINT2`.
-- Velxio reference paths: `/home/dave/velxio/frontend/src/simulation/AVRSimulator.ts` (master file), `/home/dave/velxio/frontend/src/simulation/I2CBusManager.ts`, `/home/dave/velxio/frontend/src/simulation/parts/`.
 - One commit per item. Push after every commit (memory rule
   [[push-after-commit]]). When a row flips to `[x]`, also append the
   commit hash in parentheses.

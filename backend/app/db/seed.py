@@ -43,8 +43,7 @@ async def seed_examples() -> int:
     coll = db[COLLECTION_EXAMPLES]
     written = 0
     for item in EXAMPLES_SEED:
-        intent_for_embedding = f"{item['intent_en']} | {item['intent_es']}"
-        embedding = await embed_text(intent_for_embedding)
+        embedding = await embed_text(item["intent_en"])
         await coll.update_one(
             {"_id": item["id"]},
             {
@@ -52,7 +51,6 @@ async def seed_examples() -> int:
                     "_id": item["id"],
                     "title": item["title"],
                     "intent_text_en": item["intent_en"],
-                    "intent_text_es": item["intent_es"],
                     "intent_embedding": embedding,
                     "tags": item["tags"],
                     "difficulty": item["difficulty"],

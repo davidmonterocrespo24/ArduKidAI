@@ -19,7 +19,7 @@ def _parse_sse(body: str) -> list[tuple[str, str]]:
 def test_chat_mock_traffic_light_emits_tool_calls(client):
     response = client.post(
         "/api/agent/chat",
-        json={"session_id": "s1", "message": "Quiero un semáforo"},
+        json={"session_id": "s1", "message": "I want a traffic light"},
     )
     assert response.status_code == 200
     events = _parse_sse(response.text)

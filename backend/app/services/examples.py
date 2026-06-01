@@ -77,8 +77,7 @@ async def _atlas_vector_search(db, query_vector, limit: int) -> list[ExampleHit]
 async def _fallback_search(query_vector: list[float], limit: int) -> list[ExampleHit]:
     scored: list[tuple[float, dict]] = []
     for item in EXAMPLES_SEED:
-        intent = f"{item['intent_en']} | {item['intent_es']}"
-        vec = await embed_text(intent)
+        vec = await embed_text(item["intent_en"])
         scored.append((cosine(query_vector, vec), item))
     scored.sort(key=lambda x: x[0], reverse=True)
     return [

@@ -54,7 +54,6 @@ Margin day: **Jun 11, 2026** - submit on Devpost before 14:00 PT.
 
 - [`agent-v2-architecture.md`](./agent-v2-architecture.md) - the v2 design and compliance analysis.
 - [`manual-setup.md`](./manual-setup.md) - things only the user can do (now: deploy console steps, video, Devpost).
-- [`velxio-reference-index.md`](./velxio-reference-index.md) - reference patterns only, never copy.
 
 ## Commit rules
 

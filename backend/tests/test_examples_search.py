@@ -1,5 +1,5 @@
 async def test_search_examples_returns_top_hit_for_traffic_light(client):
-    response = client.get("/api/examples/search", params={"q": "semaforo 3 LEDs", "limit": 3})
+    response = client.get("/api/examples/search", params={"q": "traffic light with 3 LEDs", "limit": 3})
     assert response.status_code == 200
     body = response.json()
     assert len(body) == 3
