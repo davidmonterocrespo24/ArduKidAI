@@ -2,135 +2,120 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>ArduKid - Technical Architecture</title>
+<title>ArduKid - Architecture</title>
 <style>
   :root{
     --ink:#0f172a; --muted:#475569; --line:#e2e8f0; --bg:#f8fafc;
-    --teal:#0d9488; --teal-d:#0f766e; --cyan:#0891b2;
-    --green:#047857; --blue:#2563eb; --arrow:#94a3b8;
+    --teal:#0d9488; --cyan:#0891b2; --green:#047857; --blue:#2563eb; --arrow:#94a3b8;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);padding:34px}
+  body{background:var(--bg);font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);padding:44px}
   .page{width:1180px;margin:0 auto}
-  .title{font-size:30px;font-weight:800;letter-spacing:-.4px}
-  .title .ai{color:var(--teal)}
-  .sub{color:var(--muted);font-size:15px;margin-top:4px;margin-bottom:22px}
+  h1{font-size:36px;font-weight:800;letter-spacing:-.5px}
+  h1 .ai{color:var(--teal)}
+  .sub{color:var(--muted);font-size:18px;margin-top:6px;margin-bottom:34px}
 
-  .card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(15,23,42,.04);overflow:hidden}
-  .hd{padding:9px 16px;color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:space-between}
-  .hd .tag{font-weight:600;font-size:12px;opacity:.9}
-  .bd{padding:16px}
-  .note{color:var(--muted);font-size:12.5px;margin-top:12px;font-style:italic}
+  .flow{display:grid;grid-template-columns:1fr 96px 1fr 96px 1fr;align-items:stretch}
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 6px 18px rgba(15,23,42,.06);display:flex;flex-direction:column;overflow:hidden}
+  .top{height:8px}
+  .body{padding:22px 22px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;flex:1}
+  .ic{width:74px;height:74px;border-radius:18px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+  .name{font-size:22px;font-weight:800;line-height:1.15}
+  .role{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-top:4px}
+  .list{margin-top:14px;text-align:left;align-self:stretch}
+  .list div{font-size:15.5px;color:#0f172a;line-height:1.5;padding:4px 0 4px 20px;position:relative}
+  .list div:before{content:"";position:absolute;left:2px;top:11px;width:8px;height:8px;border-radius:3px;background:var(--dot,#0d9488)}
+  .list b{font-weight:800}
 
-  .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .chip{border:1px solid var(--line);background:#f8fafc;border-radius:8px;padding:7px 11px;font-size:13px;font-weight:600;color:#0f172a}
-  .chip b{color:var(--teal-d)}
+  .conn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+  .conn .lbl{font-size:13px;font-weight:800;color:var(--muted);text-align:center;line-height:1.25}
 
-  .cols{display:grid;grid-template-columns:1fr 270px;gap:14px}
-  .box{border:1px solid var(--line);border-radius:11px;overflow:hidden}
-  .box .bh{padding:7px 12px;font-weight:700;font-size:13.5px;color:#fff}
-  .box .bb{padding:11px 12px}
-  ul{list-style:none}
-  li{font-size:13px;color:#0f172a;padding:4px 0 4px 16px;position:relative;line-height:1.35}
-  li:before{content:"";position:absolute;left:2px;top:10px;width:6px;height:6px;border-radius:2px;background:var(--teal)}
-  li small{color:var(--muted);font-weight:600}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
-
-  .arrow{display:flex;flex-direction:column;align-items:center;gap:2px;margin:6px 0}
-  .arrow .lbl{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.2px}
-  .bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  .kv{font-size:13px;color:#0f172a;padding:3px 0}
-  .kv b{color:var(--green)}
-  .kv.v b{color:var(--blue)}
-  .strip{margin-top:18px;border:1px dashed #cbd5e1;background:#f1f5f9;border-radius:11px;padding:12px 16px;font-size:12.5px;color:var(--muted)}
-  .strip b{color:var(--ink)}
+  .pills{margin-top:34px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+  .pill{border:2px solid var(--line);background:#fff;border-radius:999px;padding:11px 18px;font-size:16px;font-weight:800;color:var(--ink)}
+  .pill span{font-weight:600;color:var(--muted);font-size:14px}
+  .foot{margin-top:14px;text-align:center;color:var(--muted);font-size:13.5px}
 </style>
 </head>
 <body>
 <div class="page">
-  <div class="title">ArduKid<span class="ai">AI</span> &mdash; Technical Architecture</div>
-  <div class="sub">An AI agent that builds and simulates real Arduino circuits from a kid's plain-language description.</div>
+  <h1>ArduKid<span class="ai">AI</span> &mdash; how it works</h1>
+  <div class="sub">A kid describes a circuit in plain words. An AI agent builds it, codes it, and runs it live.</div>
 
-  <!-- BROWSER -->
-  <div class="card">
-    <div class="hd" style="background:var(--cyan)">Browser &mdash; Single Page App <span class="tag">React + TypeScript + Vite + Zustand</span></div>
-    <div class="bd">
-      <div class="chips">
-        <div class="chip">Chat sidebar <b>(SSE stream)</b></div>
-        <div class="chip">Agent-controlled canvas <b>(Wokwi web components)</b></div>
-        <div class="chip">Blockly block editor</div>
-        <div class="chip">Monaco <b>read-only C++</b></div>
-        <div class="chip"><b>avr8js</b> in-browser AVR sim &mdash; ATmega328P / ATmega2560</div>
-      </div>
-      <div class="note">The compiled HEX runs locally in the browser &mdash; the simulation never round-trips to the backend.</div>
-    </div>
-  </div>
+  <div class="flow">
 
-  <div class="arrow">
-    <svg width="46" height="40" viewBox="0 0 46 40"><line x1="23" y1="2" x2="23" y2="28" stroke="#94a3b8" stroke-width="2"/><polygon points="23,40 16,28 30,28" fill="#94a3b8"/></svg>
-    <div class="lbl">HTTPS &nbsp;&bull;&nbsp; Server-Sent Events (token + tool-call streaming)</div>
-  </div>
-
-  <!-- CLOUD RUN -->
-  <div class="card">
-    <div class="hd" style="background:var(--teal-d)">Google Cloud Run &mdash; single service <span class="tag">region us-central1</span></div>
-    <div class="bd">
-      <div class="cols">
-        <div class="box">
-          <div class="bh" style="background:var(--teal)">Backend container &mdash; FastAPI / Python 3.12 (also serves the SPA)</div>
-          <div class="bb">
-            <ul>
-              <li><b>Google ADK</b> LlmAgent &mdash; <small>Vertex AI Agent Builder, powered by Gemini 3</small></li>
-              <li>Canvas tools <small>add_components &middot; wire_many &middot; set_blocks &middot; compile_and_run &middot; validate_circuit &middot; save_project</small></li>
-              <li>Recall + RAG tools &middot; Google web tools <small>(Search, URL context, YouTube)</small> &middot; load_memory</li>
-              <li>Component skills toolset <small>(one authoritative file per part)</small></li>
-              <li><b>arduino-cli</b> <small>Blockly XML &rarr; Arduino C++ &rarr; HEX</small></li>
-              <li>ADK session + memory services <small>(persisted in MongoDB)</small></li>
-            </ul>
-          </div>
+    <!-- 1. Browser -->
+    <div class="card">
+      <div class="top" style="background:var(--cyan)"></div>
+      <div class="body">
+        <div class="ic" style="background:#cffafe">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0891b2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="15" rx="2.5"/><path d="M2.5 8.5h19"/><path d="M10 12.2l4.2 2.6-4.2 2.6z" fill="#0891b2" stroke="none"/></svg>
         </div>
-        <div class="box">
-          <div class="bh" style="background:var(--green)">Sidecar container</div>
-          <div class="bb">
-            <ul>
-              <li><b>MongoDB MCP server</b><br><small class="mono">http://localhost:3030</small></li>
-              <li>Official partner MCP <small>routes all recall &amp; RAG queries</small></li>
-            </ul>
-          </div>
+        <div class="name">Kid's browser</div>
+        <div class="role">Web app</div>
+        <div class="list" style="--dot:var(--cyan)">
+          <div style="--c:var(--cyan)"><b>Types</b> what to build</div>
+          <div><b>Watches</b> it wire up</div>
+          <div><b>Runs it live</b> &mdash; avr8js simulator</div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="arrow">
-    <svg width="46" height="40" viewBox="0 0 46 40"><line x1="23" y1="2" x2="23" y2="28" stroke="#94a3b8" stroke-width="2"/><polygon points="23,40 16,28 30,28" fill="#94a3b8"/></svg>
-    <div class="lbl">Backend &rarr; MCP sidecar &rarr; MongoDB Atlas ($vectorSearch) &nbsp;&bull;&nbsp; Backend &rarr; Vertex AI (Gemini + embeddings)</div>
-  </div>
+    <!-- arrow -->
+    <div class="conn">
+      <div class="lbl">plain-language<br>request</div>
+      <svg width="80" height="34" viewBox="0 0 80 34"><line x1="4" y1="17" x2="64" y2="17" stroke="#94a3b8" stroke-width="3"/><polygon points="78,17 60,8 60,26" fill="#94a3b8"/></svg>
+    </div>
 
-  <!-- DATA + AI -->
-  <div class="bottom">
-    <div class="box">
-      <div class="bh" style="background:var(--green)">MongoDB Atlas &mdash; M0 cluster</div>
-      <div class="bb">
-        <div class="kv"><b>examples</b> &mdash; intent_embedding <span class="mono">(vector, 768d)</span></div>
-        <div class="kv"><b>knowledge_chunks</b> &mdash; embedding <span class="mono">(vector, 768d)</span></div>
-        <div class="kv"><b>projects</b> &middot; <b>chat_sessions</b> &middot; <b>agent_memory</b></div>
-        <div class="note" style="margin-top:9px">Atlas Vector Search via the official MongoDB MCP server.</div>
+    <!-- 2. Agent -->
+    <div class="card">
+      <div class="top" style="background:var(--teal)"></div>
+      <div class="body">
+        <div class="ic" style="background:#ccfbf1">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="3.5"/><path d="M12 4.5V8"/><circle cx="12" cy="3.4" r="1.4" fill="#0d9488" stroke="none"/><circle cx="9.3" cy="13.5" r="1.5" fill="#0d9488" stroke="none"/><circle cx="14.7" cy="13.5" r="1.5" fill="#0d9488" stroke="none"/></svg>
+        </div>
+        <div class="name">AI agent</div>
+        <div class="role">Google Cloud Run</div>
+        <div class="list" style="--dot:var(--teal)">
+          <div style="--c:var(--teal)"><b>Gemini 3</b> + Google ADK</div>
+          <div>Picks parts, wires, writes code</div>
+          <div><b>Compiles</b> &amp; checks the circuit</div>
+        </div>
       </div>
     </div>
-    <div class="box">
-      <div class="bh" style="background:var(--blue)">Vertex AI &mdash; Google Cloud</div>
-      <div class="bb">
-        <div class="kv v"><b>Gemini 3</b> <span class="mono">gemini-3-flash-preview</span> &mdash; the agent</div>
-        <div class="kv v"><b>text-embedding-005</b> &mdash; 768-dim embeddings</div>
-        <div class="note" style="margin-top:9px">All language and embedding inference is Gemini on Vertex AI.</div>
+
+    <!-- arrow -->
+    <div class="conn">
+      <div class="lbl">MongoDB<br>MCP server</div>
+      <svg width="80" height="34" viewBox="0 0 80 34"><line x1="4" y1="17" x2="64" y2="17" stroke="#94a3b8" stroke-width="3"/><polygon points="78,17 60,8 60,26" fill="#94a3b8"/></svg>
+    </div>
+
+    <!-- 3. MongoDB -->
+    <div class="card">
+      <div class="top" style="background:var(--green)"></div>
+      <div class="body">
+        <div class="ic" style="background:#d1fae5">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7.5" ry="3"/><path d="M4.5 6v12c0 1.6 3.4 3 7.5 3s7.5-1.4 7.5-3V6"/><path d="M4.5 12c0 1.6 3.4 3 7.5 3s7.5-1.4 7.5-3"/></svg>
+        </div>
+        <div class="name">MongoDB Atlas</div>
+        <div class="role">Data + memory</div>
+        <div class="list" style="--dot:var(--green)">
+          <div style="--c:var(--green)"><b>Vector Search</b> examples + docs</div>
+          <div>Saved projects</div>
+          <div>Agent <b>memory</b> across chats</div>
+        </div>
       </div>
     </div>
+
   </div>
 
-  <div class="strip">
-    <b>Hackathon compliance:</b> Gemini-only LLM and embeddings &middot; MongoDB Atlas Vector Search through the official MongoDB MCP server (partner track) &middot; Google ADK / Vertex AI Agent Builder &middot; avr8js simulator only &middot; web platform &middot; English-only &middot; MIT license.
+  <div class="pills">
+    <div class="pill">Gemini 3 <span>Vertex AI</span></div>
+    <div class="pill">Google ADK <span>Agent Builder</span></div>
+    <div class="pill">MongoDB Atlas <span>Vector Search</span></div>
+    <div class="pill">avr8js <span>simulator</span></div>
+    <div class="pill">Google Cloud Run</div>
   </div>
+  <div class="foot">All AI is Gemini on Google Cloud. The simulation runs in the browser. MongoDB is reached through the official MongoDB MCP server.</div>
 </div>
 </body>
 </html>
