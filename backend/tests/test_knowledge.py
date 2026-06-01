@@ -55,3 +55,48 @@ async def test_search_docs_agent_tool_via_dispatch():
     assert result["ok"] is True
     assert len(result["hits"]) <= 2
     assert any("resistor" in hit["text"].lower() for hit in result["hits"])
+
+
+async def test_list_sources_and_delete_source():
+    n = await knowledge.index_plain_text(
+        "The Arduino UNO has 14 digital pins and 6 analog inputs.", "Note A"
+    )
+    sources = await knowledge.list_sources()
+    assert any(s["source"] == "Note A" and s["chunks"] == n for s in sources)
+
+    deleted = await knowledge.delete_source("Note A")
+    assert deleted == n
+    assert await knowledge.list_sources() == []
+
+
+async def test_index_url_uses_extractor(monkeypatch):
+    async def fake_fetch(url: str, *, timeout: float = 30.0):
+        return ("Blink Tutorial", "Connect an LED to pin 13 through a 220 ohm resistor.")
+
+    monkeypatch.setattr(knowledge, "fetch_url_text", fake_fetch)
+
+    n = await knowledge.index_url("https://example.com/blink", source="Blink")
+    assert n >= 1
+    sources = await knowledge.list_sources()
+    assert any(
+        "Blink" in s["source"] and "https://example.com/blink" in s["source"] for s in sources
+    )
+
+
+def test_knowledge_routes_text_list_delete(client):
+    knowledge.memory_reset()
+
+    r = client.post(
+        "/api/knowledge/text",
+        json={"text": "A servo signal goes to pin 9.", "source": "ServoNote"},
+    )
+    assert r.status_code == 200
+    assert r.json()["chunks"] >= 1
+
+    r = client.get("/api/knowledge")
+    assert r.status_code == 200
+    assert any(row["source"] == "ServoNote" for row in r.json())
+
+    r = client.request("DELETE", "/api/knowledge/ServoNote")
+    assert r.status_code == 200
+    assert r.json()["ok"] is True

@@ -35,10 +35,19 @@ class CircuitState(BaseModel):
     cpp_code: str = ""
 
 
+class ChatAttachment(BaseModel):
+    """An image or document attached to a chat message (base64 payload)."""
+
+    mime_type: str = Field(..., description="e.g. image/png, image/jpeg, application/pdf")
+    data: str = Field(..., description="base64-encoded bytes, without a data: URL prefix")
+    name: str | None = None
+
+
 class ChatRequest(BaseModel):
     session_id: str = Field(..., description="Stable identifier per browser tab.")
     message: str
     circuit_state: CircuitState | None = None
+    attachments: list[ChatAttachment] | None = None
 
 
 class CompileSource(BaseModel):

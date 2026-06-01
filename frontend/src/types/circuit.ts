@@ -58,9 +58,15 @@ export interface CircuitState {
 
 export type ChatRole = 'user' | 'agent' | 'system'
 
+export interface ChatMessageAttachment {
+  name: string
+  previewUrl?: string
+}
+
 export interface ChatMessage {
   id: string
   role: ChatRole
   text: string
   toolName?: string
+  attachments?: ChatMessageAttachment[]
 }

@@ -18,8 +18,12 @@ async def chat(request: Request, payload: ChatRequest) -> EventSourceResponse:
     if payload.circuit_state is not None:
         session.replace_circuit(payload.circuit_state)
 
+    attachments = [a.model_dump() for a in payload.attachments] if payload.attachments else None
+
     async def event_stream():
-        async for event in run_chat(session=session, user_message=payload.message):
+        async for event in run_chat(
+            session=session, user_message=payload.message, attachments=attachments
+        ):
             if await request.is_disconnected():
                 return
             yield {"event": event.type, "data": json.dumps(event.data, ensure_ascii=False)}

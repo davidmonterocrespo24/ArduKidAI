@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { ExamplesModal } from './ExamplesModal'
 import { LibrariesModal } from './LibrariesModal'
+import { KnowledgeModal } from './KnowledgeModal'
 import { SimControls } from './SimControls'
 import { UserMenu } from './UserMenu'
-import { IconBook, IconLibrary } from './Icons'
+import { IconBook, IconBrain, IconLibrary } from './Icons'
 
 export function TopBar() {
   const [examplesOpen, setExamplesOpen] = useState(false)
   const [librariesOpen, setLibrariesOpen] = useState(false)
+  const [knowledgeOpen, setKnowledgeOpen] = useState(false)
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2">
@@ -39,6 +41,15 @@ export function TopBar() {
           <IconLibrary />
           Libraries
         </button>
+        <button
+          type="button"
+          onClick={() => setKnowledgeOpen(true)}
+          className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
+          title="Manage what the agent knows (PDFs, links, notes, images)"
+        >
+          <IconBrain />
+          Knowledge
+        </button>
       </div>
       <div className="flex flex-wrap items-center gap-4">
         <SimControls />
@@ -47,6 +58,7 @@ export function TopBar() {
       </div>
       <ExamplesModal open={examplesOpen} onClose={() => setExamplesOpen(false)} />
       <LibrariesModal open={librariesOpen} onClose={() => setLibrariesOpen(false)} />
+      <KnowledgeModal open={knowledgeOpen} onClose={() => setKnowledgeOpen(false)} />
     </header>
   )
 }

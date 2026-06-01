@@ -266,12 +266,27 @@ class AdkAgentClient:
         self._known.add(session_id)
 
     async def chat(
-        self, *, session: SessionState, user_message: str
+        self,
+        *,
+        session: SessionState,
+        user_message: str,
+        attachments: list[dict[str, Any]] | None = None,
     ) -> AsyncIterator[SSEEvent]:
+        import base64
+
         from google.genai import types
 
         await self._ensure_adk_session(session.session_id)
-        message = types.Content(role="user", parts=[types.Part(text=user_message)])
+        parts: list[Any] = [types.Part(text=user_message)]
+        for att in attachments or []:
+            data = att.get("data") or ""
+            mime = att.get("mime_type") or "application/octet-stream"
+            try:
+                raw = base64.b64decode(data)
+            except Exception:
+                continue
+            parts.append(types.Part.from_bytes(data=raw, mime_type=mime))
+        message = types.Content(role="user", parts=parts)
         async for event in self._runner.run_async(
             user_id=session.session_id,
             session_id=session.session_id,

@@ -5,15 +5,33 @@ import { authHeader } from '../auth/token'
 import { useAppStore } from '../store/useAppStore'
 import { handleAgentEvent } from './dispatcher'
 
-export async function sendChatMessage(message: string): Promise<void> {
+export interface ChatAttachment {
+  mime_type: string
+  data: string // base64-encoded bytes, no data: URL prefix
+  name?: string
+}
+
+export async function sendChatMessage(
+  message: string,
+  attachments?: ChatAttachment[],
+): Promise<void> {
   const trimmed = message.trim()
-  if (!trimmed) return
+  const hasAttachments = !!attachments && attachments.length > 0
+  if (!trimmed && !hasAttachments) return
 
   const store = useAppStore.getState()
   store.appendChatMessage({
     id: crypto.randomUUID(),
     role: 'user',
     text: trimmed,
+    attachments: hasAttachments
+      ? attachments!.map((a) => ({
+          name: a.name ?? 'file',
+          previewUrl: a.mime_type.startsWith('image/')
+            ? `data:${a.mime_type};base64,${a.data}`
+            : undefined,
+        }))
+      : undefined,
   })
   store.setAgentStatus('streaming')
 
@@ -30,6 +48,7 @@ export async function sendChatMessage(message: string): Promise<void> {
           blockly_xml: store.blocklyXml,
           cpp_code: store.cppCode,
         },
+        attachments: hasAttachments ? attachments : undefined,
       }),
     })
 

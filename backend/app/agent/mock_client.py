@@ -12,6 +12,7 @@ of the single-LED one."""
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from typing import Any
 
 from .runner import SSEEvent
 from .session import SessionState
@@ -32,6 +33,7 @@ class MockAgentClient:
         *,
         session: SessionState,
         user_message: str,
+        attachments: list[dict[str, Any]] | None = None,
     ) -> AsyncIterator[SSEEvent]:
         msg = _normalize(user_message)
 
