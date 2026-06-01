@@ -35,6 +35,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
 COPY app ./app
+COPY skills ./skills
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PORT=8080
