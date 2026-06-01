@@ -32,7 +32,7 @@ class GeminiAgentClient:
         self._client = genai.Client(
             vertexai=True,
             project=settings.google_cloud_project,
-            location=settings.google_cloud_location,
+            location=settings.ardukid_gemini_location,
         )
         self._model = settings.ardukid_gemini_model
         self._tool = types.Tool(
@@ -75,8 +75,8 @@ class GeminiAgentClient:
         guard = 0
         while True:
             guard += 1
-            if guard > 12:
-                yield SSEEvent(type="error", data={"message": "tool loop exceeded 12 iterations"})
+            if guard > 40:
+                yield SSEEvent(type="error", data={"message": "tool loop exceeded 40 iterations"})
                 return
 
             text_chunks: list[str] = []

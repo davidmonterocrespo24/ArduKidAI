@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 AgentMode = Literal["real", "mock"]
@@ -9,11 +10,18 @@ AgentMode = Literal["real", "mock"]
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    agent_mode: AgentMode = "mock"
+    # The .env documents this as ARDUKID_AGENT_MODE; accept the bare AGENT_MODE too.
+    agent_mode: AgentMode = Field(
+        default="mock",
+        validation_alias=AliasChoices("ARDUKID_AGENT_MODE", "AGENT_MODE"),
+    )
 
     google_cloud_project: str = ""
+    # Embeddings (text-embedding-005) live in a regional endpoint.
     google_cloud_location: str = "us-central1"
-    ardukid_gemini_model: str = "gemini-3-pro"
+    # Gemini 3 chat models are served from the "global" endpoint, not us-central1.
+    ardukid_gemini_location: str = "global"
+    ardukid_gemini_model: str = "gemini-3-flash-preview"
 
     ardukid_fqbn: str = "arduino:avr:uno"
     ardukid_arduino_cli: str = "arduino-cli"
