@@ -85,3 +85,6 @@ temp/
 
 # Local knowledge-base source assets (indexed via scripts/index_sources.py, not source code)
 data/
+
+# AI assistant instructions - kept locally, not published to the repo
+CLAUDE.md

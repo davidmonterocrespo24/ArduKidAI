@@ -30,7 +30,7 @@ Wire the SPA to the backend agent over SSE. Tool calls from the agent must apply
   - [x] 7-segment display (values + color)
 - [/] Pin map / wire rendering. The store carries the wire list and the canvas footer displays the first few. **Visual SVG wire drawing between component pins is deferred to phase 5** - it needs per-element pin coordinates which are inside each wokwi shadow DOM, and a polish pass is better spent during deploy QA.
 - [/] avr8js wired to drive canvas components. The LED follows the simulator (phase 1 wiring), and props on servo / buzzer / lcd / 7-segment plumb through correctly, but **per-pin sim drive for non-LED components is deferred to phase 5** alongside the visual wire pass.
-- [x] First-run screen with 4 suggestion chips in Spanish ("Quiero encender un LED", "Un botón que prende una luz", "Quiero un semáforo", "Tocá una melodía con el buzzer"). Click sends the prompt to the agent.
+- [x] First-run screen with 4 suggestion chips in English ("Make an LED blink", "A button that turns on a light", "Build a traffic light", "Play a melody with the buzzer"). Click sends the prompt to the agent.
 - [ ] Tooltip flow ("Try pressing the button in the simulation"). Deferred to phase 6 QA polish.
 - [x] Modification flow tested via the mock agent (keywords cover LED, button + LED, traffic light).
 - [x] C++ tab updates whenever blocks change. Custom **Blockly C++ generator** in `src/blockly/cppGenerator.ts` walks the workspace on every change and writes to the store.
