@@ -285,32 +285,68 @@ export function WireOverlay({ hostRef }: Props) {
     })
   }
 
-  // Insert a direction point (waypoint) on a wire at the given client position.
-  // Used by both double-click and right-click on a wire.
-  function addWaypointFromClient(
-    clientX: number,
-    clientY: number,
-    wireIndex: number,
-    polyline: Array<{ x: number; y: number }>,
-    waypoints: Array<{ x: number; y: number }>,
-  ) {
+  // Insert a direction point (waypoint) on a wire at the given client position,
+  // placing it in the correct slot between the wire's control points so the wire
+  // bends at the click instead of re-routing oddly.
+  function addWaypointFromClient(clientX: number, clientY: number, wireIndex: number) {
     const rect = overlayRef.current?.getBoundingClientRect()
     if (!rect) return
+    const w = wires[wireIndex]
+    if (!w) return
+    const a = pinIndex.get(w.from_pin)
+    const b = pinIndex.get(w.to_pin)
+    if (!a || !b) return
     const x = clientX - rect.left
     const y = clientY - rect.top
-    let bestSeg = 0
+    const wps = w.waypoints ?? []
+    const ctrl = [a, ...wps, b]
+    let bestCtrl = 0
     let bestD = Infinity
-    for (let s = 0; s < polyline.length - 1; s++) {
-      const d = distancePointToSegment(x, y, polyline[s].x, polyline[s].y, polyline[s + 1].x, polyline[s + 1].y)
+    for (let i = 0; i < ctrl.length - 1; i++) {
+      const sub = orthogonalPolyline(ctrl[i], [], ctrl[i + 1])
+      const d = distanceToPolyline(x, y, sub)
       if (d < bestD) {
         bestD = d
-        bestSeg = s
+        bestCtrl = i
       }
     }
-    const insertAt = Math.min(waypoints.length, Math.max(0, bestSeg))
-    insertWireWaypoint(wireIndex, insertAt, { x, y })
+    insertWireWaypoint(wireIndex, Math.min(wps.length, bestCtrl), { x, y })
     selectWire(wireIndex)
   }
+
+  // Right-click anywhere near a wire inserts a direction point on it. A native
+  // contextmenu listener makes this reliable even when a handle or the curved
+  // stroke sits under the cursor (those would otherwise swallow the event).
+  useEffect(() => {
+    const host = hostRef.current
+    const overlay = overlayRef.current
+    if (!host || !overlay) return
+    const onCtx = (e: MouseEvent) => {
+      const rect = overlay.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      let best = -1
+      let bestD = Infinity
+      for (let i = 0; i < wires.length; i++) {
+        const a = pinIndex.get(wires[i].from_pin)
+        const b = pinIndex.get(wires[i].to_pin)
+        if (!a || !b) continue
+        const poly = orthogonalPolyline(a, wires[i].waypoints ?? [], b)
+        const d = distanceToPolyline(x, y, poly)
+        if (d < bestD) {
+          bestD = d
+          best = i
+        }
+      }
+      if (best >= 0 && bestD <= 20) {
+        e.preventDefault()
+        addWaypointFromClient(e.clientX, e.clientY, best)
+      }
+    }
+    host.addEventListener('contextmenu', onCtx)
+    return () => host.removeEventListener('contextmenu', onCtx)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hostRef, wires, pinIndex])
 
   const inProgressPin = wireInProgress ? pinIndex.get(wireInProgress.from_pin) : undefined
 
@@ -345,12 +381,7 @@ export function WireOverlay({ hostRef }: Props) {
             }}
             onDoubleClick={(e) => {
               e.stopPropagation()
-              addWaypointFromClient(e.clientX, e.clientY, i, polyline, w.waypoints ?? [])
-            }}
-            onContextMenu={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              addWaypointFromClient(e.clientX, e.clientY, i, polyline, w.waypoints ?? [])
+              addWaypointFromClient(e.clientX, e.clientY, i)
             }}
             onMouseEnter={() => holdWireHover(i)}
             onMouseLeave={() => releaseWireHover(i)}
