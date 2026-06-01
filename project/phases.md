@@ -28,7 +28,7 @@ Architecture reference for phases 5-12: [`agent-v2-architecture.md`](./agent-v2-
 
 | # | Phase | Priority | Status | File |
 | --- | --- | --- | --- | --- |
-| 5 | Agent migration to Google ADK | P0 (compliance) | pending | [phase-5-adk-migration.md](./phase-5-adk-migration.md) |
+| 5 | Agent migration to Google ADK | P0 (compliance) | **done** | [phase-5-adk-migration.md](./phase-5-adk-migration.md) |
 | 6 | MongoDB MCP server integration | P0 (compliance) | pending | [phase-6-mongodb-mcp-integration.md](./phase-6-mongodb-mcp-integration.md) |
 | 7 | Skills: component know-how + best practices | P1 | pending | [phase-7-skills.md](./phase-7-skills.md) |
 | 8 | Multimodal RAG (PDF / link / text / image) | P1 | pending | [phase-8-multimodal-rag.md](./phase-8-multimodal-rag.md) |

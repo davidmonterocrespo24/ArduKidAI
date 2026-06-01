@@ -3,7 +3,7 @@
 This is what runs by default for local dev and CI. It looks at keywords in the
 user message and emits a plausible sequence of tool calls so the frontend can
 be exercised end-to-end without GCP credentials. The real client lives in
-gemini_client.py.
+adk_client.py.
 
 The keyword table is checked in order from most-specific to least, so
 "potentiometer that dims an LED" routes to the pot + LED template instead

@@ -25,9 +25,9 @@ async def run_chat(*, session: SessionState, user_message: str) -> AsyncIterator
 
     try:
         if settings.agent_mode == "real":
-            from .gemini_client import GeminiAgentClient
+            from .adk_client import get_adk_client
 
-            client = GeminiAgentClient()
+            client = get_adk_client()
         else:
             from .mock_client import MockAgentClient
 
