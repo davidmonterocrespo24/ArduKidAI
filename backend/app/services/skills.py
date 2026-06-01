@@ -73,6 +73,12 @@ VALID_PINS: dict[str, set[str]] = {
 
 
 def valid_pins_for(component_type: str) -> set[str]:
+    # Board ids (uno / nano / mega) resolve to their full pin set from the
+    # board registry, so each board validates against its own pin count.
+    from ..boards import board_ids, valid_board_pins
+
+    if component_type in board_ids():
+        return valid_board_pins(component_type)
     return VALID_PINS.get(component_type, set())
 
 

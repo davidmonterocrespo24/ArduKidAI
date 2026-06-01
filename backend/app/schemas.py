@@ -48,11 +48,13 @@ class ChatRequest(BaseModel):
     message: str
     circuit_state: CircuitState | None = None
     attachments: list[ChatAttachment] | None = None
+    board: str = "uno"
 
 
 class CompileSource(BaseModel):
     source: str
     source_kind: Literal["cpp", "blockly_xml"] = "cpp"
+    board: str = "uno"
 
 
 class CompileResponse(BaseModel):

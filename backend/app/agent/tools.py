@@ -22,6 +22,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
+from ..boards import board_ids, get_board
 from ..schemas import ComponentInstance, Wire
 from ..services import catalog, projects_store
 from ..services.compiler import compile_cpp
@@ -53,10 +54,11 @@ async def list_available_components_handler(session: SessionState) -> dict[str, 
 async def _create_component(
     session: SessionState, component_type: str, props: dict[str, Any] | None
 ) -> tuple[ComponentInstance | None, str | None]:
-    if component_type == "uno":
+    if component_type in board_ids():
+        board = get_board(session.board)
         return None, (
-            "The Arduino UNO is already on the canvas with id 'UNO'. "
-            "Do not add another one; just wire parts to UNO."
+            f"The {board.label} is already on the canvas with id '{board.canvas_id}'. "
+            f"Do not add another board; just wire parts to {board.canvas_id}."
         )
     component = await catalog.get_component(component_type)
     if component is None:
@@ -113,16 +115,17 @@ async def remove_component_handler(session: SessionState, id: str) -> dict[str, 
 
 
 def _component_type(session: SessionState, component_id: str) -> str | None:
-    if component_id == "UNO":
-        return "uno"
+    board = get_board(session.board)
+    if component_id == board.canvas_id:
+        return board.id
     inst = session.components.get(component_id)
     return inst.type if inst else None
 
 
-def _normalize_pin(component_id: str, pin_name: str) -> str:
-    # A bare UNO digital pin ("13") renders but does not drive the simulator;
+def _normalize_pin(session: SessionState, component_id: str, pin_name: str) -> str:
+    # A bare board digital pin ("13") renders but does not drive the simulator;
     # the sim's pin tracer needs the "D" prefix. Normalize so the part lights up.
-    if component_id == "UNO" and pin_name.isdigit():
+    if component_id == get_board(session.board).canvas_id and pin_name.isdigit():
         return f"D{pin_name}"
     return pin_name
 
@@ -136,10 +139,11 @@ def _resolve_pin(session: SessionState, pin: str) -> tuple[str | None, str | Non
     component_type = _component_type(session, component_id)
     if component_type is None:
         return None, (
-            f"unknown component id '{component_id}'. The board is 'UNO'; "
-            "add other parts with add_component(s) before wiring them."
+            f"unknown component id '{component_id}'. The board is "
+            f"'{get_board(session.board).canvas_id}'; add other parts with "
+            "add_component(s) before wiring them."
         )
-    pin_name = _normalize_pin(component_id, pin_name)
+    pin_name = _normalize_pin(session, component_id, pin_name)
     valid = valid_pins_for(component_type)
     if valid and pin_name not in valid:
         return None, (
@@ -161,7 +165,7 @@ _LAYOUT_ROWS = 5
 
 
 def _peripheral_count(session: SessionState) -> int:
-    return sum(1 for c in session.components.values() if c.type != "uno")
+    return sum(1 for c in session.components.values() if c.type not in board_ids())
 
 
 def _layout_position(index: int) -> tuple[float, float]:
@@ -253,7 +257,7 @@ async def compile_and_run_handler(session: SessionState) -> dict[str, Any]:
             "ok": False,
             "error": "no C++ source on the session yet. The frontend should send `circuit_state.cpp_code` along with the chat request.",
         }
-    result = await compile_cpp(session.cpp_code)
+    result = await compile_cpp(session.cpp_code, fqbn=get_board(session.board).fqbn)
     return {
         "ok": result.ok,
         "hex": result.hex_text,

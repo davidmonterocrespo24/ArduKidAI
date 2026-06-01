@@ -15,6 +15,7 @@ router = APIRouter()
 @limiter.limit(CHAT_LIMIT)
 async def chat(request: Request, payload: ChatRequest) -> EventSourceResponse:
     session = get_or_create_session(payload.session_id)
+    session.board = payload.board
     if payload.circuit_state is not None:
         session.replace_circuit(payload.circuit_state)
 

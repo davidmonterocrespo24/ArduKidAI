@@ -41,8 +41,9 @@ def _wrap_in_sketch_if_needed(cpp: str) -> str:
     )
 
 
-async def compile_cpp(cpp: str) -> CompileResult:
+async def compile_cpp(cpp: str, fqbn: str | None = None) -> CompileResult:
     settings = get_settings()
+    target_fqbn = fqbn or settings.ardukid_fqbn
     source = _wrap_in_sketch_if_needed(cpp)
 
     workdir = Path(tempfile.mkdtemp(prefix="ardukid_"))
@@ -58,7 +59,7 @@ async def compile_cpp(cpp: str) -> CompileResult:
             settings.ardukid_arduino_cli,
             "compile",
             "--fqbn",
-            settings.ardukid_fqbn,
+            target_fqbn,
             "--output-dir",
             str(out_dir),
             str(sketch_dir),

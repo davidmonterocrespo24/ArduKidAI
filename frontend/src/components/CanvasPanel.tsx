@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { isActive } from '../sim/pinState'
+import { getBoard } from '../sim/boards'
 import { AddComponentModal } from './AddComponentModal'
 import { DraggablePart } from './DraggablePart'
 import { WireDialog } from './WireDialog'
@@ -14,15 +15,18 @@ const STAGE_HEIGHT = 1000
 const UNO_LEFT = 240
 const UNO_TOP = 60
 
-// Render the wokwi-arduino-uno with its built-in LED indicators bound
-// to the live sim: the L LED follows pin D13, RX/TX flicker on USART
-// pin activity, ledPower stays on while the sim is running. Without
-// this binding the SVG ships dark even though D13 is being toggled.
-function ArduinoUnoBoard() {
+// Render the selected board's wokwi element with its built-in LED indicators
+// bound to the live sim: the L LED follows pin D13, RX/TX flicker on USART pin
+// activity, ledPower stays on while the sim is running. Without this binding
+// the SVG ships dark even though D13 is being toggled. The element tag and id
+// come from the board registry so UNO/Nano/Mega all render correctly.
+function ArduinoBoard() {
   const ref = useRef<HTMLElement>(null)
+  const board = useAppStore((s) => s.board)
   const pinLevels = useAppStore((s) => s.pinLevels)
   const pinActivity = useAppStore((s) => s.pinActivity)
   const simStatus = useAppStore((s) => s.simStatus)
+  const cfg = getBoard(board)
   const props = useMemo(
     () => ({
       led13: !!pinLevels.D13,
@@ -40,11 +44,14 @@ function ArduinoUnoBoard() {
     const el = ref.current as unknown as Record<string, unknown>
     for (const [k, v] of Object.entries(props)) el[k] = v
   }, [props])
-  return <wokwi-arduino-uno ref={ref} id="UNO" />
+  if (cfg.id === 'nano') return <wokwi-arduino-nano ref={ref} id={cfg.canvasId} />
+  if (cfg.id === 'mega') return <wokwi-arduino-mega ref={ref} id={cfg.canvasId} />
+  return <wokwi-arduino-uno ref={ref} id={cfg.canvasId} />
 }
 
 export function CanvasPanel() {
   const components = useAppStore((s) => s.components)
+  const boardId = useAppStore((s) => s.board)
   const wireInProgress = useAppStore((s) => s.wireInProgress)
   const cancelWire = useAppStore((s) => s.cancelWire)
   const selectWire = useAppStore((s) => s.selectWire)
@@ -108,14 +115,14 @@ export function CanvasPanel() {
         }}
       >
         <div className="relative" style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT }}>
-          {/* Arduino UNO is pinned for now (user request). */}
+          {/* The selected Arduino board is pinned on the canvas. */}
           <div
             style={{ position: 'absolute', left: UNO_LEFT, top: UNO_TOP, userSelect: 'none' }}
             className="flex flex-col items-center gap-1"
           >
-            <ArduinoUnoBoard />
+            <ArduinoBoard />
             <span className="rounded bg-white/80 px-1 font-mono text-[10px] text-slate-600 shadow-sm">
-              UNO (pinned)
+              {getBoard(boardId).canvasId} (pinned)
             </span>
           </div>
 

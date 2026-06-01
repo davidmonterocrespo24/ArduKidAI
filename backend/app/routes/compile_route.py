@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request
 
+from ..boards import get_board
 from ..rate_limit import COMPILE_LIMIT, limiter
 from ..schemas import CompileResponse, CompileSource
 from ..services.blockly_to_cpp import blockly_xml_to_cpp
@@ -17,7 +18,7 @@ async def compile_source(request: Request, payload: CompileSource) -> CompileRes
     else:
         cpp = payload.source
 
-    result = await compile_cpp(cpp)
+    result = await compile_cpp(cpp, fqbn=get_board(payload.board).fqbn)
     return CompileResponse(
         ok=result.ok,
         hex=result.hex_text,

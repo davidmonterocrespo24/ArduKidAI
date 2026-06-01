@@ -3,6 +3,7 @@ import type { ChatMessage, ComponentInstance, Wire } from '../types/circuit'
 import type { UserPublic } from '../auth/api'
 import { emptyActivity, emptyPinLevels, type DigitalPinLabel } from '../sim/pinState'
 import { emptyPwmSnapshot, type PwmSnapshot } from '../sim/pwm'
+import { DEFAULT_BOARD, type BoardId } from '../sim/boards'
 import { BLINK_BLOCKS } from '../lib/exampleTemplates'
 
 export type SimStatus = 'idle' | 'running' | 'stopped' | 'error'
@@ -57,6 +58,9 @@ export interface AppState {
 
   agentStatus: AgentStatus
   setAgentStatus: (s: AgentStatus) => void
+
+  board: BoardId
+  setBoard: (b: BoardId) => void
 
   components: ComponentInstance[]
   addComponent: (c: ComponentInstance) => void
@@ -139,6 +143,24 @@ export const useAppStore = create<AppState>((set) => ({
 
   agentStatus: 'idle',
   setAgentStatus: (s) => set({ agentStatus: s }),
+
+  board: DEFAULT_BOARD,
+  // Switching board clears the circuit: existing wires reference the old
+  // board's id (e.g. "UNO.D13") and its pins. The program is kept.
+  setBoard: (b) =>
+    set({
+      board: b,
+      components: [],
+      wires: [],
+      wireInProgress: null,
+      selectedWireIndex: null,
+      hexCode: null,
+      compileError: null,
+      simStatus: 'idle',
+      pinLevels: emptyPinLevels(),
+      pinActivity: emptyActivity(),
+      pwm: emptyPwmSnapshot(),
+    }),
 
   components: [],
   addComponent: (c) =>

@@ -42,6 +42,7 @@ export async function sendChatMessage(
       body: JSON.stringify({
         session_id: getSessionId(),
         message: trimmed,
+        board: store.board,
         circuit_state: {
           components: store.components,
           wires: store.wires,

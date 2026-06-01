@@ -4,6 +4,7 @@ import { newSession } from '../lib/sessionId'
 import { startSim, type SimHandle } from '../sim/runner'
 import { resolveAllDrivePins, resolveAnalogChannel } from '../sim/wireTrace'
 import type { DigitalPinLabel } from '../sim/pinState'
+import { getBoard } from '../sim/boards'
 import { postJson } from '../lib/api'
 import { cn } from '../lib/cn'
 import { SaveProjectDialog } from './SaveProjectDialog'
@@ -176,6 +177,7 @@ export function SimControls() {
   const hexCode = useAppStore((s) => s.hexCode)
   const setHexCode = useAppStore((s) => s.setHexCode)
   const cppCode = useAppStore((s) => s.cppCode)
+  const board = useAppStore((s) => s.board)
   const appendChatMessage = useAppStore((s) => s.appendChatMessage)
   const resetCircuit = useAppStore((s) => s.resetCircuit)
   const setCompileError = useAppStore((s) => s.setCompileError)
@@ -234,12 +236,13 @@ export function SimControls() {
   }
 
   async function compileAndRun() {
-    appendCompileLog('info', 'POST /api/compile (arduino:avr:uno)')
+    appendCompileLog('info', `POST /api/compile (${getBoard(board).fqbn})`)
     setBottomTab('compile')
     try {
       const resp = await postJson<CompileResponse>('/api/compile', {
         source: cppCode,
         source_kind: 'cpp',
+        board,
       })
       if (resp.ok && resp.hex) {
         const bytes = Math.round(resp.hex.length / 2)

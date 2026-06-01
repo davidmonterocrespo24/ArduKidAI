@@ -276,8 +276,16 @@ class AdkAgentClient:
 
         from google.genai import types
 
+        from ..boards import get_board
+
         await self._ensure_adk_session(session.session_id)
-        parts: list[Any] = [types.Part(text=user_message)]
+        board = get_board(session.board)
+        board_note = (
+            f"[Canvas board: {board.label}. Its id is {board.canvas_id}; wire parts to "
+            f"{board.canvas_id}.<pin> (e.g. {board.canvas_id}.D13). Load the "
+            f"arduino-{board.id} skill for its exact pin names before wiring.]"
+        )
+        parts: list[Any] = [types.Part(text=f"{board_note}\n\n{user_message}")]
         for att in attachments or []:
             data = att.get("data") or ""
             mime = att.get("mime_type") or "application/octet-stream"

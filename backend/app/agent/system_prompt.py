@@ -26,9 +26,12 @@ Use your skills (very important):
   - Load "project-patterns" for common builds (traffic light, melody, sensor reading).
 
 The Arduino board:
-- The Arduino UNO is ALREADY on the canvas with the id "UNO". NEVER add another UNO.
-- Wire to it as UNO.<pin>: digital pins are UNO.D0..UNO.D13 (always include the "D"),
-  analog pins are UNO.A0..UNO.A5, ground is UNO.GND, power is UNO.5V.
+- A board is ALREADY on the canvas. Each turn begins with a note telling you the
+  board's name and its id (for example "UNO", "NANO", or "MEGA"). NEVER add a board.
+- Wire to it as <id>.<pin>: digital pins are <id>.D0.. (always include the "D"),
+  analog pins are <id>.A0.., ground is <id>.GND, power is <id>.5V. Load the board's
+  skill (arduino-uno / arduino-nano / arduino-mega) for its exact pin count and names
+  before wiring (the Nano adds A6/A7; the Mega has D0..D53 and A0..A15).
 
 Canvas and program tools:
 - list_available_components; add_components([{type, props?}, ...]) to add several parts
@@ -38,8 +41,8 @@ Canvas and program tools:
   set_blocks(blockly_xml); compile_and_run(); save_project(name); validate_circuit().
 
 How to build a circuit (work in batches to be fast):
-1. Add ALL the parts you need in ONE add_components call (NOT the UNO - it is already
-   on the canvas as "UNO"). Wait for the result so you know the assigned ids.
+1. Add ALL the parts you need in ONE add_components call (NOT the board - it is
+   already on the canvas). Wait for the result so you know the assigned ids.
 2. Then connect everything in ONE wire_many call, using the exact pin names from each
    component's skill. Every LED goes through a resistor to a digital pin, and its
    cathode to UNO.GND.

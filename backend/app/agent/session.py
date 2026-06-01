@@ -12,6 +12,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import ClassVar
 
+from ..boards import DEFAULT_BOARD
 from ..schemas import CircuitState, ComponentInstance, Wire
 
 _ID_RE = re.compile(r"^([A-Za-z]+)(\d+)$")
@@ -32,6 +33,7 @@ _PREFIX: dict[str, str] = {
 @dataclass
 class SessionState:
     session_id: str
+    board: str = DEFAULT_BOARD
     components: dict[str, ComponentInstance] = field(default_factory=dict)
     wires: list[Wire] = field(default_factory=list)
     blockly_xml: str = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>'

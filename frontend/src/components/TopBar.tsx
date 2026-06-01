@@ -5,11 +5,15 @@ import { KnowledgeModal } from './KnowledgeModal'
 import { SimControls } from './SimControls'
 import { UserMenu } from './UserMenu'
 import { IconBook, IconBrain, IconLibrary } from './Icons'
+import { useAppStore } from '../store/useAppStore'
+import { BOARDS, SELECTABLE_BOARDS, type BoardId } from '../sim/boards'
 
 export function TopBar() {
   const [examplesOpen, setExamplesOpen] = useState(false)
   const [librariesOpen, setLibrariesOpen] = useState(false)
   const [knowledgeOpen, setKnowledgeOpen] = useState(false)
+  const board = useAppStore((s) => s.board)
+  const setBoard = useAppStore((s) => s.setBoard)
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2">
@@ -50,6 +54,21 @@ export function TopBar() {
           <IconBrain />
           Knowledge
         </button>
+        <label className="ml-1 inline-flex items-center gap-1.5 text-sm text-slate-600">
+          <span className="text-xs font-medium text-slate-500">Board</span>
+          <select
+            value={board}
+            onChange={(e) => setBoard(e.target.value as BoardId)}
+            title="Switching board clears the circuit"
+            className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm font-medium text-slate-700 focus:border-brand-500 focus:outline-none"
+          >
+            {SELECTABLE_BOARDS.map((id) => (
+              <option key={id} value={id}>
+                {BOARDS[id].label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       <div className="flex flex-wrap items-center gap-4">
         <SimControls />

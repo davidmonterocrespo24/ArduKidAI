@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { readPinPositions, type PinScreenPosition } from '../sim/pinPositions'
 import { pickWireColor } from '../lib/wireColors'
+import { getBoard } from '../sim/boards'
 import type { ComponentType } from '../types/circuit'
 
 // wokwi-elements expose abbreviated pin names while the agent / backend
@@ -25,6 +26,7 @@ interface PositionedPin extends PinScreenPosition {
 
 export function WireOverlay({ hostRef }: Props) {
   const components = useAppStore((s) => s.components)
+  const boardCanvasId = getBoard(useAppStore((s) => s.board)).canvasId
   const wires = useAppStore((s) => s.wires)
   const wireInProgress = useAppStore((s) => s.wireInProgress)
   const startWire = useAppStore((s) => s.startWire)
@@ -91,15 +93,15 @@ export function WireOverlay({ hostRef }: Props) {
         next.push({ ...p, componentId: c.id })
       }
     }
-    // UNO has a fixed id on its element so we can route to it too.
-    const unoPositions = readPinPositions('UNO', overlay)
-    if (unoPositions) {
-      for (const p of unoPositions) {
-        next.push({ ...p, componentId: 'UNO' })
+    // The board has a fixed id on its element so we can route to it too.
+    const boardPositions = readPinPositions(boardCanvasId, overlay)
+    if (boardPositions) {
+      for (const p of boardPositions) {
+        next.push({ ...p, componentId: boardCanvasId })
       }
     }
     setPins(next)
-  }, [components, hostRef])
+  }, [components, hostRef, boardCanvasId])
 
   useEffect(() => {
     recompute()
@@ -116,10 +118,10 @@ export function WireOverlay({ hostRef }: Props) {
       const el = document.getElementById(c.id)
       if (el) observer.observe(el)
     }
-    const uno = document.getElementById('UNO')
-    if (uno) observer.observe(uno)
+    const boardEl = document.getElementById(boardCanvasId)
+    if (boardEl) observer.observe(boardEl)
     return () => observer.disconnect()
-  }, [recompute, components, hostRef])
+  }, [recompute, components, hostRef, boardCanvasId])
 
   useEffect(() => {
     const host = hostRef.current
@@ -180,15 +182,15 @@ export function WireOverlay({ hostRef }: Props) {
     const map = new Map<string, PositionedPin>()
     for (const p of pins) {
       map.set(`${p.componentId}.${p.name}`, p)
-      if (p.componentId === 'UNO') {
+      if (p.componentId === boardCanvasId) {
         if (/^\d+$/.test(p.name)) {
-          map.set(`UNO.D${p.name}`, p)
+          map.set(`${boardCanvasId}.D${p.name}`, p)
         }
-        if (/^GND(\.\d+)?$/.test(p.name) && !map.has('UNO.GND')) {
-          map.set('UNO.GND', p)
+        if (/^GND(\.\d+)?$/.test(p.name) && !map.has(`${boardCanvasId}.GND`)) {
+          map.set(`${boardCanvasId}.GND`, p)
         }
-        if (p.name === '3.3V') map.set('UNO.3V3', p)
-        if (p.name === '5V') map.set('UNO.5V', p)
+        if (p.name === '3.3V') map.set(`${boardCanvasId}.3V3`, p)
+        if (p.name === '5V') map.set(`${boardCanvasId}.5V`, p)
         continue
       }
       const type = typeById.get(p.componentId)
@@ -201,7 +203,7 @@ export function WireOverlay({ hostRef }: Props) {
       }
     }
     return map
-  }, [pins, typeById])
+  }, [pins, typeById, boardCanvasId])
 
   // Hover detection by distance, not by SVG hit area. The old wide
   // invisible stroke would absorb mousedown on top of pushbuttons and

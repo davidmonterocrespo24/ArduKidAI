@@ -9,6 +9,8 @@ declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
       'wokwi-arduino-uno': WokwiElement
+      'wokwi-arduino-nano': WokwiElement
+      'wokwi-arduino-mega': WokwiElement
       'wokwi-led': WokwiElement<{
         color?: string
         brightness?: number
