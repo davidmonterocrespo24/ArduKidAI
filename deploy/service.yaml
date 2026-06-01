@@ -19,7 +19,7 @@ spec:
       serviceAccountName: 626067361949-compute@developer.gserviceaccount.com
       containers:
       - name: backend
-        image: us-central1-docker.pkg.dev/ardukid-ai/ardukid/ardukid:v1
+        image: us-central1-docker.pkg.dev/ardukid-ai/ardukid/ardukid:v2
         ports:
         - containerPort: 8080
           name: http1
