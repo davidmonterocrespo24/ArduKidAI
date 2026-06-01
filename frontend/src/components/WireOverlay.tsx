@@ -329,7 +329,7 @@ export function WireOverlay({ hostRef }: Props) {
         const b = pinIndex.get(w.to_pin)
         if (!a || !b) return null
         const polyline = orthogonalPolyline(a, w.waypoints ?? [], b)
-        const pathD = polylineToPath(polyline)
+        const pathD = polylineToRoundedPath(polyline)
         return (
           <path
             key={`hit-${w.from_pin}-${w.to_pin}-${i}`}
@@ -546,8 +546,7 @@ export function WireOverlay({ hostRef }: Props) {
  * Build the polyline that an orthogonal wire follows: starting at `start`,
  * detouring through each waypoint, and ending at `end`. Between any two
  * consecutive control points we insert a corner (go horizontal first,
- * then vertical) so the visible wire is always axis-aligned. Matches
- * Wokwi / velxio routing style.
+ * then vertical) so the visible wire is always axis-aligned, Wokwi-style.
  */
 function orthogonalPolyline(
   start: { x: number; y: number },
@@ -625,14 +624,11 @@ function distanceToPolyline(px: number, py: number, pts: Array<{ x: number; y: n
 }
 
 /**
- * Slide a segment of an orthogonal polyline perpendicular to its axis.
- * Horizontal segments take a new Y (move up/down), vertical segments
- * take a new X (move left/right). When the moved segment is the very
- * first or last one, we insert connector points so the wire stays
- * anchored at the original start / end pin position.
- *
- * Mirrors velxio's wireHitDetection.moveSegment so the on-canvas feel
- * matches what the kid is used to from Wokwi-style editors.
+ * Slide one segment of an orthogonal polyline perpendicular to its axis.
+ * A horizontal segment takes a new Y (moves up/down); a vertical segment takes a
+ * new X (moves left/right). Middle segments just shift both of their endpoints.
+ * The first/last segments touch a pin, so instead of moving the pin we insert two
+ * connector points that keep the wire joined to the pin while the segment moves.
  */
 function moveSegment(
   pts: Array<{ x: number; y: number }>,
@@ -640,39 +636,49 @@ function moveSegment(
   axis: 'horizontal' | 'vertical',
   newValue: number,
 ): Array<{ x: number; y: number }> {
-  const n = pts.length
-  const numSegs = n - 1
   const out = pts.map((p) => ({ ...p }))
-  if (axis === 'horizontal') {
-    if (segIndex === 0 && numSegs > 0) {
-      out.splice(1, 0, { x: out[0].x, y: newValue }, { x: out[1].x, y: newValue })
-      out.splice(3, 1)
-    } else if (segIndex === numSegs - 1 && numSegs > 0) {
-      const last = out[n - 1]
-      out.splice(n - 1, 0, { x: out[n - 2].x, y: newValue }, { x: last.x, y: newValue })
-    } else {
+  const lastSeg = out.length - 2
+
+  // Middle segment: slide both of its endpoints perpendicular to the axis.
+  if (segIndex > 0 && segIndex < lastSeg) {
+    if (axis === 'horizontal') {
       out[segIndex].y = newValue
       out[segIndex + 1].y = newValue
-    }
-  } else {
-    if (segIndex === 0 && numSegs > 0) {
-      out.splice(1, 0, { x: newValue, y: out[0].y }, { x: newValue, y: out[1].y })
-      out.splice(3, 1)
-    } else if (segIndex === numSegs - 1 && numSegs > 0) {
-      const last = out[n - 1]
-      out.splice(n - 1, 0, { x: newValue, y: out[n - 2].y }, { x: last.x, y: newValue })
     } else {
       out[segIndex].x = newValue
       out[segIndex + 1].x = newValue
     }
+    return out
   }
+
+  // First segment: keep the start pin (out[0]) and insert two connectors after it.
+  if (segIndex === 0) {
+    const p0 = out[0]
+    const p1 = out[1]
+    const connectors =
+      axis === 'horizontal'
+        ? [{ x: p0.x, y: newValue }, { x: p1.x, y: newValue }]
+        : [{ x: newValue, y: p0.y }, { x: newValue, y: p1.y }]
+    out.splice(1, 0, ...connectors)
+    return out
+  }
+
+  // Last segment: keep the end pin (last point) and insert two connectors before it.
+  const n = out.length
+  const pPrev = out[n - 2]
+  const pEnd = out[n - 1]
+  const connectors =
+    axis === 'horizontal'
+      ? [{ x: pPrev.x, y: newValue }, { x: pEnd.x, y: newValue }]
+      : [{ x: newValue, y: pPrev.y }, { x: newValue, y: pEnd.y }]
+  out.splice(n - 1, 0, ...connectors)
   return out
 }
 
 /**
  * Drop duplicate points and collapse triples that share an axis (either
  * collinear or U-turns) so the wire doesn't accumulate visible bumps
- * after a chain of segment drags. Same simplifier velxio uses.
+ * after a chain of segment drags.
  */
 function simplifyOrthogonalPath(
   pts: Array<{ x: number; y: number }>,

@@ -101,6 +101,11 @@ export function CanvasPanel() {
           if (wireInProgress) cancelWire()
           selectWire(null)
         }}
+        onContextMenu={(e) => {
+          // Suppress the browser menu in the canvas so right-clicking a wire can
+          // add a direction point instead of opening the native context menu.
+          e.preventDefault()
+        }}
       >
         <div className="relative" style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT }}>
           {/* Arduino UNO is pinned for now (user request). */}
