@@ -11,7 +11,7 @@ MongoDB partner track.
 
 **Live demo:** https://ardukid-626067361949.us-central1.run.app
 
-![ArduKid building and simulating a traffic light](docs/screenshots/01-ide-traffic-light-running.png)
+![ArduKid building and simulating a traffic light](doc/screenshots/01-ide-traffic-light-running.png)
 
 *The child typed "Build a traffic light". The agent loaded the LED and resistor
 skills, added three LEDs through resistors, wired them, wrote the Blockly
@@ -70,7 +70,7 @@ Over 50 ready-made starter circuits, sorted by difficulty. Picking one loads it
 straight onto the canvas (no agent call) so a child can explore, run it, and
 then ask the agent to change it.
 
-![The example circuit library modal](docs/screenshots/02-examples-modal.png)
+![The example circuit library modal](doc/screenshots/02-examples-modal.png)
 
 ### Arduino library manager
 
@@ -78,7 +78,7 @@ The container ships with `arduino-cli` and the libraries the kid-level examples
 need (LCD, NeoPixel, servo, sensors, OLED). The Libraries panel lets you install
 or remove libraries and search the registry, so sketches that use them compile.
 
-![The Arduino libraries modal](docs/screenshots/03-libraries-modal.png)
+![The Arduino libraries modal](doc/screenshots/03-libraries-modal.png)
 
 ### Knowledge base (multimodal RAG)
 
@@ -87,7 +87,7 @@ images (images are described by Gemini vision). Everything is chunked, embedded
 with Gemini, and stored in MongoDB Atlas. The panel shows each indexed source
 and its chunk count.
 
-![The knowledge base modal with indexed PDFs and links](docs/screenshots/04-knowledge-modal.png)
+![The knowledge base modal with indexed PDFs and links](doc/screenshots/04-knowledge-modal.png)
 
 ### Accounts, projects, and history
 
@@ -97,7 +97,7 @@ documents, and the agent remembers the user across chats.
 
 | User menu | My projects |
 | --- | --- |
-| ![The signed-in user menu](docs/screenshots/05-user-menu.png) | ![The saved projects modal](docs/screenshots/06-projects-modal.png) |
+| ![The signed-in user menu](doc/screenshots/05-user-menu.png) | ![The saved projects modal](doc/screenshots/06-projects-modal.png) |
 
 ### The generated Arduino code
 
@@ -105,7 +105,7 @@ The block program is translated to real Arduino C++, shown read-only in a Monaco
 editor. This is the exact code that is compiled and run - children can read
 along and see what their blocks become.
 
-![The read-only generated Arduino C++ view](docs/screenshots/07-arduino-code-view.png)
+![The read-only generated Arduino C++ view](doc/screenshots/07-arduino-code-view.png)
 
 ## How the agent works
 
@@ -268,12 +268,11 @@ See [`deploy/README.md`](./deploy/README.md) for the full recipe.
 ## Repository layout
 
 ```
-doc/         Hackathon rules, resources, and product specification
+doc/         Hackathon rules, product specification, project story, README screenshots
 project/     Phase-by-phase implementation plan and progress tracker
 frontend/    React + Vite single-page app
 backend/     FastAPI agent service (ADK, tools, services, skills)
 deploy/      Cloud Run service definition, Docker Compose, reverse-proxy config
-docs/        Screenshots used in this README
 ```
 
 ## License
