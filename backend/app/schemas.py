@@ -44,11 +44,14 @@ class ChatAttachment(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    session_id: str = Field(..., description="Stable identifier per browser tab.")
+    session_id: str = Field(..., description="Chat session id (one per conversation).")
     message: str
     circuit_state: CircuitState | None = None
     attachments: list[ChatAttachment] | None = None
     board: str = "uno"
+    client_id: str | None = Field(
+        default=None, description="Stable per-browser id used to scope anonymous chat history."
+    )
 
 
 class CompileSource(BaseModel):

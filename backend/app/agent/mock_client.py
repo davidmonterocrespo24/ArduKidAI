@@ -34,6 +34,7 @@ class MockAgentClient:
         session: SessionState,
         user_message: str,
         attachments: list[dict[str, Any]] | None = None,
+        user_id: str = "guest",
     ) -> AsyncIterator[SSEEvent]:
         msg = _normalize(user_message)
 

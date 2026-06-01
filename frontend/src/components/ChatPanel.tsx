@@ -4,14 +4,13 @@ import { useAppStore } from '../store/useAppStore'
 import { cn } from '../lib/cn'
 import { SavedProjectsList } from './SavedProjectsList'
 import { IconClock, IconImage, IconMinimize, IconPaperclip, IconPlus, IconTrash } from './Icons'
-import { getSessionId, newSession, setSessionId } from '../lib/sessionId'
+import { newSession, setSessionId } from '../lib/sessionId'
 import {
-  deleteSession,
-  deriveTitle,
-  listSessions,
-  saveSession,
-  type ChatSession,
-} from '../lib/chatHistory'
+  deleteChatSession,
+  getChatSession,
+  listChatSessions,
+  type ChatSessionSummary,
+} from '../agent/chatSessions'
 
 const SUGGESTIONS = [
   'Make an LED blink',
@@ -38,13 +37,10 @@ export function ChatPanel() {
   const agentStatus = useAppStore((s) => s.agentStatus)
   const setChatMessages = useAppStore((s) => s.setChatMessages)
   const setChatCollapsed = useAppStore((s) => s.setChatCollapsed)
-  const board = useAppStore((s) => s.board)
-  const currentUser = useAppStore((s) => s.currentUser)
-  const userKey = currentUser?.email ?? 'guest'
   const [value, setValue] = useState('')
   const [pending, setPending] = useState<File[]>([])
   const [historyOpen, setHistoryOpen] = useState(false)
-  const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [sessions, setSessions] = useState<ChatSessionSummary[]>([])
   const listRef = useRef<HTMLDivElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -52,46 +48,37 @@ export function ChatPanel() {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
   }, [messages])
 
-  // Persist the conversation to local history when a turn finishes.
-  useEffect(() => {
-    if (agentStatus !== 'idle' || messages.length === 0) return
-    saveSession(userKey, {
-      id: getSessionId(),
-      title: deriveTitle(messages),
-      messages,
-      board,
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentStatus])
-
   const isStreaming = agentStatus === 'streaming'
 
-  function persistCurrent() {
-    if (messages.length === 0) return
-    saveSession(userKey, {
-      id: getSessionId(),
-      title: deriveTitle(messages),
-      messages,
-      board,
-    })
-  }
-
+  // The backend (ADK MongoSessionService) persists every turn, so a new chat
+  // just starts a fresh session id; the old one is already saved.
   function newChat() {
-    persistCurrent()
     newSession()
     setChatMessages([])
     setHistoryOpen(false)
   }
 
-  function loadSession(s: ChatSession) {
-    persistCurrent()
-    setSessionId(s.id)
-    setChatMessages(s.messages)
+  async function loadSession(s: ChatSessionSummary) {
+    try {
+      const transcript = await getChatSession(s.id)
+      setSessionId(s.id) // continue this conversation: the agent reloads its full context from Mongo
+      setChatMessages(transcript.messages)
+    } catch {
+      /* ignore - the chat just will not load */
+    }
     setHistoryOpen(false)
   }
 
+  async function refreshSessions() {
+    try {
+      setSessions(await listChatSessions())
+    } catch {
+      setSessions([])
+    }
+  }
+
   function toggleHistory() {
-    if (!historyOpen) setSessions(listSessions(userKey))
+    if (!historyOpen) void refreshSessions()
     setHistoryOpen((o) => !o)
   }
 
@@ -164,20 +151,17 @@ export function ChatPanel() {
                 >
                   <button
                     type="button"
-                    onClick={() => loadSession(s)}
+                    onClick={() => void loadSession(s)}
                     className="min-w-0 flex-1 text-left"
                   >
                     <div className="truncate text-xs font-medium text-slate-700">{s.title}</div>
                     <div className="text-[10px] text-slate-400">
-                      {s.messages.length} messages - {new Date(s.updatedAt).toLocaleString()}
+                      {new Date(s.updated_at * 1000).toLocaleString()}
                     </div>
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      deleteSession(userKey, s.id)
-                      setSessions(listSessions(userKey))
-                    }}
+                    onClick={() => void deleteChatSession(s.id).then(refreshSessions)}
                     title="Delete this chat"
                     className="shrink-0 rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                   >

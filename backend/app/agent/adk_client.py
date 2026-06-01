@@ -204,7 +204,9 @@ class AdkAgentClient:
     def __init__(self) -> None:
         from google.adk.agents import LlmAgent
         from google.adk.runners import Runner
-        from google.adk.sessions import InMemorySessionService
+
+        from .mongo_memory_service import get_memory_service
+        from .mongo_session_service import get_session_service
 
         settings = get_settings()
         if not settings.google_cloud_project:
@@ -239,31 +241,43 @@ class AdkAgentClient:
         except Exception:  # pragma: no cover - web tools are best-effort
             pass
 
+        # Long-term memory: the load_memory tool lets the agent recall relevant
+        # things from the child's earlier conversations (MongoMemoryService).
+        try:
+            from google.adk.tools.load_memory_tool import load_memory_tool
+
+            tools.append(load_memory_tool)
+        except Exception:  # pragma: no cover - memory tool is best-effort
+            pass
+
         self._agent = LlmAgent(
             model=settings.ardukid_gemini_model,
             name="ardukid_agent",
             instruction=SYSTEM_PROMPT,
             tools=tools,
         )
-        self._session_service = InMemorySessionService()
+        self._session_service = get_session_service()
+        self._memory_service = get_memory_service()
         self._runner = Runner(
             app_name=self._APP,
             agent=self._agent,
             session_service=self._session_service,
+            memory_service=self._memory_service,
         )
         self._known: set[str] = set()
 
-    async def _ensure_adk_session(self, session_id: str) -> None:
-        if session_id in self._known:
+    async def _ensure_adk_session(self, user_id: str, session_id: str) -> None:
+        cache_key = f"{user_id}::{session_id}"
+        if cache_key in self._known:
             return
         existing = await self._session_service.get_session(
-            app_name=self._APP, user_id=session_id, session_id=session_id
+            app_name=self._APP, user_id=user_id, session_id=session_id
         )
         if existing is None:
             await self._session_service.create_session(
-                app_name=self._APP, user_id=session_id, session_id=session_id
+                app_name=self._APP, user_id=user_id, session_id=session_id
             )
-        self._known.add(session_id)
+        self._known.add(cache_key)
 
     async def chat(
         self,
@@ -271,6 +285,7 @@ class AdkAgentClient:
         session: SessionState,
         user_message: str,
         attachments: list[dict[str, Any]] | None = None,
+        user_id: str = "guest",
     ) -> AsyncIterator[SSEEvent]:
         import base64
 
@@ -278,7 +293,7 @@ class AdkAgentClient:
 
         from ..boards import get_board
 
-        await self._ensure_adk_session(session.session_id)
+        await self._ensure_adk_session(user_id, session.session_id)
         board = get_board(session.board)
         board_note = (
             f"[Canvas board: {board.label}. Its id is {board.canvas_id}; wire parts to "
@@ -296,7 +311,7 @@ class AdkAgentClient:
             parts.append(types.Part.from_bytes(data=raw, mime_type=mime))
         message = types.Content(role="user", parts=parts)
         async for event in self._runner.run_async(
-            user_id=session.session_id,
+            user_id=user_id,
             session_id=session.session_id,
             new_message=message,
             run_config=RunConfig(max_llm_calls=200),
@@ -307,14 +322,30 @@ class AdkAgentClient:
                     data={"name": call.name, "args": dict(call.args or {})},
                 )
             for response in event.get_function_responses():
+                result = response.response
+                # Built-in tools (e.g. load_memory) return pydantic objects that
+                # are not JSON-serializable; coerce them so the SSE layer can
+                # encode the event.
+                if hasattr(result, "model_dump"):
+                    result = result.model_dump(mode="json")
                 yield SSEEvent(
                     type="tool_result",
-                    data={"name": response.name, "result": response.response},
+                    data={"name": response.name, "result": result},
                 )
             if event.content and event.content.parts:
                 text_parts = [p.text for p in event.content.parts if p.text]
                 if text_parts:
                     yield SSEEvent(type="agent_text", data={"content": "".join(text_parts)})
+
+        # Memorialize the turn so future chats can recall it (best-effort).
+        try:
+            sess = await self._session_service.get_session(
+                app_name=self._APP, user_id=user_id, session_id=session.session_id
+            )
+            if sess is not None:
+                await self._memory_service.add_session_to_memory(sess)
+        except Exception:  # pragma: no cover - memory write is best-effort
+            pass
 
 
 _singleton: AdkAgentClient | None = None

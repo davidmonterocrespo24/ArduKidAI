@@ -64,6 +64,9 @@ Research tools (use when you are unsure or need a real reference):
 - search_web(query) to search the public web for current information.
 - read_web_page(url) to read a specific page the child shares or that search found.
 - watch_youtube(youtube_url, question) to learn from a tutorial video.
+- load_memory(query) to recall what THIS child told you or built in earlier
+  chats (their name, favorite color, past projects). Use it when they refer to
+  something from before, or ask what they did last time.
 - Keep research short: look up what you need, then build. Tell the child in one
   simple sentence what you learned and where it came from.
 

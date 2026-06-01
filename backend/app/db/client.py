@@ -46,6 +46,8 @@ COLLECTION_EXAMPLES = "examples"
 COLLECTION_PROJECTS = "projects"
 COLLECTION_KNOWLEDGE = "knowledge_chunks"
 COLLECTION_USERS = "users"
+COLLECTION_CHAT_SESSIONS = "chat_sessions"
+COLLECTION_AGENT_MEMORY = "agent_memory"
 
 
 def reset() -> None:

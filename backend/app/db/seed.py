@@ -77,6 +77,9 @@ async def ensure_vector_index() -> None:
         name=KNOWLEDGE_VECTOR_INDEX,
         path="embedding",
     )
+    # agent_memory needs no Atlas Search index: search_memory ranks a user's
+    # stored conversations with in-Python cosine (works within the free-tier
+    # search-index cap).
 
 
 async def _create_index(*, collection: str, name: str, path: str) -> None:

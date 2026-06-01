@@ -24,6 +24,7 @@ async def run_chat(
     session: SessionState,
     user_message: str,
     attachments: list[dict[str, Any]] | None = None,
+    user_id: str = "guest",
 ) -> AsyncIterator[SSEEvent]:
     settings = get_settings()
     yield SSEEvent(type="agent_start", data={"session_id": session.session_id})
@@ -39,7 +40,10 @@ async def run_chat(
             client = MockAgentClient()
 
         async for event in client.chat(
-            session=session, user_message=user_message, attachments=attachments
+            session=session,
+            user_message=user_message,
+            attachments=attachments,
+            user_id=user_id,
         ):
             yield event
     except Exception as exc:

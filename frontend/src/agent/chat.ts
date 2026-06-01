@@ -1,6 +1,7 @@
 import { apiUrl } from '../lib/api'
 import { sseStream } from '../lib/sse'
 import { getSessionId } from '../lib/sessionId'
+import { getClientId } from '../lib/clientId'
 import { authHeader } from '../auth/token'
 import { useAppStore } from '../store/useAppStore'
 import { handleAgentEvent } from './dispatcher'
@@ -41,6 +42,7 @@ export async function sendChatMessage(
       headers: { 'Content-Type': 'application/json', ...authHeader() },
       body: JSON.stringify({
         session_id: getSessionId(),
+        client_id: getClientId(),
         message: trimmed,
         board: store.board,
         circuit_state: {
