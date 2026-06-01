@@ -50,27 +50,55 @@ async def list_available_components_handler(session: SessionState) -> dict[str, 
     return {"ok": True, "components": components}
 
 
+async def _create_component(
+    session: SessionState, component_type: str, props: dict[str, Any] | None
+) -> tuple[ComponentInstance | None, str | None]:
+    if component_type == "uno":
+        return None, (
+            "The Arduino UNO is already on the canvas with id 'UNO'. "
+            "Do not add another one; just wire parts to UNO."
+        )
+    component = await catalog.get_component(component_type)
+    if component is None:
+        return None, f"unknown component type: {component_type}"
+    cid = session.next_component_id(component_type)
+    px, py = _layout_position(_peripheral_count(session))
+    merged_props = {**component.get("default_props", {}), **(props or {})}
+    instance = ComponentInstance(id=cid, type=component_type, x=px, y=py, props=merged_props)
+    session.components[cid] = instance
+    return instance, None
+
+
 async def add_component_handler(
     session: SessionState,
     type: str,
-    x: float = 0.0,
-    y: float = 0.0,
     props: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    if type == "uno":
-        return {
-            "ok": False,
-            "error": "The Arduino UNO is already on the canvas with id 'UNO'. "
-            "Do not add another one; just wire parts to UNO.",
-        }
-    component = await catalog.get_component(type)
-    if component is None:
-        return {"ok": False, "error": f"unknown component type: {type}"}
-    cid = session.next_component_id(type)
-    merged_props = {**component.get("default_props", {}), **(props or {})}
-    instance = ComponentInstance(id=cid, type=type, x=x, y=y, props=merged_props)
-    session.components[cid] = instance
+    instance, err = await _create_component(session, type, props)
+    if instance is None:
+        return {"ok": False, "error": err or "could not add component"}
     return {"ok": True, "component": instance.model_dump()}
+
+
+async def add_components_handler(
+    session: SessionState, components: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Add several components in one call. Each item is {type, props?}; the backend
+    assigns non-overlapping positions. Invalid items are reported per-index."""
+    created: list[dict[str, Any]] = []
+    errors: list[dict[str, Any]] = []
+    for idx, spec in enumerate(components or []):
+        ctype = spec.get("type") if isinstance(spec, dict) else None
+        if not ctype:
+            errors.append({"index": idx, "error": "each item must be {type, props?}"})
+            continue
+        spec_props = spec.get("props") if isinstance(spec, dict) else None
+        instance, err = await _create_component(session, str(ctype), spec_props)
+        if instance is None:
+            errors.append({"index": idx, "type": ctype, "error": err})
+            continue
+        created.append(instance.model_dump())
+    return {"ok": len(errors) == 0, "components": created, "errors": errors}
 
 
 async def remove_component_handler(session: SessionState, id: str) -> dict[str, Any]:
@@ -99,36 +127,87 @@ def _normalize_pin(component_id: str, pin_name: str) -> str:
     return pin_name
 
 
-async def wire_handler(session: SessionState, from_pin: str, to_pin: str) -> dict[str, Any]:
-    def _resolve(pin: str) -> tuple[str | None, str | None]:
-        if "." not in pin:
-            return None, f"pin must be `componentId.pinName`, got '{pin}'"
-        component_id, pin_name = pin.split(".", 1)
-        component_type = _component_type(session, component_id)
-        if component_type is None:
-            return None, (
-                f"unknown component id '{component_id}'. The board is 'UNO'; "
-                "add other parts with add_component before wiring them."
-            )
-        pin_name = _normalize_pin(component_id, pin_name)
-        valid = valid_pins_for(component_type)
-        if valid and pin_name not in valid:
-            return None, (
-                f"'{component_id}.{pin_name}' is not a real pin of {component_type}. "
-                f"Valid {component_type} pins: {sorted(valid)}. "
-                "Load the matching component skill for the correct pin names."
-            )
-        return f"{component_id}.{pin_name}", None
+def _resolve_pin(session: SessionState, pin: str) -> tuple[str | None, str | None]:
+    """Validate + normalize a `componentId.pinName` reference. Returns
+    (normalized_pin, None) or (None, error_message)."""
+    if "." not in pin:
+        return None, f"pin must be `componentId.pinName`, got '{pin}'"
+    component_id, pin_name = pin.split(".", 1)
+    component_type = _component_type(session, component_id)
+    if component_type is None:
+        return None, (
+            f"unknown component id '{component_id}'. The board is 'UNO'; "
+            "add other parts with add_component(s) before wiring them."
+        )
+    pin_name = _normalize_pin(component_id, pin_name)
+    valid = valid_pins_for(component_type)
+    if valid and pin_name not in valid:
+        return None, (
+            f"'{component_id}.{pin_name}' is not a real pin of {component_type}. "
+            f"Valid {component_type} pins: {sorted(valid)}. "
+            "Load the matching component skill for the correct pin names."
+        )
+    return f"{component_id}.{pin_name}", None
 
-    resolved_from, err = _resolve(from_pin)
+
+# --- Component placement: the backend lays parts out in non-overlapping columns
+# to the left of the pinned UNO so the agent never has to pick coordinates and
+# parts never stack on top of each other. ---
+_LAYOUT_ORIGIN_X = 30
+_LAYOUT_ORIGIN_Y = 30
+_LAYOUT_STEP_X = 130
+_LAYOUT_STEP_Y = 120
+_LAYOUT_ROWS = 5
+
+
+def _peripheral_count(session: SessionState) -> int:
+    return sum(1 for c in session.components.values() if c.type != "uno")
+
+
+def _layout_position(index: int) -> tuple[float, float]:
+    col = index // _LAYOUT_ROWS
+    row = index % _LAYOUT_ROWS
+    return (
+        float(_LAYOUT_ORIGIN_X + col * _LAYOUT_STEP_X),
+        float(_LAYOUT_ORIGIN_Y + row * _LAYOUT_STEP_Y),
+    )
+
+
+async def wire_handler(session: SessionState, from_pin: str, to_pin: str) -> dict[str, Any]:
+    resolved_from, err = _resolve_pin(session, from_pin)
     if err:
         return {"ok": False, "error": err}
-    resolved_to, err = _resolve(to_pin)
+    resolved_to, err = _resolve_pin(session, to_pin)
     if err:
         return {"ok": False, "error": err}
     wire = Wire(from_pin=resolved_from or from_pin, to_pin=resolved_to or to_pin)
     session.wires.append(wire)
     return {"ok": True, "wire": wire.model_dump()}
+
+
+async def wire_many_handler(
+    session: SessionState, wires: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Create several wires in one call. Each item is {from_pin, to_pin}; invalid
+    ones are reported per-index so the agent can fix just those."""
+    created: list[dict[str, Any]] = []
+    errors: list[dict[str, Any]] = []
+    for idx, spec in enumerate(wires or []):
+        if not isinstance(spec, dict):
+            errors.append({"index": idx, "error": "each wire must be {from_pin, to_pin}"})
+            continue
+        resolved_from, err = _resolve_pin(session, str(spec.get("from_pin", "")))
+        if err:
+            errors.append({"index": idx, "from_pin": spec.get("from_pin"), "error": err})
+            continue
+        resolved_to, err = _resolve_pin(session, str(spec.get("to_pin", "")))
+        if err:
+            errors.append({"index": idx, "to_pin": spec.get("to_pin"), "error": err})
+            continue
+        wire = Wire(from_pin=resolved_from or "", to_pin=resolved_to or "")
+        session.wires.append(wire)
+        created.append(wire.model_dump())
+    return {"ok": len(errors) == 0, "wires": created, "errors": errors}
 
 
 def _validate_blockly_xml(xml: str) -> str | None:
@@ -328,7 +407,8 @@ TOOLS: dict[str, ToolSpec] = {
     ),
     "add_component": ToolSpec(
         name="add_component",
-        description="Drop a component on the canvas. The backend assigns the id.",
+        description="Drop one component on the canvas. The backend assigns the id and "
+        "a non-overlapping position. Prefer add_components when adding several.",
         parameters_schema={
             "type": "object",
             "properties": {
@@ -337,8 +417,6 @@ TOOLS: dict[str, ToolSpec] = {
                     "description": "Component type from the catalog.",
                     "enum": catalog.CATALOG_TYPES,
                 },
-                "x": {"type": "number", "default": 0},
-                "y": {"type": "number", "default": 0},
                 "props": {
                     "type": "object",
                     "description": "Optional component-specific properties (e.g. {\"color\":\"red\"}).",
@@ -347,6 +425,30 @@ TOOLS: dict[str, ToolSpec] = {
             "required": ["type"],
         },
         handler=add_component_handler,
+    ),
+    "add_components": ToolSpec(
+        name="add_components",
+        description="Add several components in one call (fewer round-trips). The backend "
+        "assigns ids and non-overlapping positions. Returns the created components and any "
+        "per-item errors.",
+        parameters_schema={
+            "type": "object",
+            "properties": {
+                "components": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {"type": "string", "enum": catalog.CATALOG_TYPES},
+                            "props": {"type": "object"},
+                        },
+                        "required": ["type"],
+                    },
+                },
+            },
+            "required": ["components"],
+        },
+        handler=add_components_handler,
     ),
     "remove_component": ToolSpec(
         name="remove_component",
@@ -360,7 +462,8 @@ TOOLS: dict[str, ToolSpec] = {
     ),
     "wire": ToolSpec(
         name="wire",
-        description="Connect two pins. Use `componentId.pinName`, e.g. `L1.anode` to `UNO.D7`.",
+        description="Connect two pins. Use `componentId.pinName`, e.g. `L1.anode` to `UNO.D13`. "
+        "Prefer wire_many when making several connections.",
         parameters_schema={
             "type": "object",
             "properties": {
@@ -370,6 +473,29 @@ TOOLS: dict[str, ToolSpec] = {
             "required": ["from_pin", "to_pin"],
         },
         handler=wire_handler,
+    ),
+    "wire_many": ToolSpec(
+        name="wire_many",
+        description="Create several wires in one call (fewer round-trips). Each item is "
+        "{from_pin, to_pin} using `componentId.pinName`. Returns created wires and per-item errors.",
+        parameters_schema={
+            "type": "object",
+            "properties": {
+                "wires": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "from_pin": {"type": "string"},
+                            "to_pin": {"type": "string"},
+                        },
+                        "required": ["from_pin", "to_pin"],
+                    },
+                },
+            },
+            "required": ["wires"],
+        },
+        handler=wire_many_handler,
     ),
     "set_blocks": ToolSpec(
         name="set_blocks",

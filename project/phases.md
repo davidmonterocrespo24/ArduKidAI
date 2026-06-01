@@ -33,7 +33,7 @@ Architecture reference for phases 5-12: [`agent-v2-architecture.md`](./agent-v2-
 | 7 | Skills: component know-how + best practices | P1 | **done** | [phase-7-skills.md](./phase-7-skills.md) |
 | 8 | Multimodal RAG (PDF / link / text / image) | P1 | pending | [phase-8-multimodal-rag.md](./phase-8-multimodal-rag.md) |
 | 9 | Web + YouTube tools (Google-native) | P2 | pending | [phase-9-web-youtube-tools.md](./phase-9-web-youtube-tools.md) |
-| 10 | Browser-tool hardening + UX | P1 | pending | [phase-10-browser-tools.md](./phase-10-browser-tools.md) |
+| 10 | Browser-tool hardening + UX | P1 | **done** | [phase-10-browser-tools.md](./phase-10-browser-tools.md) |
 | 11 | Production deploy (Cloud Run + Firebase + MCP sidecar) | P0 | pending | [phase-11-deploy.md](./phase-11-deploy.md) |
 | 12 | QA, video, Devpost submission | P0 | pending | [phase-12-qa-submission.md](./phase-12-qa-submission.md) |
 

@@ -50,23 +50,31 @@ async def list_available_components(tool_context: ToolContext) -> dict[str, Any]
 
 
 async def add_component(
-    type: str,
-    x: float = 0.0,
-    y: float = 0.0,
-    props: dict[str, Any] | None = None,
-    *,
-    tool_context: ToolContext,
+    type: str, props: dict[str, Any] | None = None, *, tool_context: ToolContext
 ) -> dict[str, Any]:
-    """Drop a component on the canvas. The backend assigns the id.
+    """Drop ONE component on the canvas. The backend assigns the id and a
+    non-overlapping position - do not pass coordinates. Prefer add_components when
+    adding several parts at once.
 
     Args:
-        type: component type from the catalog (one of: uno, led, resistor,
-            pushbutton, buzzer, servo, potentiometer, lcd1602, seg7).
-        x: optional x position on the canvas.
-        y: optional y position on the canvas.
+        type: component type from the catalog (led, resistor, pushbutton, buzzer,
+            servo, potentiometer, lcd1602, seg7). The UNO is already on the canvas;
+            do not add it.
         props: optional component-specific properties, e.g. {"color": "red"}.
     """
-    return await _run("add_component", tool_context, type=type, x=x, y=y, props=props)
+    return await _run("add_component", tool_context, type=type, props=props)
+
+
+async def add_components(
+    components: list[dict[str, Any]], *, tool_context: ToolContext
+) -> dict[str, Any]:
+    """Add SEVERAL components in one call (fewer steps than calling add_component
+    repeatedly). The backend assigns ids and non-overlapping positions.
+
+    Args:
+        components: a list of items, each {"type": <component type>, "props": <optional dict>}.
+    """
+    return await _run("add_components", tool_context, components=components)
 
 
 async def remove_component(id: str, *, tool_context: ToolContext) -> dict[str, Any]:
@@ -86,6 +94,18 @@ async def wire(from_pin: str, to_pin: str, *, tool_context: ToolContext) -> dict
         to_pin: destination pin reference, e.g. "UNO.13".
     """
     return await _run("wire", tool_context, from_pin=from_pin, to_pin=to_pin)
+
+
+async def wire_many(
+    wires: list[dict[str, str]], *, tool_context: ToolContext
+) -> dict[str, Any]:
+    """Create SEVERAL wires in one call (fewer steps than calling wire repeatedly).
+
+    Args:
+        wires: a list of items, each {"from_pin": "...", "to_pin": "..."} using
+            `componentId.pinName` (e.g. {"from_pin": "UNO.D13", "to_pin": "R1.a"}).
+    """
+    return await _run("wire_many", tool_context, wires=wires)
 
 
 async def set_blocks(blockly_xml: str, *, tool_context: ToolContext) -> dict[str, Any]:
@@ -160,8 +180,10 @@ async def validate_circuit(tool_context: ToolContext) -> dict[str, Any]:
 _TOOLS = [
     list_available_components,
     add_component,
+    add_components,
     remove_component,
     wire,
+    wire_many,
     set_blocks,
     compile_and_run,
     save_project,

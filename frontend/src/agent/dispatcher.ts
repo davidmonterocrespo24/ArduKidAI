@@ -6,11 +6,12 @@ type ToolResult = {
   ok?: boolean
   error?: string
   component?: ComponentInstance
+  components?: ComponentInstance[]
   wire?: Wire
+  wires?: Wire[]
   removed_id?: string
   hex?: string
   stderr?: string
-  components?: unknown
   project?: unknown
   length?: number
 }
@@ -66,9 +67,21 @@ export function applyToolResult(name: string, result: ToolResult): void {
         store.removeComponent(result.removed_id)
       }
       break
+    case 'add_components':
+      // Batch add: the backend already assigned non-overlapping positions, so
+      // render each component at the position it returned.
+      if (Array.isArray(result.components)) {
+        for (const comp of result.components) store.addComponent(comp)
+      }
+      break
     case 'wire':
       if (result.wire) {
         store.addWire(result.wire)
+      }
+      break
+    case 'wire_many':
+      if (Array.isArray(result.wires)) {
+        for (const w of result.wires) store.addWire(w)
       }
       break
     case 'compile_and_run':

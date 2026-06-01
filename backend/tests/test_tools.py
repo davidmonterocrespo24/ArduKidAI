@@ -46,6 +46,63 @@ async def test_wire_validates_component_ids(session):
     assert "must be" in malformed["error"]
 
 
+async def test_add_components_batch_assigns_non_overlapping_positions(session):
+    res = await dispatch(
+        "add_components",
+        session,
+        {"components": [{"type": "led"}, {"type": "resistor"}, {"type": "led"}]},
+    )
+    assert res["ok"] is True
+    comps = res["components"]
+    assert [c["id"] for c in comps] == ["L1", "R1", "L2"]
+    positions = {(c["x"], c["y"]) for c in comps}
+    assert len(positions) == 3  # no two parts share a spot
+
+
+async def test_add_components_reports_uno_per_item(session):
+    res = await dispatch(
+        "add_components", session, {"components": [{"type": "uno"}, {"type": "led"}]}
+    )
+    assert res["ok"] is False
+    assert any("UNO" in e["error"] for e in res["errors"])
+    assert len(res["components"]) == 1  # the led was still added
+
+
+async def test_wire_many_validates_each(session):
+    await dispatch("add_components", session, {"components": [{"type": "led"}, {"type": "resistor"}]})
+    res = await dispatch(
+        "wire_many",
+        session,
+        {
+            "wires": [
+                {"from_pin": "UNO.D13", "to_pin": "R1.a"},
+                {"from_pin": "R1.b", "to_pin": "L1.anode"},
+                {"from_pin": "L1.cathode", "to_pin": "UNO.GND"},
+                {"from_pin": "L9.anode", "to_pin": "UNO.GND"},
+            ]
+        },
+    )
+    assert len(res["wires"]) == 3
+    assert len(res["errors"]) == 1
+    assert res["ok"] is False
+    assert len(session.wires) == 3
+
+
+async def test_wire_normalizes_bare_uno_digital_pin(session):
+    await dispatch("add_component", session, {"type": "led"})
+    res = await dispatch("wire", session, {"from_pin": "L1.anode", "to_pin": "UNO.13"})
+    assert res["ok"] is True
+    assert res["wire"]["to_pin"] == "UNO.D13"
+
+
+async def test_validate_circuit_flags_loose_led(session):
+    await dispatch("add_component", session, {"type": "led"})
+    res = await dispatch("validate_circuit", session, {})
+    assert res["ok"] is True
+    assert res["is_valid"] is False
+    assert any("L1" in issue for issue in res["issues"])
+
+
 async def test_remove_component_drops_wires(session):
     await dispatch("add_component", session, {"type": "led"})
     await dispatch("wire", session, {"from_pin": "L1.anode", "to_pin": "UNO.D13"})
@@ -75,8 +132,10 @@ def test_canvas_and_mcp_tools_registered():
     canvas_tools = {
         "list_available_components",
         "add_component",
+        "add_components",
         "remove_component",
         "wire",
+        "wire_many",
         "set_blocks",
         "compile_and_run",
         "save_project",
