@@ -78,7 +78,7 @@ export function ExamplesModal({ open, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
       <div className="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
-        <header className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3">
+        <header className="flex shrink-0 items-center justify-between border-b border-brand-100 bg-brand-50 px-4 py-3">
           <div>
             <h3 className="text-base font-semibold">Example circuits</h3>
             <p className="text-xs text-slate-500">

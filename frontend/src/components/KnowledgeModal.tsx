@@ -143,9 +143,9 @@ export function KnowledgeModal({ open, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
       >
-        <header className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <header className="flex items-center justify-between border-b border-brand-100 bg-brand-50 px-4 py-3">
           <div>
-            <h2 className="text-sm font-semibold">Knowledge base</h2>
+            <h2 className="text-sm font-semibold text-brand-900">Knowledge base</h2>
             <p className="text-xs text-slate-500">
               Add Arduino references the agent can search. PDFs, web links, notes, and images.
             </p>
