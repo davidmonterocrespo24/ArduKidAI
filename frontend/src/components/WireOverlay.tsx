@@ -285,6 +285,33 @@ export function WireOverlay({ hostRef }: Props) {
     })
   }
 
+  // Insert a direction point (waypoint) on a wire at the given client position.
+  // Used by both double-click and right-click on a wire.
+  function addWaypointFromClient(
+    clientX: number,
+    clientY: number,
+    wireIndex: number,
+    polyline: Array<{ x: number; y: number }>,
+    waypoints: Array<{ x: number; y: number }>,
+  ) {
+    const rect = overlayRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const x = clientX - rect.left
+    const y = clientY - rect.top
+    let bestSeg = 0
+    let bestD = Infinity
+    for (let s = 0; s < polyline.length - 1; s++) {
+      const d = distancePointToSegment(x, y, polyline[s].x, polyline[s].y, polyline[s + 1].x, polyline[s + 1].y)
+      if (d < bestD) {
+        bestD = d
+        bestSeg = s
+      }
+    }
+    const insertAt = Math.min(waypoints.length, Math.max(0, bestSeg))
+    insertWireWaypoint(wireIndex, insertAt, { x, y })
+    selectWire(wireIndex)
+  }
+
   const inProgressPin = wireInProgress ? pinIndex.get(wireInProgress.from_pin) : undefined
 
   return (
@@ -301,159 +328,33 @@ export function WireOverlay({ hostRef }: Props) {
         const a = pinIndex.get(w.from_pin)
         const b = pinIndex.get(w.to_pin)
         if (!a || !b) return null
-        const isHover = hoveredWire === i
-        const isSelected = selectedWireIndex === i
-        const waypoints = w.waypoints ?? []
-        const polyline = orthogonalPolyline(a, waypoints, b)
+        const polyline = orthogonalPolyline(a, w.waypoints ?? [], b)
         const pathD = polylineToPath(polyline)
-        const mid = polyline[Math.floor(polyline.length / 2)]
         return (
-          <g key={`${w.from_pin}-${w.to_pin}-${i}`}>
-            {/* Visible stroke is drawn in a separate top layer (below) so wires
-                sit ABOVE the pin dots. Here we keep only the interaction layer. */}
-            {/* Wide invisible hit zone for click-to-select and double-click-to-add-waypoint.
-                It is pointer-events: stroke, not auto, so only the stroked area captures
-                events - lets clicks on bare canvas still pass through to the wrapper. */}
-            <path
-              d={pathD}
-              fill="none"
-              stroke="transparent"
-              strokeWidth={12}
-              strokeLinecap="round"
-              style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
-              onClick={(e) => {
-                e.stopPropagation()
-                selectWire(i)
-              }}
-              onDoubleClick={(e) => {
-                e.stopPropagation()
-                // Insert a new waypoint at the click location, between the
-                // two polyline points it falls closest to.
-                const rect = overlayRef.current?.getBoundingClientRect()
-                if (!rect) return
-                const x = e.clientX - rect.left
-                const y = e.clientY - rect.top
-                // Find segment index of closest segment
-                let bestSeg = 0
-                let bestD = Infinity
-                for (let s = 0; s < polyline.length - 1; s++) {
-                  const d = distancePointToSegment(x, y, polyline[s].x, polyline[s].y, polyline[s + 1].x, polyline[s + 1].y)
-                  if (d < bestD) { bestD = d; bestSeg = s }
-                }
-                // Map polyline segment back to waypoint insertion index.
-                // polyline = [start, ...orthoCorners and waypoints..., end].
-                // Inserting at the end of the matching waypoint range keeps
-                // ordering stable enough for the simple case.
-                const insertAt = Math.min(waypoints.length, Math.max(0, bestSeg))
-                insertWireWaypoint(i, insertAt, { x, y })
-                selectWire(i)
-              }}
-              onMouseEnter={() => holdWireHover(i)}
-              onMouseLeave={() => releaseWireHover(i)}
-            />
-            {/* Hover delete badge */}
-            {(isHover || isSelected) && (
-              <g
-                className="pointer-events-auto cursor-pointer"
-                onMouseEnter={() => holdWireHover(i)}
-                onMouseLeave={() => releaseWireHover(i)}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (wireHoverTimerRef.current !== null) {
-                    window.clearTimeout(wireHoverTimerRef.current)
-                    wireHoverTimerRef.current = null
-                  }
-                  setHoveredWire(null)
-                  removeWire(i)
-                }}
-              >
-                <circle cx={mid.x} cy={mid.y} r={10} fill="#fee2e2" stroke="#dc2626" strokeWidth={1.5} />
-                <text
-                  x={mid.x}
-                  y={mid.y + 4}
-                  textAnchor="middle"
-                  fontSize={13}
-                  fontWeight={700}
-                  fill="#dc2626"
-                >
-                  &times;
-                </text>
-                <rect
-                  x={mid.x + 14}
-                  y={mid.y - 10}
-                  width={Math.max(110, (w.from_pin.length + w.to_pin.length) * 5.5)}
-                  height={20}
-                  rx={4}
-                  fill="#0f172a"
-                  fillOpacity={0.9}
-                />
-                <text
-                  x={mid.x + 20}
-                  y={mid.y + 4}
-                  fontSize={10}
-                  fontFamily="ui-monospace, Menlo, monospace"
-                  fill="#f8fafc"
-                >
-                  {w.from_pin} {'→'} {w.to_pin}
-                </text>
-              </g>
-            )}
-            {/* Segment midpoint handles - drag perpendicular to slide the segment. */}
-            {isSelected && polyline.length >= 2 && polyline.slice(0, -1).map((p1, si) => {
-              const p2 = polyline[si + 1]
-              if (p1.x === p2.x && p1.y === p2.y) return null
-              const axis: 'horizontal' | 'vertical' = p1.y === p2.y ? 'horizontal' : 'vertical'
-              const mx = (p1.x + p2.x) / 2
-              const my = (p1.y + p2.y) / 2
-              return (
-                <circle
-                  key={`seg-${si}`}
-                  cx={mx}
-                  cy={my}
-                  r={5}
-                  fill="white"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  style={{
-                    pointerEvents: 'all',
-                    cursor: axis === 'horizontal' ? 'ns-resize' : 'ew-resize',
-                  }}
-                  onMouseDown={(e) => {
-                    e.stopPropagation()
-                    dragRef.current = {
-                      kind: 'segment',
-                      wireIndex: i,
-                      segIndex: si,
-                      axis,
-                      polyline: polyline.map((p) => ({ ...p })),
-                    }
-                  }}
-                />
-              )
-            })}
-            {/* Waypoint handles - drag to bend, double-click to remove. */}
-            {isSelected && waypoints.map((wp, wi) => (
-              <circle
-                key={`wp-${wi}`}
-                cx={wp.x}
-                cy={wp.y}
-                r={6}
-                fill="#10b981"
-                stroke="white"
-                strokeWidth={2}
-                style={{ pointerEvents: 'all', cursor: 'move' }}
-                onMouseDown={(e) => {
-                  e.stopPropagation()
-                  dragRef.current = { kind: 'waypoint', wireIndex: i, waypointIndex: wi }
-                }}
-                onDoubleClick={(e) => {
-                  e.stopPropagation()
-                  const next = waypoints.filter((_, idx) => idx !== wi)
-                  setWireWaypoints(i, next)
-                }}
-              />
-            ))}
-          </g>
+          <path
+            key={`hit-${w.from_pin}-${w.to_pin}-${i}`}
+            d={pathD}
+            fill="none"
+            stroke="transparent"
+            strokeWidth={14}
+            strokeLinecap="round"
+            style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+            onClick={(e) => {
+              e.stopPropagation()
+              selectWire(i)
+            }}
+            onDoubleClick={(e) => {
+              e.stopPropagation()
+              addWaypointFromClient(e.clientX, e.clientY, i, polyline, w.waypoints ?? [])
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              addWaypointFromClient(e.clientX, e.clientY, i, polyline, w.waypoints ?? [])
+            }}
+            onMouseEnter={() => holdWireHover(i)}
+            onMouseLeave={() => releaseWireHover(i)}
+          />
         )
       })}
 
@@ -521,8 +422,10 @@ export function WireOverlay({ hostRef }: Props) {
           </g>
         )
       })}
-      {/* Visible wire strokes ON TOP of the pins: thicker, with curved bends.
-          pointer-events: none so the pin dots below stay clickable. */}
+      {/* Visible wire strokes + editing handles, ON TOP of the pins. The strokes
+          are pointer-events:none (pins stay clickable), but the selected wire's
+          drag handles and the delete badge are pointer-events:all so they are
+          always grabbable - even where a wire crosses a pin. */}
       {wires.map((w, i) => {
         const a = pinIndex.get(w.from_pin)
         const b = pinIndex.get(w.to_pin)
@@ -530,10 +433,12 @@ export function WireOverlay({ hostRef }: Props) {
         const colour = w.color ?? pickWireColor(w.from_pin, w.to_pin, i)
         const isHover = hoveredWire === i
         const isSelected = selectedWireIndex === i
-        const polyline = orthogonalPolyline(a, w.waypoints ?? [], b)
+        const waypoints = w.waypoints ?? []
+        const polyline = orthogonalPolyline(a, waypoints, b)
         const pathD = polylineToRoundedPath(polyline)
+        const mid = polyline[Math.floor(polyline.length / 2)]
         return (
-          <g key={`vis-${w.from_pin}-${w.to_pin}-${i}`} pointerEvents="none">
+          <g key={`vis-${w.from_pin}-${w.to_pin}-${i}`}>
             {isSelected && (
               <path
                 d={pathD}
@@ -543,6 +448,7 @@ export function WireOverlay({ hostRef }: Props) {
                 strokeOpacity={0.3}
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                pointerEvents="none"
               />
             )}
             <path
@@ -552,7 +458,83 @@ export function WireOverlay({ hostRef }: Props) {
               strokeWidth={isSelected ? 5 : isHover ? 5.5 : 4}
               strokeLinecap="round"
               strokeLinejoin="round"
+              pointerEvents="none"
             />
+            {/* Delete badge (hover or selected) */}
+            {(isHover || isSelected) && (
+              <g
+                className="cursor-pointer"
+                style={{ pointerEvents: 'all' }}
+                onMouseEnter={() => holdWireHover(i)}
+                onMouseLeave={() => releaseWireHover(i)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (wireHoverTimerRef.current !== null) {
+                    window.clearTimeout(wireHoverTimerRef.current)
+                    wireHoverTimerRef.current = null
+                  }
+                  setHoveredWire(null)
+                  removeWire(i)
+                }}
+              >
+                <circle cx={mid.x} cy={mid.y} r={10} fill="#fee2e2" stroke="#dc2626" strokeWidth={1.5} />
+                <text x={mid.x} y={mid.y + 4} textAnchor="middle" fontSize={13} fontWeight={700} fill="#dc2626">
+                  &times;
+                </text>
+              </g>
+            )}
+            {/* Segment midpoint handles - drag perpendicular to slide the segment
+                (vertical segments move left/right, horizontal move up/down). */}
+            {isSelected && polyline.slice(0, -1).map((p1, si) => {
+              const p2 = polyline[si + 1]
+              if (p1.x === p2.x && p1.y === p2.y) return null
+              const axis: 'horizontal' | 'vertical' = p1.y === p2.y ? 'horizontal' : 'vertical'
+              const hx = (p1.x + p2.x) / 2
+              const hy = (p1.y + p2.y) / 2
+              return (
+                <circle
+                  key={`seg-${si}`}
+                  cx={hx}
+                  cy={hy}
+                  r={7}
+                  fill="white"
+                  stroke="#10b981"
+                  strokeWidth={2.5}
+                  style={{ pointerEvents: 'all', cursor: axis === 'horizontal' ? 'ns-resize' : 'ew-resize' }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation()
+                    dragRef.current = {
+                      kind: 'segment',
+                      wireIndex: i,
+                      segIndex: si,
+                      axis,
+                      polyline: polyline.map((p) => ({ ...p })),
+                    }
+                  }}
+                />
+              )
+            })}
+            {/* Waypoint handles - drag to bend freely, double-click to remove. */}
+            {isSelected && waypoints.map((wp, wi) => (
+              <circle
+                key={`wp-${wi}`}
+                cx={wp.x}
+                cy={wp.y}
+                r={7}
+                fill="#10b981"
+                stroke="white"
+                strokeWidth={2.5}
+                style={{ pointerEvents: 'all', cursor: 'move' }}
+                onMouseDown={(e) => {
+                  e.stopPropagation()
+                  dragRef.current = { kind: 'waypoint', wireIndex: i, waypointIndex: wi }
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation()
+                  setWireWaypoints(i, waypoints.filter((_, idx) => idx !== wi))
+                }}
+              />
+            ))}
           </g>
         )
       })}
