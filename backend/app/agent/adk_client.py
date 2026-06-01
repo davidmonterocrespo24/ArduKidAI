@@ -230,6 +230,15 @@ class AdkAgentClient:
         except Exception:  # pragma: no cover - skills are best-effort
             pass
 
+        # Google-native web tools (search, url reading, youtube). Best-effort:
+        # if the ADK built-ins are unavailable the agent still works offline.
+        try:
+            from .web_tools import build_web_tools
+
+            tools.extend(build_web_tools(settings.ardukid_gemini_model))
+        except Exception:  # pragma: no cover - web tools are best-effort
+            pass
+
         self._agent = LlmAgent(
             model=settings.ardukid_gemini_model,
             name="ardukid_agent",

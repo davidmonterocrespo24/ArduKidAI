@@ -48,22 +48,34 @@ def _fake_embedding(text: str) -> list[float]:
     return vec.tolist()
 
 
-async def embed_text(text: str) -> list[float]:
+async def embed_text(text: str, *, task_type: str | None = None) -> list[float]:
+    """Embed `text` into a 768-dim vector.
+
+    `task_type` (e.g. "RETRIEVAL_DOCUMENT" when indexing, "RETRIEVAL_QUERY"
+    when searching) lets Gemini produce asymmetric embeddings tuned for
+    retrieval. It is ignored by the deterministic fallback."""
+
     settings = get_settings()
     if not settings.google_cloud_project:
         return _fake_embedding(text)
 
     try:
         from google import genai
+        from google.genai.types import EmbedContentConfig
 
         client = genai.Client(
             vertexai=True,
             project=settings.google_cloud_project,
             location=settings.google_cloud_location,
         )
+        config = EmbedContentConfig(
+            output_dimensionality=EMBEDDING_DIMS,
+            task_type=task_type,
+        )
         response = await client.aio.models.embed_content(
             model=GEMINI_EMBEDDING_MODEL,
             contents=text,
+            config=config,
         )
         # google-genai returns a list of Embedding objects; first one's `values`.
         embeddings = getattr(response, "embeddings", None) or []

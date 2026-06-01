@@ -31,8 +31,8 @@ Architecture reference for phases 5-12: [`agent-v2-architecture.md`](./agent-v2-
 | 5 | Agent migration to Google ADK | P0 (compliance) | **done** | [phase-5-adk-migration.md](./phase-5-adk-migration.md) |
 | 6 | MongoDB MCP server integration | P0 (compliance) | **done** | [phase-6-mongodb-mcp-integration.md](./phase-6-mongodb-mcp-integration.md) |
 | 7 | Skills: component know-how + best practices | P1 | **done** | [phase-7-skills.md](./phase-7-skills.md) |
-| 8 | Multimodal RAG (PDF / link / text / image) | P1 | pending | [phase-8-multimodal-rag.md](./phase-8-multimodal-rag.md) |
-| 9 | Web + YouTube tools (Google-native) | P2 | pending | [phase-9-web-youtube-tools.md](./phase-9-web-youtube-tools.md) |
+| 8 | Multimodal RAG (PDF / link / text / image) | P1 | **in progress** | [phase-8-multimodal-rag.md](./phase-8-multimodal-rag.md) |
+| 9 | Web + YouTube tools (Google-native) | P2 | next | [phase-9-web-youtube-tools.md](./phase-9-web-youtube-tools.md) |
 | 10 | Browser-tool hardening + UX | P1 | **done** | [phase-10-browser-tools.md](./phase-10-browser-tools.md) |
 | 11 | Production deploy (Cloud Run + Firebase + MCP sidecar) | P0 | pending | [phase-11-deploy.md](./phase-11-deploy.md) |
 | 12 | QA, video, Devpost submission | P0 | pending | [phase-12-qa-submission.md](./phase-12-qa-submission.md) |

@@ -1,31 +1,38 @@
 # Phase 8 - Multimodal RAG (PDF / link / text / image)
 
-Priority: P1. Status: pending.
+Priority: P1. Status: in progress (2026-06-01).
 Reference: [agent-v2-architecture.md](./agent-v2-architecture.md) section 5.
 
 ## Goal
 
-Let users feed the agent knowledge from Arduino docs and tutorials in any form -
-PDFs, web links, raw text, and images - all embedded with Gemini and stored in
-MongoDB Atlas (one 768-dim text index), searchable via the MCP `$vectorSearch` path.
+Populate the agent's knowledge base from Arduino docs so `search_docs` (RAG over
+MongoDB Atlas, queried through the MCP `$vectorSearch`) returns real references.
+Ingest PDFs, web links, raw text, and images - all embedded with Gemini, one
+768-dim text index.
+
+## Sources to index (for the comprehensive test)
+
+- `data/arduinoprojecthandbook.pdf` (Arduino Project Handbook, ~18 MB) - exists.
+- Project lists from duino4projects.com (link + short description per project):
+  - https://duino4projects.com/arduino-project-list-pages
+  - https://duino4projects.com/arduino-project-lists/
+  - https://duino4projects.com/arduino-uno-based-projects-list/
 
 ## Tasks
 
-- [ ] Generalize `knowledge.py` into `index_pdf`, `index_url`, `index_text`, `index_image`,
-      all funneling into `_index_chunks -> embed_text -> Atlas` (add a `kind` field per doc).
-- [ ] **Image** ingest: Gemini vision -> structured JSON (summary, OCR'd text, components, keywords)
-      via `response_schema` -> embed the caption text.
-- [ ] **URL** ingest: httpx + trafilatura/BeautifulSoup -> main text -> `chunk_plain_text` -> embed.
-- [ ] **PDF** ingest: keep pypdf; add Gemini-native transcription fallback for scanned/low-text pages.
-- [ ] Embedding quality: pass `task_type=RETRIEVAL_DOCUMENT` (index) and `RETRIEVAL_QUERY` (search);
-      optionally move to `gemini-embedding-001` at `output_dimensionality=768`.
-- [ ] Backend endpoints to add/list/delete knowledge sources; ensure the `knowledge_chunks` vector
-      index exists (seeder already attempts it).
-- [ ] Frontend "Knowledge" panel: upload PDF / paste link / paste text / upload image; list + delete.
-- [ ] Wire `search_docs` to the same MCP `aggregate` `$vectorSearch` path.
+- [x] PDF + plain-text ingestion already exist (`knowledge.index_pdf_path`, `index_plain_text`).
+- [ ] `index_url(url, source)`: fetch HTML (httpx) -> extract main text (BeautifulSoup) ->
+      `chunk_plain_text` -> `_index_chunks`.
+- [ ] `index_image(data, source)`: Gemini vision -> structured caption/OCR -> embed the caption.
+- [ ] Embedding quality: pass `task_type=RETRIEVAL_DOCUMENT` on indexing and
+      `RETRIEVAL_QUERY` on search (asymmetric).
+- [ ] Backend admin route `POST /api/knowledge/{pdf,url,text,image}` + list/delete; ensure the
+      `knowledge_chunks` vector index exists after the first ingest.
+- [ ] `scripts/index_sources.py`: index the PDF + the 3 duino4projects pages, then ensure the
+      knowledge vector index. Run once against Atlas.
+- [ ] (Optional) minimal in-app "Knowledge" panel to upload/list/delete sources.
 
 ## Exit criteria
 
-- A user can upload a PDF, a link, a text snippet, and an image; the agent then answers a question
-  using `search_docs` with a correct citation (source + page/url).
-- Commit `feat(phase-8): multimodal rag ingestion (pdf, link, text, image)`.
+- `search_docs("...")` returns relevant chunks from the PDF and duino4projects with citations.
+- Commit `feat(phase-8): multimodal rag ingestion (pdf, url, text, image) + indexed sources`.
