@@ -74,9 +74,9 @@ export const BOARDS: Record<BoardId, BoardConfig> = {
   },
 }
 
-/** Boards a kid can pick today. Mega is registered above but its accurate
- * simulation arrives in phase B, so it is gated out of the picker for now. */
-export const SELECTABLE_BOARDS: BoardId[] = ['uno', 'nano']
+/** Boards a kid can pick. All three run in the in-browser simulator (the Mega
+ * uses a hand-written ATmega2560 peripheral map - see avrBoards.ts). */
+export const SELECTABLE_BOARDS: BoardId[] = ['uno', 'nano', 'mega']
 
 export const DEFAULT_BOARD: BoardId = 'uno'
 

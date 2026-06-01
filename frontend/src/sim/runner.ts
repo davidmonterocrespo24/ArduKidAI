@@ -7,15 +7,11 @@ import {
   CPU,
   adcConfig,
   avrInstruction,
-  portBConfig,
-  portCConfig,
-  portDConfig,
-  timer0Config,
-  timer1Config,
-  timer2Config,
   twiConfig,
   usart0Config,
 } from 'avr8js'
+import { simForBoard } from './avrBoards'
+import { DEFAULT_BOARD, type BoardId } from './boards'
 import { BLINK_PROGRAM } from './blinkProgram'
 import { bytesToProgramWords, parseIntelHex } from '../lib/intelHex'
 import { DIGITAL_PIN_LABELS, type DigitalPinLabel } from './pinState'
@@ -43,7 +39,6 @@ export function sendSerialToActiveSim(bytes: Uint8Array): void {
 
 export type { PwmSnapshot } from './pwm'
 
-const PROGRAM_MEM_WORDS = 0x4000
 // 250k instructions per ~16 ms frame keeps the simulator close to a real
 // 16 MHz Arduino UNO (15 M cycles/sec actual, ~16 M target) so delay(500)
 // in the kid's sketch feels like half a second of wall time. 50k was four
@@ -87,12 +82,12 @@ export type SimProgram =
   | { kind: 'hex'; hex: string }
   | { kind: 'fallback' }
 
-function loadProgram(input: SimProgram): Uint16Array {
-  const mem = new Uint16Array(PROGRAM_MEM_WORDS)
+function loadProgram(input: SimProgram, programMemWords: number): Uint16Array {
+  const mem = new Uint16Array(programMemWords)
   if (input.kind === 'hex') {
     const bytes = parseIntelHex(input.hex)
     if (bytes.length > 0) {
-      const words = bytesToProgramWords(bytes, PROGRAM_MEM_WORDS)
+      const words = bytesToProgramWords(bytes, programMemWords)
       mem.set(words)
       return mem
     }
@@ -100,14 +95,6 @@ function loadProgram(input: SimProgram): Uint16Array {
   mem.set(BLINK_PROGRAM)
   return mem
 }
-
-const PORTD_MAP: Array<[DigitalPinLabel, number]> = [
-  ['D0', 0], ['D1', 1], ['D2', 2], ['D3', 3],
-  ['D4', 4], ['D5', 5], ['D6', 6], ['D7', 7],
-]
-const PORTB_MAP: Array<[DigitalPinLabel, number]> = [
-  ['D8', 0], ['D9', 1], ['D10', 2], ['D11', 3], ['D12', 4], ['D13', 5],
-]
 
 function emptySnapshot(): PinSnapshot {
   const levels = Object.fromEntries(
@@ -119,23 +106,35 @@ function emptySnapshot(): PinSnapshot {
   return { levels, activity }
 }
 
-export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandle {
-  const cpu = new CPU(loadProgram(program))
-  const portB = new AVRIOPort(cpu, portBConfig)
-  const portC = new AVRIOPort(cpu, portCConfig)
-  const portD = new AVRIOPort(cpu, portDConfig)
+export function startSim(
+  program: SimProgram,
+  callbacks: SimCallbacks,
+  board: BoardId = DEFAULT_BOARD,
+): SimHandle {
+  const sim = simForBoard(board)
+  const cpu = new CPU(loadProgram(program, sim.programMemWords), sim.sramBytes)
+
+  // Build the board's I/O ports from its config and a flat label -> port+bit
+  // map so the pin tracer, input bridge, and DHT sensors work for any board
+  // (the UNO has 3 ports, the Mega has 11).
+  const ports = sim.ports.map((desc) => ({
+    port: new AVRIOPort(cpu, desc.config),
+    pins: desc.pins,
+  }))
+  const pinToPort = new Map<string, { port: AVRIOPort; bit: number }>()
+  for (const { port, pins } of ports) {
+    for (const [label, bit] of pins) pinToPort.set(label, { port, bit })
+  }
+
   const usart = new AVRUSART(cpu, usart0Config, F_CPU)
-  // Wire the three ATmega328P timers. Without them `millis()` stays at 0
-  // because the Timer0 overflow interrupt never fires, so `delay()` and
-  // `tone()` block forever and any sketch using them looks frozen after
-  // the first instruction. tone() also needs Timer2; Timer1 is here for
-  // sketches that use PWM on pins 9/10.
-  new AVRTimer(cpu, timer0Config)
-  new AVRTimer(cpu, timer1Config)
-  new AVRTimer(cpu, timer2Config)
-  // ADC: feeds analogRead(A0..A5). channelValues[i] is the voltage at that
-  // pin; we refresh from the caller every frame so dragging the
-  // potentiometer knob is reflected on the next conversion.
+  // Wire the board's timers. Without Timer0 `millis()` stays at 0 because its
+  // overflow interrupt never fires, so `delay()` and `tone()` block forever and
+  // any sketch using them looks frozen. The Mega supplies the same timers with
+  // ATmega2560 interrupt-vector addresses (see avrBoards.ts).
+  for (const timerConfig of sim.timers) new AVRTimer(cpu, timerConfig)
+  // ADC: feeds analogRead(Ax). channelValues[i] is the voltage at that pin; we
+  // refresh from the caller every frame so dragging the potentiometer knob is
+  // reflected on the next conversion.
   const adc = new AVRADC(cpu, adcConfig)
 
   // TWI / I2C: kids' I2C sketches are 99% "LiquidCrystal_I2C lcd(0x27,
@@ -213,9 +212,7 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
     }
   }
 
-  portB.addListener(makeHandler(PORTB_MAP))
-  portD.addListener(makeHandler(PORTD_MAP))
-  portC.addListener(makeHandler([]))
+  for (const { port, pins } of ports) port.addListener(makeHandler(pins))
 
   // Serial RX bridge: the SerialMonitor "Send" button feeds bytes
   // into the USART so the sketch can read them with Serial.read().
@@ -230,18 +227,8 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
   // right port+bit and call setPin, which inside avr8js also fires
   // INT0/INT1/PCINT vectors so attachInterrupt() works for free.
   const setter = (label: DigitalPinLabel, value: boolean) => {
-    for (const [l, bit] of PORTD_MAP) {
-      if (l === label) {
-        portD.setPin(bit, value)
-        return
-      }
-    }
-    for (const [l, bit] of PORTB_MAP) {
-      if (l === label) {
-        portB.setPin(bit, value)
-        return
-      }
-    }
+    const entry = pinToPort.get(label)
+    if (entry) entry.port.setPin(entry.bit, value)
   }
   registerInputBridge(setter)
 
@@ -250,13 +237,8 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
   // so dragging the panel sliders changes the next library read.
   if (callbacks.dhtSensors && callbacks.dhtSensors.length > 0) {
     for (const sensor of callbacks.dhtSensors) {
-      const portdEntry = PORTD_MAP.find(([l]) => l === sensor.pin)
-      const portbEntry = PORTB_MAP.find(([l]) => l === sensor.pin)
-      if (portdEntry) {
-        new DHT22Sim(cpu, portD, portdEntry[1], sensor.getValues)
-      } else if (portbEntry) {
-        new DHT22Sim(cpu, portB, portbEntry[1], sensor.getValues)
-      }
+      const entry = pinToPort.get(sensor.pin)
+      if (entry) new DHT22Sim(cpu, entry.port, entry.bit, sensor.getValues)
     }
   }
 
@@ -266,7 +248,7 @@ export function startSim(program: SimProgram, callbacks: SimCallbacks): SimHandl
   function frame() {
     if (stopped) return
     if (callbacks.getAdcChannel) {
-      for (let ch = 0; ch < 6; ch++) {
+      for (let ch = 0; ch < sim.adcChannels; ch++) {
         adc.channelValues[ch] = callbacks.getAdcChannel(ch)
       }
     }

@@ -11,11 +11,18 @@
  */
 
 import type { DigitalPinLabel } from './pinState'
+import { BOARDS } from './boards'
 import type { Wire } from '../types/circuit'
 
-const PIN_RE = /^UNO\.(D\d+)$/
+// Match a board pin reference like UNO.D13 / NANO.D13 / MEGA.D40. Restricting
+// the prefix to the registered board ids avoids matching a component pin that
+// happens to look like "A5" (e.g. an LED bar-graph anode).
+const _BOARD_PREFIX = Object.values(BOARDS)
+  .map((b) => b.canvasId)
+  .join('|')
+const PIN_RE = new RegExp(`^(?:${_BOARD_PREFIX})\\.(D\\d+)$`)
 
-function unoPin(reference: string): DigitalPinLabel | null {
+function boardPin(reference: string): DigitalPinLabel | null {
   const match = PIN_RE.exec(reference)
   if (!match) return null
   return match[1] as DigitalPinLabel
@@ -42,10 +49,10 @@ function componentIdOf(reference: string): string | null {
   return reference.slice(0, dot)
 }
 
-const ANALOG_PIN_RE = /^UNO\.A([0-5])$/
+const ANALOG_PIN_RE = new RegExp(`^(?:${_BOARD_PREFIX})\\.A(\\d+)$`)
 
-/** Return the analog input channel (0..5) the component is wired into, or
- * null if it is not connected to A0-A5. Used so the simulator can route a
+/** Return the analog input channel the component is wired into, or null if it
+ * is not connected to an analog pin. Used so the simulator can route a
  * potentiometer / sensor on the canvas into `analogRead(A?)`. */
 export function resolveAnalogChannel(componentId: string, wires: Wire[]): number | null {
   for (const w of wires) {
@@ -73,7 +80,7 @@ export function resolveAllDrivePins(
         : null
     if (!selfRef) continue
     const other = selfRef === w.from_pin ? w.to_pin : w.from_pin
-    const pin = unoPin(other)
+    const pin = boardPin(other)
     if (!pin) continue
     const pinName = selfRef.slice(componentId.length + 1)
     out[pinName] = pin
@@ -87,7 +94,7 @@ export function resolveDrivePin(
 ): DigitalPinLabel | null {
   // 1. Direct connection.
   for (const ref of neighboursOfPrefix(componentId, wires)) {
-    const pin = unoPin(ref)
+    const pin = boardPin(ref)
     if (pin) return pin
   }
   // 2. Through one resistor (any neighbour whose id begins with `R`).
@@ -95,7 +102,7 @@ export function resolveDrivePin(
     const neighbourId = componentIdOf(ref)
     if (!neighbourId || !neighbourId.startsWith('R')) continue
     for (const ref2 of neighboursOfPrefix(neighbourId, wires)) {
-      const pin = unoPin(ref2)
+      const pin = boardPin(ref2)
       if (pin) return pin
     }
   }

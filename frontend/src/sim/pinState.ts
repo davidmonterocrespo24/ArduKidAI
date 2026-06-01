@@ -12,9 +12,10 @@
  * can add once this primitive is stable.
  */
 
-export type DigitalPinLabel =
-  | 'D0' | 'D1' | 'D2' | 'D3' | 'D4' | 'D5' | 'D6' | 'D7'
-  | 'D8' | 'D9' | 'D10' | 'D11' | 'D12' | 'D13'
+// A digital pin label like "D0".."D53". Loosened from a fixed UNO union to a
+// string so boards with more pins (Mega: D0..D53) work; the live pin snapshot
+// is populated dynamically by the runner from the active board's port map.
+export type DigitalPinLabel = string
 
 export const DIGITAL_PIN_LABELS: DigitalPinLabel[] = [
   'D0', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7',

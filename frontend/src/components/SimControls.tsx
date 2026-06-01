@@ -231,6 +231,7 @@ export function SimControls() {
         onPwmChange: (snap) => setPwmSnapshot(snap),
         dhtSensors: buildDhtSensorsFromStore(),
       },
+      board,
     )
     setSimStatus('running')
   }
@@ -262,6 +263,7 @@ export function SimControls() {
             onPwmChange: (snap) => setPwmSnapshot(snap),
             dhtSensors: buildDhtSensorsFromStore(),
           },
+          board,
         )
         setSimStatus('running')
       } else {
