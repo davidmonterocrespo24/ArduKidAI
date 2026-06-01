@@ -56,7 +56,6 @@ export type Difficulty = 1 | 2 | 3
 export interface ExampleTemplate {
   id: string
   title: string
-  intent_es: string
   intent_en: string
   tags: string[]
   difficulty: Difficulty
@@ -1363,7 +1362,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-001',
     title: 'Blink the on-board LED',
     intent_en: 'blink the LED on pin 13 once per second',
-    intent_es: 'hacer parpadear el LED del pin 13 una vez por segundo',
     tags: ['led', 'blink', 'starter'],
     difficulty: 1,
     components: layout([{ type: 'led', props: { color: 'red' } }, { type: 'resistor', props: { value: '220' } }]),
@@ -1375,7 +1373,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-002',
     title: 'Two LEDs alternating',
     intent_en: 'alternate two LEDs so one is on while the other is off',
-    intent_es: 'alternar dos LEDs, uno prendido y el otro apagado',
     tags: ['led', 'blink', 'alternate'],
     difficulty: 1,
     components: layout([
@@ -1392,7 +1389,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-003',
     title: 'Traffic light',
     intent_en: 'three LEDs sequencing red, yellow, green like a traffic light',
-    intent_es: 'tres LEDs en secuencia rojo, amarillo, verde como un semaforo',
     tags: ['led', 'traffic', 'sequence'],
     difficulty: 2,
     components: layout([
@@ -1411,7 +1407,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-004',
     title: 'Button-controlled LED',
     intent_en: 'an LED that turns on while a button is pressed',
-    intent_es: 'un LED que se prende mientras se aprieta un boton',
     tags: ['led', 'button'],
     difficulty: 1,
     components: layout([
@@ -1427,7 +1422,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-005',
     title: 'Button toggles LED on and off',
     intent_en: 'press the button once to turn the LED on, press again to turn it off',
-    intent_es: 'apretar el boton una vez prende el LED, otra vez lo apaga',
     tags: ['led', 'button', 'toggle'],
     difficulty: 2,
     components: layout([
@@ -1443,7 +1437,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-006',
     title: 'Fading LED (PWM)',
     intent_en: 'smoothly fade an LED in and out using PWM',
-    intent_es: 'hacer que un LED se prenda y apague suavemente con PWM',
     tags: ['led', 'pwm', 'fade'],
     difficulty: 2,
     components: layout([
@@ -1458,7 +1451,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-007',
     title: 'Potentiometer dims an LED',
     intent_en: 'read a potentiometer and use it to set LED brightness',
-    intent_es: 'leer un potenciometro y usarlo para regular el brillo del LED',
     tags: ['led', 'potentiometer', 'pwm'],
     difficulty: 2,
     components: layout([
@@ -1479,7 +1471,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-008',
     title: 'Buzzer plays a tone',
     intent_en: 'play a single tone on a buzzer when the sketch starts',
-    intent_es: 'hacer que un buzzer toque una nota al arrancar',
     tags: ['buzzer', 'tone'],
     difficulty: 1,
     components: layout([{ type: 'buzzer' }]),
@@ -1491,7 +1482,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-009',
     title: 'Happy Birthday melody',
     intent_en: 'play the Happy Birthday melody on a buzzer',
-    intent_es: 'tocar la melodia de Feliz Cumpleanos con un buzzer',
     tags: ['buzzer', 'melody', 'music'],
     difficulty: 3,
     components: layout([{ type: 'buzzer' }]),
@@ -1518,7 +1508,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-010',
     title: 'Servo sweep 0 to 180',
     intent_en: 'make a servo sweep from 0 to 180 degrees back and forth',
-    intent_es: 'hacer que un servo barra de 0 a 180 grados y vuelva',
     tags: ['servo', 'sweep'],
     difficulty: 2,
     components: layout([{ type: 'servo' }]),
@@ -1578,7 +1567,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-011',
     title: 'Potentiometer controls a servo',
     intent_en: 'use a potentiometer to control the angle of a servo motor',
-    intent_es: 'controlar el angulo de un servo con un potenciometro',
     tags: ['servo', 'potentiometer', 'motor'],
     difficulty: 2,
     components: layout([{ type: 'servo' }, { type: 'potentiometer' }]),
@@ -1600,7 +1588,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-012',
     title: 'Doorbell',
     intent_en: 'press a button to play a doorbell sound on the buzzer',
-    intent_es: 'apretar un boton y que suene un timbre de puerta en el buzzer',
     tags: ['buzzer', 'button', 'doorbell'],
     difficulty: 2,
     components: layout([{ type: 'pushbutton' }, { type: 'buzzer' }]),
@@ -1616,7 +1603,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-013',
     title: 'Hello world on LCD',
     intent_en: "show 'Hello world' on a 16x2 I2C LCD display",
-    intent_es: "mostrar 'Hola mundo' en una pantalla LCD 16x2 por I2C",
     tags: ['lcd', 'display'],
     difficulty: 2,
     components: layout([{ type: 'lcd1602' }]),
@@ -1633,7 +1619,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-014',
     title: 'Show potentiometer value on LCD',
     intent_en: 'read a potentiometer and display its value on a 16x2 LCD',
-    intent_es: 'leer un potenciometro y mostrar su valor en un LCD 16x2',
     tags: ['lcd', 'potentiometer'],
     difficulty: 3,
     components: layout([{ type: 'lcd1602' }, { type: 'potentiometer' }]),
@@ -1653,7 +1638,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-015',
     title: '7-segment counts 0 to 9',
     intent_en: 'count from 0 to 9 on a single 7-segment display once per second',
-    intent_es: 'contar de 0 a 9 en un display de 7 segmentos una vez por segundo',
     tags: ['7segment', 'counter'],
     difficulty: 2,
     components: layout([{ type: 'seg7' }]),
@@ -1669,7 +1653,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-016',
     title: '7-segment counts button presses',
     intent_en: 'count how many times a button is pressed and show the digit on a 7-segment',
-    intent_es: 'contar cuantas veces se aprieta un boton y mostrar el digito en un 7 segmentos',
     tags: ['7segment', 'button', 'counter'],
     difficulty: 3,
     components: layout([{ type: 'seg7' }, { type: 'pushbutton' }]),
@@ -1736,7 +1719,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-017',
     title: 'Reaction time game',
     intent_en: 'wait a random delay then turn on an LED; measure how fast a button is pressed in response',
-    intent_es: 'esperar un tiempo aleatorio, prender un LED y medir cuanto tarda en apretarse un boton',
     tags: ['led', 'button', 'game'],
     difficulty: 3,
     components: layout([
@@ -1784,7 +1766,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-018',
     title: 'Christmas lights',
     intent_en: 'alternate three colored LEDs in a holiday-light sequence',
-    intent_es: 'alternar tres LEDs de colores como luces de navidad',
     tags: ['led', 'sequence'],
     difficulty: 1,
     components: layout([
@@ -1803,7 +1784,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-019',
     title: 'SOS Morse with LED',
     intent_en: 'blink an LED in Morse code spelling SOS',
-    intent_es: 'hacer parpadear un LED con codigo Morse de SOS',
     tags: ['led', 'morse'],
     difficulty: 2,
     components: layout([{ type: 'led', props: { color: 'red' } }, { type: 'resistor', props: { value: '220' } }]),
@@ -1815,7 +1795,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-020',
     title: 'Knight Rider scanner',
     intent_en: 'scan a row of LEDs left and right like the Knight Rider car',
-    intent_es: 'barrer una fila de LEDs ida y vuelta estilo el auto de Knight Rider',
     tags: ['led', 'sequence', 'scan'],
     difficulty: 2,
     components: layout([
@@ -1834,7 +1813,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-021',
     title: 'Heartbeat LED',
     intent_en: 'make an LED pulse like a heartbeat using PWM',
-    intent_es: 'hacer que un LED lata como un corazon con PWM',
     tags: ['led', 'pwm', 'heartbeat'],
     difficulty: 2,
     components: layout([{ type: 'led', props: { color: 'red' } }, { type: 'resistor', props: { value: '220' } }]),
@@ -1846,7 +1824,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-022',
     title: 'Police lights',
     intent_en: 'alternate red and blue LEDs quickly like emergency vehicle lights',
-    intent_es: 'alternar LEDs rojo y azul rapido como luces de emergencia',
     tags: ['led', 'alternate'],
     difficulty: 1,
     components: layout([
@@ -1863,7 +1840,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-023',
     title: 'Theremin-style buzzer',
     intent_en: 'use a potentiometer to change the pitch played on a buzzer in real time',
-    intent_es: 'cambiar la nota que toca el buzzer girando un potenciometro',
     tags: ['buzzer', 'potentiometer'],
     difficulty: 2,
     components: layout([{ type: 'buzzer' }, { type: 'potentiometer' }]),
@@ -1881,7 +1857,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-024',
     title: 'Dimmer with potentiometer',
     intent_en: 'read a potentiometer and use its value to dim a single LED',
-    intent_es: 'leer un potenciometro y usarlo para regular el brillo de un LED',
     tags: ['led', 'potentiometer', 'dimmer'],
     difficulty: 2,
     components: layout([
@@ -1902,7 +1877,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-025',
     title: 'Three-button mini piano',
     intent_en: 'three buttons that each play a different note on a buzzer',
-    intent_es: 'tres botones que tocan notas distintas en un buzzer',
     tags: ['buzzer', 'button', 'music'],
     difficulty: 3,
     components: layout([
@@ -1925,7 +1899,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-026',
     title: 'Servo door lock',
     intent_en: 'press a button to toggle a servo between locked and unlocked positions',
-    intent_es: 'apretar un boton para que un servo cambie entre posicion abierta y cerrada',
     tags: ['servo', 'button', 'lock'],
     difficulty: 2,
     components: layout([{ type: 'servo' }, { type: 'pushbutton' }]),
@@ -1978,7 +1951,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-027',
     title: 'Random number on 7-segment',
     intent_en: 'show a random digit 0-9 on a 7-segment when a button is pressed',
-    intent_es: 'mostrar un numero aleatorio del 0 al 9 en un display de 7 segmentos al apretar un boton',
     tags: ['7segment', 'button', 'random'],
     difficulty: 2,
     components: layout([{ type: 'seg7' }, { type: 'pushbutton' }]),
@@ -2034,7 +2006,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-028',
     title: 'Binary counter on LEDs',
     intent_en: 'count up in binary using three LEDs, advancing once per second',
-    intent_es: 'contar en binario con tres LEDs, avanzando cada segundo',
     tags: ['led', 'binary', 'counter'],
     difficulty: 3,
     components: layout([
@@ -2053,7 +2024,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-029',
     title: 'Fake thermometer on LCD',
     intent_en: 'use a potentiometer as a fake temperature sensor and display the value on the LCD',
-    intent_es: 'usar un potenciometro como sensor de temperatura falso y mostrar el valor en el LCD',
     tags: ['lcd', 'potentiometer', 'sensor'],
     difficulty: 3,
     components: layout([{ type: 'lcd1602' }, { type: 'potentiometer' }]),
@@ -2073,7 +2043,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-030',
     title: 'Greeting card',
     intent_en: 'press a button to play a melody and blink a colored LED in time',
-    intent_es: 'apretar un boton para que suene una melodia y un LED parpadee al ritmo',
     tags: ['buzzer', 'led', 'button', 'music'],
     difficulty: 3,
     components: layout([
@@ -2095,7 +2064,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-031',
     title: 'Tiny button blinks LED',
     intent_en: 'press a 6 mm tactile button to turn an LED on while held',
-    intent_es: 'apretar un boton chico de 6 mm para encender un LED mientras se mantiene',
     tags: ['button', 'led', 'starter', '6mm'],
     difficulty: 1,
     components: layout([
@@ -2111,7 +2079,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-032',
     title: 'Fader dims an LED',
     intent_en: 'use a slide potentiometer to fade an LED brighter and dimmer',
-    intent_es: 'usar un potenciometro deslizable para variar el brillo de un LED',
     tags: ['fader', 'led', 'pwm'],
     difficulty: 2,
     components: layout([
@@ -2132,7 +2099,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-033',
     title: 'Slide switch turns LED on',
     intent_en: 'slide a switch to turn an LED on and off',
-    intent_es: 'mover un slide switch para prender y apagar un LED',
     tags: ['switch', 'led'],
     difficulty: 1,
     components: layout([
@@ -2153,7 +2119,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-034',
     title: 'Light sensor nightlight',
     intent_en: 'light a LED when the room gets dark (LDR reading is low)',
-    intent_es: 'prender un LED cuando esta oscuro (el sensor de luz baja)',
     tags: ['ldr', 'light-sensor', 'led'],
     difficulty: 2,
     components: layout([
@@ -2174,7 +2139,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-035',
     title: 'Hot-temperature alarm',
     intent_en: 'beep with a buzzer whenever the NTC sensor reads above 30 C',
-    intent_es: 'sonar un buzzer cuando el sensor NTC marque mas de 30 grados',
     tags: ['ntc', 'temperature', 'buzzer'],
     difficulty: 3,
     components: layout([
@@ -2219,7 +2183,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-036',
     title: 'Tilt switch beeps',
     intent_en: 'beep every time the tilt switch is tilted',
-    intent_es: 'sonar un beep cada vez que el sensor de inclinacion se mueve',
     tags: ['tilt', 'buzzer'],
     difficulty: 2,
     components: layout([
@@ -2240,7 +2203,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-037',
     title: 'Motion lights up an LED',
     intent_en: 'turn on a LED while the PIR sensor sees motion',
-    intent_es: 'prender un LED mientras el sensor PIR detecta movimiento',
     tags: ['pir', 'motion', 'led'],
     difficulty: 2,
     components: layout([
@@ -2261,7 +2223,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-038',
     title: 'RGB LED color cycle',
     intent_en: 'fade an RGB LED through red, green and blue colors',
-    intent_es: 'mezclar colores rojo, verde y azul en un LED RGB',
     tags: ['rgb', 'led', 'pwm', 'color'],
     difficulty: 3,
     components: layout([{ type: 'rgbLed' }]),
@@ -2309,7 +2270,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-039',
     title: 'LED bar graph from a pot',
     intent_en: 'light up the 10-segment LED bar in proportion to the potentiometer',
-    intent_es: 'prender mas LEDs del bar graph segun gira el potenciometro',
     tags: ['bar-graph', 'potentiometer', 'led'],
     difficulty: 3,
     components: layout([
@@ -2386,7 +2346,6 @@ export const EXAMPLE_TEMPLATES: ExampleTemplate[] = [
     id: 'ex-040',
     title: 'Hello world on 20x4 LCD',
     intent_en: 'show a four-line greeting on a 20x4 I2C LCD',
-    intent_es: 'mostrar un saludo de 4 lineas en una pantalla LCD 20x4 por I2C',
     tags: ['lcd', 'lcd2004', 'display'],
     difficulty: 2,
     components: layout([{ type: 'lcd2004' }]),
@@ -2429,7 +2388,6 @@ void loop() {}
     id: 'ex-041',
     title: 'DIP switches pick which LED',
     intent_en: 'flip each DIP switch to light or turn off one of three LEDs',
-    intent_es: 'mover cada switch del DIP para prender o apagar uno de 3 LEDs',
     tags: ['dip-switch', 'led', 'starter'],
     difficulty: 2,
     components: layout([
@@ -2531,7 +2489,6 @@ void loop() {
     id: 'ex-042',
     title: 'Joystick LEDs',
     intent_en: 'light the left or right LED depending on which way the joystick is pushed',
-    intent_es: 'prender el LED izquierdo o derecho segun hacia donde se mueva el joystick',
     tags: ['joystick', 'led', 'analog'],
     difficulty: 3,
     components: layout([
@@ -2607,7 +2564,6 @@ void loop() {
     id: 'ex-043',
     title: 'Clap-detector LED',
     intent_en: 'turn the LED on whenever the sound sensor hears a loud noise',
-    intent_es: 'prender el LED cuando el sensor escucha un sonido fuerte',
     tags: ['sound', 'led'],
     difficulty: 2,
     components: layout([
@@ -2658,7 +2614,6 @@ void loop() {
     id: 'ex-044',
     title: 'Fire alarm',
     intent_en: 'beep a buzzer when the flame sensor sees a strong light source',
-    intent_es: 'sonar el buzzer cuando el sensor de llama detecta luz fuerte',
     tags: ['flame', 'buzzer'],
     difficulty: 2,
     components: layout([
@@ -2706,7 +2661,6 @@ void loop() {
     id: 'ex-045',
     title: 'Rotary encoder LED brightness',
     intent_en: 'turn the rotary encoder knob to fade an LED brighter or dimmer',
-    intent_es: 'girar el encoder para subir o bajar el brillo de un LED',
     tags: ['encoder', 'led', 'pwm'],
     difficulty: 3,
     components: layout([
@@ -2825,7 +2779,6 @@ void loop() {
     id: 'ex-046',
     title: 'Gas alarm with LED',
     intent_en: 'turn on a red LED when the gas sensor reads above its threshold',
-    intent_es: 'prender un LED rojo cuando el sensor de gas supera el umbral',
     tags: ['gas', 'led', 'sensor'],
     difficulty: 2,
     components: layout([
@@ -2875,7 +2828,6 @@ void loop() {
     id: 'ex-047',
     title: 'Pulse-sensor heartbeat LED',
     intent_en: 'flash an LED in sync with the pulse-sensor heartbeat reading',
-    intent_es: 'parpadear un LED al ritmo de los latidos que mide el sensor',
     tags: ['heart-beat', 'led', 'sensor'],
     difficulty: 3,
     components: layout([
@@ -2928,7 +2880,6 @@ void loop() {
     id: 'ex-048',
     title: 'Clap-detector (tiny board)',
     intent_en: 'flash an LED whenever the small sound sensor hears noise',
-    intent_es: 'parpadear un LED cuando el sensor de sonido chico escucha un ruido',
     tags: ['sound', 'led', 'sensor'],
     difficulty: 2,
     components: layout([
@@ -2978,7 +2929,6 @@ void loop() {
     id: 'ex-049',
     title: 'OLED hello world (SSD1306)',
     intent_en: 'show "Hello, kid!" on the 128x64 SSD1306 OLED over I2C',
-    intent_es: 'mostrar "Hello, kid!" en la pantalla OLED SSD1306 128x64 por I2C',
     tags: ['oled', 'ssd1306', 'i2c', 'display'],
     difficulty: 2,
     components: layout([{ type: 'ssd1306' }]),
@@ -3026,7 +2976,6 @@ void loop() {
     id: 'ex-050',
     title: 'DHT22 to Serial',
     intent_en: 'read temperature and humidity from a DHT22 and print to Serial every second',
-    intent_es: 'leer la temperatura y la humedad de un DHT22 e imprimirlas en el monitor serie cada segundo',
     tags: ['dht22', 'sensor', 'serial', 'temperature', 'humidity'],
     difficulty: 2,
     components: layout([{ type: 'dht22' }]),
@@ -3072,7 +3021,6 @@ void loop() {
     id: 'ex-051',
     title: 'Ultrasonic distance (HC-SR04)',
     intent_en: 'measure distance with an HC-SR04 ultrasonic sensor and print the centimetres to Serial',
-    intent_es: 'medir distancia con un sensor ultrasonico HC-SR04 e imprimir los centimetros en el monitor serie',
     tags: ['ultrasonic', 'hc-sr04', 'sensor', 'serial', 'distance'],
     difficulty: 2,
     components: layout([{ type: 'hcSr04' }]),

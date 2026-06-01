@@ -39,7 +39,6 @@ export function ExamplesModal({ open, onClose }: Props) {
         return (
           e.title.toLowerCase().includes(q) ||
           e.intent_en.toLowerCase().includes(q) ||
-          e.intent_es.toLowerCase().includes(q) ||
           e.tags.some((t) => t.toLowerCase().includes(q))
         )
       })
@@ -126,7 +125,7 @@ export function ExamplesModal({ open, onClose }: Props) {
                       {DIFFICULTY_LABEL[ex.difficulty]}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-600">{ex.intent_es}</p>
+                  <p className="mt-1 text-xs text-slate-600">{ex.intent_en}</p>
                   <div className="mt-2 flex flex-wrap gap-1 text-[10px] text-slate-500">
                     {ex.tags.map((t) => (
                       <span key={t} className="rounded bg-slate-100 px-1.5 py-0.5">
