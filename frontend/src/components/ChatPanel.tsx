@@ -5,10 +5,10 @@ import { cn } from '../lib/cn'
 import { SavedProjectsList } from './SavedProjectsList'
 
 const SUGGESTIONS = [
-  'Quiero encender un LED',
-  'Un botón que prende una luz',
-  'Quiero un semáforo',
-  'Tocá una melodía con el buzzer',
+  'Make an LED blink',
+  'A button that turns on a light',
+  'Build a traffic light',
+  'Play a melody with the buzzer',
 ]
 
 export function ChatPanel() {

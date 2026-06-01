@@ -34,7 +34,9 @@ export function applyToolCall(name: string, args: Record<string, unknown>): void
 
 export function applyToolResult(name: string, result: ToolResult): void {
   const store = useAppStore.getState()
-  if (!result.ok) {
+  // Only our canvas/data tools return {ok: false} on failure. ADK skill tools
+  // (list_skills, load_skill, ...) return other shapes and must not be flagged.
+  if (result && typeof result === 'object' && result.ok === false) {
     store.appendChatMessage({
       id: crypto.randomUUID(),
       role: 'system',
@@ -70,9 +72,9 @@ export function applyToolResult(name: string, result: ToolResult): void {
       }
       break
     case 'compile_and_run':
-      if (typeof result.hex === 'string') {
-        store.setHexCode(result.hex)
-      }
+      // The backend compiles a stale snapshot, so ignore result.hex. Ask the
+      // frontend to compile the freshly generated C++ and run it in the sim.
+      store.requestRun()
       break
     default:
       break

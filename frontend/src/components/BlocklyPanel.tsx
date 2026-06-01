@@ -124,11 +124,15 @@ export function BlocklyPanel() {
       Blockly.Xml.domToWorkspace(dom, workspace)
       Blockly.Events.enable()
       lastWrittenXmlRef.current = xml
+      // The load above is wrapped in Events.disable so the change listener does
+      // not fire; regenerate the C++ here so an agent-set program is compilable.
+      const cpp = generateCpp(workspace)
+      if (cpp) setCppCode(cpp)
       requestAnimationFrame(() => workspace.scrollCenter())
     } catch (err) {
       console.error('failed to apply Blockly XML from store', err)
     }
-  }, [xml])
+  }, [xml, setCppCode])
 
   return <div ref={containerRef} className="h-full w-full" />
 }

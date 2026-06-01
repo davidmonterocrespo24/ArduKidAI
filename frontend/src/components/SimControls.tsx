@@ -182,7 +182,9 @@ export function SimControls() {
   const appendCompileLog = useAppStore((s) => s.appendCompileLog)
   const appendSerial = useAppStore((s) => s.appendSerial)
   const setBottomTab = useAppStore((s) => s.setBottomTab)
+  const runRequest = useAppStore((s) => s.runRequest)
   const simRef = useRef<SimHandle | null>(null)
+  const lastRunRef = useRef(0)
   const [saveOpen, setSaveOpen] = useState(false)
 
   useEffect(() => {
@@ -202,6 +204,16 @@ export function SimControls() {
       simRef.current = null
     }
   }, [simStatus])
+
+  // When the agent finishes a build (its compile_and_run tool bumps runRequest),
+  // compile the freshly generated C++ and start the simulator automatically.
+  useEffect(() => {
+    if (runRequest > 0 && runRequest !== lastRunRef.current) {
+      lastRunRef.current = runRequest
+      void compileAndRun()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runRequest])
 
   function startWithCurrent() {
     if (simRef.current) return

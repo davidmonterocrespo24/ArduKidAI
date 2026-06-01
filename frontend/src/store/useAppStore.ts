@@ -86,6 +86,11 @@ export interface AppState {
   hexCode: string | null
   setHexCode: (h: string | null) => void
 
+  // Bumped by the agent's compile_and_run tool so SimControls compiles the
+  // freshly generated C++ and runs it in the simulator automatically.
+  runRequest: number
+  requestRun: () => void
+
   compileError: string | null
   setCompileError: (msg: string | null) => void
 
@@ -198,6 +203,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   hexCode: null,
   setHexCode: (h) => set({ hexCode: h }),
+
+  runRequest: 0,
+  requestRun: () => set((state) => ({ runRequest: state.runRequest + 1 })),
 
   compileError: null,
   setCompileError: (msg) => set({ compileError: msg }),
