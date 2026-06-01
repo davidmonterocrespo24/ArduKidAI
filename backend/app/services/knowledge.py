@@ -49,6 +49,29 @@ def _doc_id(source: str, chunk_index: int) -> str:
     return f"{source}::{chunk_index:05d}"
 
 
+async def _upsert_chunk(db, doc_id: str, doc: dict, *, attempts: int = 5) -> None:
+    """Upsert one chunk, retrying transient Atlas/DNS hiccups with backoff.
+
+    Long ingests can span a flaky DNS window; a single failed write should not
+    abort hundreds of already-embedded chunks."""
+    import asyncio
+
+    from pymongo.errors import PyMongoError
+
+    last: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            await db[COLLECTION_KNOWLEDGE].update_one(
+                {"_id": doc_id}, {"$set": doc}, upsert=True
+            )
+            return
+        except PyMongoError as exc:
+            last = exc
+            await asyncio.sleep(min(2**attempt, 8))
+    if last is not None:
+        raise last
+
+
 async def _index_chunks(source: str, chunks: list[TextChunk]) -> int:
     db = get_db()
     written = 0
@@ -67,19 +90,17 @@ async def _index_chunks(source: str, chunks: list[TextChunk]) -> int:
                 )
             )
         else:
-            await db[COLLECTION_KNOWLEDGE].update_one(
-                {"_id": doc_id},
+            await _upsert_chunk(
+                db,
+                doc_id,
                 {
-                    "$set": {
-                        "_id": doc_id,
-                        "source": source,
-                        "page": ch.page,
-                        "chunk_index": ch.chunk_index,
-                        "text": ch.text,
-                        "embedding": embedding,
-                    }
+                    "_id": doc_id,
+                    "source": source,
+                    "page": ch.page,
+                    "chunk_index": ch.chunk_index,
+                    "text": ch.text,
+                    "embedding": embedding,
                 },
-                upsert=True,
             )
         written += 1
     return written

@@ -34,13 +34,8 @@ _URLS: list[tuple[str, str]] = [
 
 async def main_async(args: argparse.Namespace) -> int:
     if not args.skip_index:
-        if _PDF_PATH.is_file():
-            print(f"indexing PDF {_PDF_PATH.name} ...", flush=True)
-            n = await index_pdf_path(str(_PDF_PATH), source="Arduino Project Handbook")
-            print(f"  indexed {n} chunks")
-        else:
-            print(f"warning: {_PDF_PATH} not found, skipping PDF", file=sys.stderr)
-
+        # URLs first - they are small and fast, so they land even if the long
+        # PDF run later hits a transient network blip.
         for url, label in _URLS:
             print(f"indexing URL {url} ...", flush=True)
             try:
@@ -48,6 +43,16 @@ async def main_async(args: argparse.Namespace) -> int:
                 print(f"  indexed {n} chunks")
             except Exception as exc:
                 print(f"  failed: {exc}", file=sys.stderr)
+
+        if _PDF_PATH.is_file():
+            print(f"indexing PDF {_PDF_PATH.name} ...", flush=True)
+            try:
+                n = await index_pdf_path(str(_PDF_PATH), source="Arduino Project Handbook")
+                print(f"  indexed {n} chunks")
+            except Exception as exc:
+                print(f"  failed: {exc}", file=sys.stderr)
+        else:
+            print(f"warning: {_PDF_PATH} not found, skipping PDF", file=sys.stderr)
 
     print("ensuring knowledge vector index ...", flush=True)
     await _create_index(
