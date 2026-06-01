@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
+import { newSession } from '../lib/sessionId'
 import { startSim, type SimHandle } from '../sim/runner'
 import { resolveAllDrivePins, resolveAnalogChannel } from '../sim/wireTrace'
 import type { DigitalPinLabel } from '../sim/pinState'
@@ -299,6 +300,9 @@ export function SimControls() {
     stopSim()
     setSimStatus('idle')
     resetCircuit()
+    // Start a fresh agent conversation so it does not try to remove parts that
+    // the reset just cleared.
+    newSession()
   }
 
   const isRunning = simStatus === 'running'

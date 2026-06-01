@@ -301,7 +301,6 @@ export function WireOverlay({ hostRef }: Props) {
         const a = pinIndex.get(w.from_pin)
         const b = pinIndex.get(w.to_pin)
         if (!a || !b) return null
-        const colour = w.color ?? pickWireColor(w.from_pin, w.to_pin, i)
         const isHover = hoveredWire === i
         const isSelected = selectedWireIndex === i
         const waypoints = w.waypoints ?? []
@@ -310,18 +309,8 @@ export function WireOverlay({ hostRef }: Props) {
         const mid = polyline[Math.floor(polyline.length / 2)]
         return (
           <g key={`${w.from_pin}-${w.to_pin}-${i}`}>
-            {/* Selection halo under the wire */}
-            {isSelected && (
-              <path d={pathD} fill="none" stroke="#10b981" strokeWidth={6} strokeOpacity={0.3} strokeLinecap="round" pointerEvents="none" />
-            )}
-            <path
-              d={pathD}
-              fill="none"
-              stroke={colour}
-              strokeWidth={isSelected ? 3 : isHover ? 3.5 : 2.5}
-              strokeLinecap="round"
-              pointerEvents="none"
-            />
+            {/* Visible stroke is drawn in a separate top layer (below) so wires
+                sit ABOVE the pin dots. Here we keep only the interaction layer. */}
             {/* Wide invisible hit zone for click-to-select and double-click-to-add-waypoint.
                 It is pointer-events: stroke, not auto, so only the stroked area captures
                 events - lets clicks on bare canvas still pass through to the wrapper. */}
@@ -532,6 +521,41 @@ export function WireOverlay({ hostRef }: Props) {
           </g>
         )
       })}
+      {/* Visible wire strokes ON TOP of the pins: thicker, with curved bends.
+          pointer-events: none so the pin dots below stay clickable. */}
+      {wires.map((w, i) => {
+        const a = pinIndex.get(w.from_pin)
+        const b = pinIndex.get(w.to_pin)
+        if (!a || !b) return null
+        const colour = w.color ?? pickWireColor(w.from_pin, w.to_pin, i)
+        const isHover = hoveredWire === i
+        const isSelected = selectedWireIndex === i
+        const polyline = orthogonalPolyline(a, w.waypoints ?? [], b)
+        const pathD = polylineToRoundedPath(polyline)
+        return (
+          <g key={`vis-${w.from_pin}-${w.to_pin}-${i}`} pointerEvents="none">
+            {isSelected && (
+              <path
+                d={pathD}
+                fill="none"
+                stroke="#10b981"
+                strokeWidth={10}
+                strokeOpacity={0.3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
+            <path
+              d={pathD}
+              fill="none"
+              stroke={colour}
+              strokeWidth={isSelected ? 5 : isHover ? 5.5 : 4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
+        )
+      })}
     </svg>
   )
 }
@@ -566,6 +590,29 @@ function polylineToPath(points: Array<{ x: number; y: number }>): string {
   if (points.length === 0) return ''
   let d = `M ${points[0].x} ${points[0].y}`
   for (let i = 1; i < points.length; i++) d += ` L ${points[i].x} ${points[i].y}`
+  return d
+}
+
+// Like polylineToPath, but each interior corner is replaced by a quadratic
+// bezier so bends look curved instead of sharp 90-degree angles. The corner
+// radius is clamped to half of each adjoining segment so short segments do not
+// overshoot.
+function polylineToRoundedPath(points: Array<{ x: number; y: number }>, radius = 12): string {
+  if (points.length <= 2) return polylineToPath(points)
+  let d = `M ${points[0].x} ${points[0].y}`
+  for (let i = 1; i < points.length - 1; i++) {
+    const p0 = points[i - 1]
+    const p1 = points[i]
+    const p2 = points[i + 1]
+    const d1 = Math.hypot(p1.x - p0.x, p1.y - p0.y) || 1
+    const d2 = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1
+    const r = Math.min(radius, d1 / 2, d2 / 2)
+    const a = { x: p1.x + ((p0.x - p1.x) / d1) * r, y: p1.y + ((p0.y - p1.y) / d1) * r }
+    const b = { x: p1.x + ((p2.x - p1.x) / d2) * r, y: p1.y + ((p2.y - p1.y) / d2) * r }
+    d += ` L ${a.x} ${a.y} Q ${p1.x} ${p1.y} ${b.x} ${b.y}`
+  }
+  const last = points[points.length - 1]
+  d += ` L ${last.x} ${last.y}`
   return d
 }
 
