@@ -75,13 +75,13 @@ export function UserMenu() {
       <button
         type="button"
         onClick={() => setMenuOpen((o) => !o)}
-        className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white py-1 pl-1 pr-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-brand-50"
+        className="inline-flex items-center justify-center rounded-md border border-brand-200 bg-white p-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-brand-50"
         title={currentUser.email}
+        aria-label={currentUser.email}
       >
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-500 text-xs font-bold text-white">
           {initial}
         </span>
-        <span className="hidden max-w-[140px] truncate sm:inline">{currentUser.email}</span>
       </button>
 
       {menuOpen && (
