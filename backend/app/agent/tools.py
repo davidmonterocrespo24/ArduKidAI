@@ -17,6 +17,7 @@ Atlas database. Either way the tool surface the agent sees is identical."""
 
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
@@ -26,6 +27,7 @@ from ..services import catalog, projects_store
 from ..services.compiler import compile_cpp
 from ..services.examples import search_similar
 from ..services.knowledge import search_docs
+from ..services.skills import VALID_BLOCK_TYPES, valid_pins_for
 from .session import SessionState
 
 ToolHandler = Callable[..., Awaitable[dict[str, Any]]]
@@ -55,6 +57,12 @@ async def add_component_handler(
     y: float = 0.0,
     props: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if type == "uno":
+        return {
+            "ok": False,
+            "error": "The Arduino UNO is already on the canvas with id 'UNO'. "
+            "Do not add another one; just wire parts to UNO.",
+        }
     component = await catalog.get_component(type)
     if component is None:
         return {"ok": False, "error": f"unknown component type: {type}"}
@@ -76,25 +84,86 @@ async def remove_component_handler(session: SessionState, id: str) -> dict[str, 
     return {"ok": True, "removed_id": id}
 
 
-async def wire_handler(session: SessionState, from_pin: str, to_pin: str) -> dict[str, Any]:
-    def _validate(pin: str) -> str | None:
-        if "." not in pin:
-            return f"pin reference must be `componentId.pinName`, got {pin}"
-        component_id = pin.split(".", 1)[0]
-        if component_id not in session.components and component_id != "UNO":
-            return f"unknown component id {component_id}"
-        return None
+def _component_type(session: SessionState, component_id: str) -> str | None:
+    if component_id == "UNO":
+        return "uno"
+    inst = session.components.get(component_id)
+    return inst.type if inst else None
 
-    for pin in (from_pin, to_pin):
-        err = _validate(pin)
-        if err:
-            return {"ok": False, "error": err}
-    wire = Wire(from_pin=from_pin, to_pin=to_pin)
+
+def _normalize_pin(component_id: str, pin_name: str) -> str:
+    # A bare UNO digital pin ("13") renders but does not drive the simulator;
+    # the sim's pin tracer needs the "D" prefix. Normalize so the part lights up.
+    if component_id == "UNO" and pin_name.isdigit():
+        return f"D{pin_name}"
+    return pin_name
+
+
+async def wire_handler(session: SessionState, from_pin: str, to_pin: str) -> dict[str, Any]:
+    def _resolve(pin: str) -> tuple[str | None, str | None]:
+        if "." not in pin:
+            return None, f"pin must be `componentId.pinName`, got '{pin}'"
+        component_id, pin_name = pin.split(".", 1)
+        component_type = _component_type(session, component_id)
+        if component_type is None:
+            return None, (
+                f"unknown component id '{component_id}'. The board is 'UNO'; "
+                "add other parts with add_component before wiring them."
+            )
+        pin_name = _normalize_pin(component_id, pin_name)
+        valid = valid_pins_for(component_type)
+        if valid and pin_name not in valid:
+            return None, (
+                f"'{component_id}.{pin_name}' is not a real pin of {component_type}. "
+                f"Valid {component_type} pins: {sorted(valid)}. "
+                "Load the matching component skill for the correct pin names."
+            )
+        return f"{component_id}.{pin_name}", None
+
+    resolved_from, err = _resolve(from_pin)
+    if err:
+        return {"ok": False, "error": err}
+    resolved_to, err = _resolve(to_pin)
+    if err:
+        return {"ok": False, "error": err}
+    wire = Wire(from_pin=resolved_from or from_pin, to_pin=resolved_to or to_pin)
     session.wires.append(wire)
     return {"ok": True, "wire": wire.model_dump()}
 
 
+def _validate_blockly_xml(xml: str) -> str | None:
+    try:
+        root = ET.fromstring(xml)
+    except ET.ParseError as exc:
+        return (
+            f"blockly_xml is not well-formed XML ({exc}). "
+            "Load the 'blockly-programming' skill for the exact format."
+        )
+    types: set[str] = set()
+    for element in root.iter():
+        tag = element.tag.rsplit("}", 1)[-1]  # strip namespace
+        if tag in ("block", "shadow"):
+            block_type = element.get("type")
+            if block_type:
+                types.add(block_type)
+    unknown = sorted(types - VALID_BLOCK_TYPES)
+    if unknown:
+        return (
+            f"unknown block types {unknown} would make the workspace render empty. "
+            "Use only valid block types; load the 'blockly-programming' skill for the list."
+        )
+    if "ardukid_setup" not in types or "ardukid_loop" not in types:
+        return (
+            "the program must include an 'ardukid_setup' and an 'ardukid_loop' top block. "
+            "Load the 'blockly-programming' skill for a complete example."
+        )
+    return None
+
+
 async def set_blocks_handler(session: SessionState, blockly_xml: str) -> dict[str, Any]:
+    error = _validate_blockly_xml(blockly_xml)
+    if error:
+        return {"ok": False, "error": error}
     session.blockly_xml = blockly_xml
     return {"ok": True, "length": len(blockly_xml)}
 
@@ -118,6 +187,79 @@ async def save_project_handler(session: SessionState, name: str) -> dict[str, An
     circuit = session.to_circuit()
     detail = await projects_store.save(name=name, circuit=circuit)
     return {"ok": True, "project": detail.model_dump()}
+
+
+def _endpoint_parts(pin_ref: str) -> tuple[str, str]:
+    cid, _, pname = pin_ref.partition(".")
+    return cid, pname
+
+
+def _is_gnd(pin_ref: str) -> bool:
+    return pin_ref == "UNO.GND" or pin_ref.startswith("UNO.GND")
+
+
+async def validate_circuit_handler(session: SessionState) -> dict[str, Any]:
+    """Inspect the current circuit and report problems the agent should fix."""
+    issues: list[str] = []
+    components = session.components
+    wires = session.wires
+
+    def other_end(w: Wire, pin_ref: str) -> str:
+        return w.to_pin if w.from_pin == pin_ref else w.from_pin
+
+    # Loose components: nothing wired to them.
+    for cid, inst in components.items():
+        touching = [
+            w
+            for w in wires
+            if _endpoint_parts(w.from_pin)[0] == cid or _endpoint_parts(w.to_pin)[0] == cid
+        ]
+        if not touching:
+            issues.append(f"{inst.type} '{cid}' is not connected to anything.")
+
+    # LED checks: anode through a resistor, cathode to ground.
+    for cid, inst in components.items():
+        if inst.type != "led":
+            continue
+        anode, cathode = f"{cid}.anode", f"{cid}.cathode"
+        anode_wires = [w for w in wires if anode in (w.from_pin, w.to_pin)]
+        if not anode_wires:
+            issues.append(f"LED '{cid}' anode is not connected; it needs a resistor to a digital pin.")
+        else:
+            through_resistor = False
+            for w in anode_wires:
+                other_id = _endpoint_parts(other_end(w, anode))[0]
+                if other_id in components and components[other_id].type == "resistor":
+                    through_resistor = True
+            if not through_resistor:
+                issues.append(f"LED '{cid}' anode should connect to a resistor, or it will not light.")
+        cathode_to_gnd = any(
+            _is_gnd(other_end(w, cathode))
+            for w in wires
+            if cathode in (w.from_pin, w.to_pin)
+        )
+        if not cathode_to_gnd:
+            issues.append(f"LED '{cid}' cathode is not connected to UNO.GND.")
+
+    # Short circuits.
+    for w in wires:
+        pair = {w.from_pin, w.to_pin}
+        if any(p.startswith("UNO.5V") for p in pair) and any(_is_gnd(p) for p in pair):
+            issues.append("Short circuit: UNO.5V is wired directly to UNO.GND.")
+        digital = [
+            p
+            for p in pair
+            if _endpoint_parts(p)[0] == "UNO"
+            and (_endpoint_parts(p)[1].startswith("D") or _endpoint_parts(p)[1].isdigit())
+        ]
+        if digital and any(_is_gnd(p) for p in pair):
+            issues.append(
+                f"Short circuit: digital pin {digital[0]} is wired straight to UNO.GND "
+                "with no component between them."
+            )
+
+    issues = list(dict.fromkeys(issues))  # de-duplicate, keep order
+    return {"ok": True, "is_valid": len(issues) == 0, "issues": issues}
 
 
 # ---------- MongoDB-MCP-shaped tool handlers ----------
@@ -254,6 +396,17 @@ TOOLS: dict[str, ToolSpec] = {
             "required": ["name"],
         },
         handler=save_project_handler,
+    ),
+    "validate_circuit": ToolSpec(
+        name="validate_circuit",
+        description=(
+            "Check the current circuit for problems: loose components, an LED without a "
+            "resistor, a missing connection to ground, or short circuits. Returns a list of "
+            "issues. Call this after building or changing a circuit and fix anything it reports "
+            "before telling the child it is ready."
+        ),
+        parameters_schema={"type": "object", "properties": {}},
+        handler=validate_circuit_handler,
     ),
     "find_similar_example": ToolSpec(
         name="find_similar_example",

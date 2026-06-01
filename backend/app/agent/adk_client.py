@@ -23,6 +23,7 @@ import os
 from collections.abc import AsyncIterator
 from typing import Any
 
+from google.adk.agents.run_config import RunConfig
 from google.adk.tools.tool_context import ToolContext
 
 from ..config import get_settings
@@ -148,6 +149,14 @@ async def search_docs(query: str, limit: int = 4, *, tool_context: ToolContext) 
     return await _run("search_docs", tool_context, query=query, limit=limit)
 
 
+async def validate_circuit(tool_context: ToolContext) -> dict[str, Any]:
+    """Check the current circuit for problems (loose components, an LED without a
+    resistor, a missing connection to ground, short circuits) and return a list of
+    issues to fix. Call this after building or changing a circuit, then fix what it reports.
+    """
+    return await _run("validate_circuit", tool_context)
+
+
 _TOOLS = [
     list_available_components,
     add_component,
@@ -156,6 +165,7 @@ _TOOLS = [
     set_blocks,
     compile_and_run,
     save_project,
+    validate_circuit,
     find_similar_example,
     list_saved_projects,
     load_project,
@@ -184,11 +194,25 @@ class AdkAgentClient:
         os.environ["GOOGLE_CLOUD_PROJECT"] = settings.google_cloud_project
         os.environ["GOOGLE_CLOUD_LOCATION"] = settings.ardukid_gemini_location
 
+        # Filesystem skills (per-component know-how) loaded via ADK's SkillToolset,
+        # so the agent dynamically activates the relevant skill for what it builds.
+        tools: list[Any] = list(_TOOLS)
+        try:
+            from google.adk.tools.skill_toolset import SkillToolset
+
+            from ..services.skills import load_adk_skills
+
+            skills = load_adk_skills()
+            if skills:
+                tools.append(SkillToolset(skills=skills))
+        except Exception:  # pragma: no cover - skills are best-effort
+            pass
+
         self._agent = LlmAgent(
             model=settings.ardukid_gemini_model,
             name="ardukid_agent",
             instruction=SYSTEM_PROMPT,
-            tools=_TOOLS,
+            tools=tools,
         )
         self._session_service = InMemorySessionService()
         self._runner = Runner(
@@ -221,6 +245,7 @@ class AdkAgentClient:
             user_id=session.session_id,
             session_id=session.session_id,
             new_message=message,
+            run_config=RunConfig(max_llm_calls=200),
         ):
             for call in event.get_function_calls():
                 yield SSEEvent(

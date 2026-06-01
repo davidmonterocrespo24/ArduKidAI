@@ -80,6 +80,7 @@ def test_canvas_and_mcp_tools_registered():
         "set_blocks",
         "compile_and_run",
         "save_project",
+        "validate_circuit",
     }
     mcp_shaped_tools = {
         "find_similar_example",
