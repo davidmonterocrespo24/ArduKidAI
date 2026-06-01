@@ -70,7 +70,7 @@ export function TopBar() {
           </select>
         </label>
       </div>
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="ml-auto flex flex-wrap items-center gap-4">
         <SimControls />
         <div className="h-6 w-px bg-slate-200" aria-hidden="true" />
         <UserMenu />
