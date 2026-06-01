@@ -101,6 +101,10 @@ export interface AppState {
   chatMessages: ChatMessage[]
   appendChatMessage: (m: ChatMessage) => void
   appendAgentText: (text: string) => void
+  setChatMessages: (m: ChatMessage[]) => void
+
+  chatCollapsed: boolean
+  setChatCollapsed: (v: boolean) => void
 
   rightTab: RightTab
   setRightTab: (t: RightTab) => void
@@ -234,6 +238,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   chatMessages: [],
   appendChatMessage: (m) => set((state) => ({ chatMessages: [...state.chatMessages, m] })),
+  setChatMessages: (m) => set({ chatMessages: m }),
+  chatCollapsed: false,
+  setChatCollapsed: (v) => set({ chatCollapsed: v }),
   appendAgentText: (text) =>
     set((state) => {
       const last = state.chatMessages[state.chatMessages.length - 1]

@@ -3,7 +3,15 @@ import { sendChatMessage, type ChatAttachment } from '../agent/chat'
 import { useAppStore } from '../store/useAppStore'
 import { cn } from '../lib/cn'
 import { SavedProjectsList } from './SavedProjectsList'
-import { IconImage, IconPaperclip } from './Icons'
+import { IconClock, IconImage, IconMinimize, IconPaperclip, IconPlus, IconTrash } from './Icons'
+import { getSessionId, newSession, setSessionId } from '../lib/sessionId'
+import {
+  deleteSession,
+  deriveTitle,
+  listSessions,
+  saveSession,
+  type ChatSession,
+} from '../lib/chatHistory'
 
 const SUGGESTIONS = [
   'Make an LED blink',
@@ -28,18 +36,64 @@ function fileToBase64(file: File): Promise<string> {
 export function ChatPanel() {
   const messages = useAppStore((s) => s.chatMessages)
   const agentStatus = useAppStore((s) => s.agentStatus)
+  const setChatMessages = useAppStore((s) => s.setChatMessages)
+  const setChatCollapsed = useAppStore((s) => s.setChatCollapsed)
+  const board = useAppStore((s) => s.board)
+  const currentUser = useAppStore((s) => s.currentUser)
+  const userKey = currentUser?.email ?? 'guest'
   const [value, setValue] = useState('')
   const [pending, setPending] = useState<File[]>([])
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [sessions, setSessions] = useState<ChatSession[]>([])
   const listRef = useRef<HTMLDivElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight
-    }
+    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
   }, [messages])
 
+  // Persist the conversation to local history when a turn finishes.
+  useEffect(() => {
+    if (agentStatus !== 'idle' || messages.length === 0) return
+    saveSession(userKey, {
+      id: getSessionId(),
+      title: deriveTitle(messages),
+      messages,
+      board,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentStatus])
+
   const isStreaming = agentStatus === 'streaming'
+
+  function persistCurrent() {
+    if (messages.length === 0) return
+    saveSession(userKey, {
+      id: getSessionId(),
+      title: deriveTitle(messages),
+      messages,
+      board,
+    })
+  }
+
+  function newChat() {
+    persistCurrent()
+    newSession()
+    setChatMessages([])
+    setHistoryOpen(false)
+  }
+
+  function loadSession(s: ChatSession) {
+    persistCurrent()
+    setSessionId(s.id)
+    setChatMessages(s.messages)
+    setHistoryOpen(false)
+  }
+
+  function toggleHistory() {
+    if (!historyOpen) setSessions(listSessions(userKey))
+    setHistoryOpen((o) => !o)
+  }
 
   async function submit(text: string, files: File[] = []) {
     if ((!text.trim() && files.length === 0) || isStreaming) return
@@ -61,14 +115,79 @@ export function ChatPanel() {
     e.target.value = ''
   }
 
+  const iconBtn =
+    'rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-brand-600 disabled:opacity-50'
+
   return (
     <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <header className="shrink-0 border-b border-slate-200 px-3 py-2">
-        <h2 className="text-sm font-semibold">Talk to the agent</h2>
+      <header className="relative shrink-0 border-b border-slate-200 px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-brand-900">Talk to the agent</h2>
+          <div className="flex items-center gap-0.5">
+            <button type="button" onClick={newChat} title="New chat" className={iconBtn}>
+              <IconPlus />
+            </button>
+            <button
+              type="button"
+              onClick={toggleHistory}
+              title="Chat history"
+              className={cn(iconBtn, historyOpen && 'bg-brand-100 text-brand-700')}
+            >
+              <IconClock />
+            </button>
+            <button
+              type="button"
+              onClick={() => setChatCollapsed(true)}
+              title="Minimize chat"
+              className={iconBtn}
+            >
+              <IconMinimize />
+            </button>
+          </div>
+        </div>
         <p className="mt-0.5 text-xs text-slate-500">
-          Type what you want to build, or attach a photo of a circuit. The agent picks parts, wires
-          them, writes the program, and runs the simulator.
+          Type what you want to build, or attach a photo of a circuit.
         </p>
+
+        {historyOpen && (
+          <div className="absolute left-2 right-2 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
+            <div className="border-b border-slate-100 bg-brand-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-brand-700">
+              Chat history
+            </div>
+            {sessions.length === 0 ? (
+              <p className="px-3 py-3 text-xs text-slate-500">No past chats yet.</p>
+            ) : (
+              sessions.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-center gap-2 border-b border-slate-100 px-3 py-2 last:border-0 hover:bg-slate-50"
+                >
+                  <button
+                    type="button"
+                    onClick={() => loadSession(s)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <div className="truncate text-xs font-medium text-slate-700">{s.title}</div>
+                    <div className="text-[10px] text-slate-400">
+                      {s.messages.length} messages - {new Date(s.updatedAt).toLocaleString()}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      deleteSession(userKey, s.id)
+                      setSessions(listSessions(userKey))
+                    }}
+                    title="Delete this chat"
+                    className="shrink-0 rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                  >
+                    <IconTrash />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </header>
 
       <div ref={listRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 text-sm">
@@ -130,9 +249,7 @@ export function ChatPanel() {
           </div>
         ))}
 
-        {isStreaming && (
-          <div className="text-xs italic text-slate-500">agent is thinking...</div>
-        )}
+        {isStreaming && <div className="text-xs italic text-slate-500">agent is thinking...</div>}
       </div>
 
       {pending.length > 0 && (
@@ -143,11 +260,7 @@ export function ChatPanel() {
               className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600"
             >
               {f.type.startsWith('image/') ? (
-                <img
-                  src={URL.createObjectURL(f)}
-                  alt={f.name}
-                  className="h-6 w-6 rounded object-cover"
-                />
+                <img src={URL.createObjectURL(f)} alt={f.name} className="h-6 w-6 rounded object-cover" />
               ) : (
                 <IconImage className="h-3.5 w-3.5" />
               )}

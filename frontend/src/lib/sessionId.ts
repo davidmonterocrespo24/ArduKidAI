@@ -20,3 +20,8 @@ export function newSession(): string {
   current = makeId()
   return current
 }
+
+/** Adopt an existing id (e.g. when reopening a past chat from history). */
+export function setSessionId(id: string): void {
+  current = id
+}
