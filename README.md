@@ -159,6 +159,8 @@ survives reloads and the agent can recall facts across separate chats.
 
 ## Architecture
 
+![ArduKid technical architecture](doc/screenshots/08-architecture.png)
+
 ```
 Browser SPA (React + Zustand + Vite)
   chat  |  agent-controlled canvas (wokwi-elements)  |  Blockly + read-only C++

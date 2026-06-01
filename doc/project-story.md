@@ -26,6 +26,9 @@ _Over fifty ready-made starter circuits, sorted by difficulty, that a kid can lo
 
 ## How we built it
 
+![ArduKid technical architecture](https://raw.githubusercontent.com/davidmonterocrespo24/ArduKidAI/main/doc/screenshots/08-architecture.png)
+_The full stack: a React single-page app with an in-browser avr8js simulator, a Google Cloud Run service running the Google ADK agent on Gemini 3 with arduino-cli, and the official MongoDB MCP server in front of MongoDB Atlas Vector Search._
+
 - Agent: a single LlmAgent on Google Cloud's Vertex AI Agent Builder using the Agent Development Kit (ADK), powered by Gemini 3 on Vertex AI.
 - Partner integration: the official MongoDB MCP server over MongoDB Atlas Vector Search for example recall and documentation RAG. Query vectors are Gemini embeddings (768 dimensions); no third-party embedding provider is used.
 - Tools and skills: the agent drives the canvas through structured tools (add and wire components, set_blocks, compile_and_run, validate_circuit, save_project), plus recall tools, Google-native web tools, and filesystem "skills", one per component, so it uses exact pin names and correct wiring instead of guessing.
