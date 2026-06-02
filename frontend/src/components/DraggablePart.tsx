@@ -183,15 +183,17 @@ export function DraggablePart({ instance }: Props) {
         >
           {instance.id}
         </span>
-        <button
-          type="button"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={() => removeComponent(instance.id)}
-          title={`Remove ${instance.id}`}
-          className="rounded border border-rose-200 bg-white/90 px-1.5 text-[10px] font-medium text-rose-600 opacity-0 transition group-hover:opacity-100 hover:bg-rose-50"
-        >
-          remove
-        </button>
+        {simStatus !== 'running' && (
+          <button
+            type="button"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={() => removeComponent(instance.id)}
+            title={`Remove ${instance.id}`}
+            className="rounded border border-rose-200 bg-white/90 px-1.5 text-[10px] font-medium text-rose-600 opacity-0 transition group-hover:opacity-100 hover:bg-rose-50"
+          >
+            remove
+          </button>
+        )}
       </div>
       {panelOpen && anchor
         ? createPortal(

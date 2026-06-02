@@ -40,6 +40,13 @@ export function WireOverlay({ hostRef }: Props) {
   const setWireWaypoints = useAppStore((s) => s.setWireWaypoints)
   const insertWireWaypoint = useAppStore((s) => s.insertWireWaypoint)
 
+  // While the simulator runs the circuit is locked: wires and pins are not
+  // selectable, movable, deletable, or connectable. Only the components stay
+  // interactive (press a button, drag a sensor slider). This keeps a wire that
+  // happens to cross a button from stealing the click.
+  const simStatus = useAppStore((s) => s.simStatus)
+  const isRunning = simStatus === 'running'
+
   const overlayRef = useRef<SVGSVGElement>(null)
   const [pins, setPins] = useState<PositionedPin[]>([])
   const [size, setSize] = useState({ width: 0, height: 0 })
@@ -131,8 +138,18 @@ export function WireOverlay({ hostRef }: Props) {
     return () => host.removeEventListener('scroll', onScroll)
   }, [recompute, hostRef])
 
+  // Lock editing when the sim starts: drop any wire selection or half-drawn wire
+  // so no handles or delete badges linger over the running circuit.
+  useEffect(() => {
+    if (!isRunning) return
+    if (selectedWireIndex !== null) selectWire(null)
+    if (wireInProgress) cancelWire()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning])
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (isRunning) return
       // Don't steal keys when the kid is typing into a chat box,
       // slider, blockly text field, etc.
       const tgt = e.target as HTMLElement | null
@@ -150,7 +167,7 @@ export function WireOverlay({ hostRef }: Props) {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [wireInProgress, cancelWire, selectedWireIndex, selectWire, removeWire])
+  }, [isRunning, wireInProgress, cancelWire, selectedWireIndex, selectWire, removeWire])
 
   useEffect(() => {
     if (!wireInProgress) return
@@ -215,6 +232,7 @@ export function WireOverlay({ hostRef }: Props) {
     const overlay = overlayRef.current
     if (!host || !overlay) return
     const onMove = (e: MouseEvent) => {
+      if (isRunning) return
       const rect = overlay.getBoundingClientRect()
       const mx = e.clientX - rect.left
       const my = e.clientY - rect.top
@@ -268,7 +286,7 @@ export function WireOverlay({ hostRef }: Props) {
       host.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
-  }, [hostRef, wires, pinIndex, hoveredWire, setWireWaypoints])
+  }, [hostRef, wires, pinIndex, hoveredWire, setWireWaypoints, isRunning])
 
   function handlePinClick(componentId: string, pinName: string) {
     const ref = `${componentId}.${pinName}`
@@ -324,6 +342,7 @@ export function WireOverlay({ hostRef }: Props) {
     const overlay = overlayRef.current
     if (!host || !overlay) return
     const onCtx = (e: MouseEvent) => {
+      if (isRunning) return
       const rect = overlay.getBoundingClientRect()
       const x = e.clientX - rect.left
       const y = e.clientY - rect.top
@@ -348,7 +367,7 @@ export function WireOverlay({ hostRef }: Props) {
     host.addEventListener('contextmenu', onCtx)
     return () => host.removeEventListener('contextmenu', onCtx)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hostRef, wires, pinIndex])
+  }, [hostRef, wires, pinIndex, isRunning])
 
   const inProgressPin = wireInProgress ? pinIndex.get(wireInProgress.from_pin) : undefined
 
@@ -362,7 +381,9 @@ export function WireOverlay({ hostRef }: Props) {
       role="img"
       aria-label="circuit wires overlay"
     >
-      {wires.map((w, i) => {
+      {/* Invisible click targets for selecting/editing wires - hidden while the
+          sim runs so a wire over a button never steals the click. */}
+      {!isRunning && wires.map((w, i) => {
         const a = pinIndex.get(w.from_pin)
         const b = pinIndex.get(w.to_pin)
         if (!a || !b) return null
@@ -402,7 +423,7 @@ export function WireOverlay({ hostRef }: Props) {
         />
       )}
 
-      {pins.map((p) => {
+      {!isRunning && pins.map((p) => {
         const ref = `${p.componentId}.${p.name}`
         const isSource = wireInProgress?.from_pin === ref
         const isHover = hoveredPin === ref
@@ -493,8 +514,8 @@ export function WireOverlay({ hostRef }: Props) {
               strokeLinejoin="round"
               pointerEvents="none"
             />
-            {/* Delete badge (hover or selected) */}
-            {(isHover || isSelected) && (
+            {/* Delete badge (hover or selected) - never while the sim runs */}
+            {!isRunning && (isHover || isSelected) && (
               <g
                 className="cursor-pointer"
                 style={{ pointerEvents: 'all' }}
