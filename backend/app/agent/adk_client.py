@@ -58,8 +58,8 @@ async def add_component(
 
     Args:
         type: component type from the catalog (led, resistor, pushbutton, buzzer,
-            servo, potentiometer, lcd1602, seg7). The UNO is already on the canvas;
-            do not add it.
+            servo, potentiometer, lcd1602, ssd1306, seg7). ssd1306 is an I2C OLED
+            graphics screen. The UNO is already on the canvas; do not add it.
         props: optional component-specific properties, e.g. {"color": "red"}.
     """
     return await _run("add_component", tool_context, type=type, props=props)

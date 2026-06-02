@@ -12,9 +12,9 @@ def session():
 async def test_list_components_returns_catalog(session):
     result = await dispatch("list_available_components", session, {})
     assert result["ok"] is True
-    assert len(result["components"]) == 9
+    assert len(result["components"]) == 10
     types = {c["type"] for c in result["components"]}
-    assert {"uno", "led", "pushbutton", "buzzer", "servo"}.issubset(types)
+    assert {"uno", "led", "pushbutton", "buzzer", "servo", "ssd1306"}.issubset(types)
 
 
 async def test_add_component_assigns_sequential_ids(session):
@@ -24,6 +24,13 @@ async def test_add_component_assigns_sequential_ids(session):
     assert a["component"]["id"] == "L1"
     assert b["component"]["id"] == "L2"
     assert a["component"]["props"]["color"] == "red"  # default
+
+
+async def test_add_component_ssd1306_oled(session):
+    r = await dispatch("add_component", session, {"type": "ssd1306"})
+    assert r["ok"] is True
+    assert r["component"]["id"] == "OLED1"
+    assert r["component"]["type"] == "ssd1306"
 
 
 async def test_add_component_rejects_unknown_type(session):

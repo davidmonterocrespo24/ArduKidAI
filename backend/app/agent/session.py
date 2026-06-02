@@ -26,6 +26,7 @@ _PREFIX: dict[str, str] = {
     "servo": "S",
     "potentiometer": "P",
     "lcd1602": "LCD",
+    "ssd1306": "OLED",
     "seg7": "SEG",
 }
 

@@ -20,9 +20,13 @@ async def list_components() -> list[dict[str, Any]]:
     async for doc in db[COLLECTION_COMPONENTS].find({}):
         doc.pop("_id", None)
         docs.append(doc)
-    if docs:
-        return docs
-    return [dict(c) for c in COMPONENTS_CATALOG]
+    # Merge in any catalog parts not yet seeded into Atlas, so newly added
+    # components (e.g. the OLED) are advertised to the agent without a re-seed.
+    present = {d.get("type") for d in docs}
+    for c in COMPONENTS_CATALOG:
+        if c["type"] not in present:
+            docs.append(dict(c))
+    return docs
 
 
 async def get_component(component_type: str) -> dict[str, Any] | None:

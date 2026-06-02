@@ -11,6 +11,7 @@ ComponentType = Literal[
     "servo",
     "potentiometer",
     "lcd1602",
+    "ssd1306",
     "seg7",
 ]
 

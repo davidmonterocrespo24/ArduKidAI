@@ -1,7 +1,7 @@
 """Static seed data for the `components_catalog` and `examples` collections.
 
 Authoring decisions:
-- 9 components, one per supported part. The agent reads pin lists and props
+- 10 components, one per supported part. The agent reads pin lists and props
   schemas to know what is wireable.
 - 30 example projects covering blink, button, traffic light, servo,
   potentiometer, LCD, buzzer, 7-segment, and a few combination toys. Each has
@@ -72,6 +72,16 @@ COMPONENTS_CATALOG: list[dict[str, Any]] = [
         "pins": ["GND", "VCC", "SDA", "SCL"],
         "default_props": {},
         "wiring_hint": "SDA -> A4, SCL -> A5 on Arduino UNO.",
+    },
+    {
+        "type": "ssd1306",
+        "label": "OLED 128x64 (SSD1306, I2C)",
+        "pins": ["DATA", "CLK", "DC", "RST", "CS", "3V3", "VIN", "GND"],
+        "default_props": {},
+        "wiring_hint": (
+            "I2C OLED graphics screen. Wire DATA -> A4 (SDA), CLK -> A5 (SCL), "
+            "VIN -> 5V, GND -> GND. Program with the OLED blocks."
+        ),
     },
     {
         "type": "seg7",
