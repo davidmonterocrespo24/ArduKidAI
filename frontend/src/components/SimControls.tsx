@@ -358,7 +358,7 @@ export function SimControls() {
         className={cn(
           'inline-flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-semibold shadow-sm',
           isRunning
-            ? 'bg-slate-200 text-slate-900 hover:bg-slate-300'
+            ? 'bg-rose-500 text-white hover:bg-rose-600'
             : 'cursor-not-allowed bg-slate-100 text-slate-400',
         )}
       >

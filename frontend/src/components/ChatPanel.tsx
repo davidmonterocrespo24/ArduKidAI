@@ -201,12 +201,24 @@ export function ChatPanel() {
           <div
             key={msg.id}
             className={cn(
-              'rounded-md px-3 py-2 text-sm',
-              msg.role === 'user' && 'bg-brand-100 text-brand-900',
-              msg.role === 'agent' && 'bg-slate-100 text-slate-900',
-              msg.role === 'system' && 'bg-amber-50 text-amber-800 text-xs font-mono',
+              msg.role === 'system' && msg.toolName
+                ? 'flex items-start gap-1.5 px-1 text-xs text-slate-500'
+                : 'rounded-md px-3 py-2 text-sm',
+              !msg.toolName && msg.role === 'user' && 'bg-brand-100 text-brand-900',
+              !msg.toolName && msg.role === 'agent' && 'bg-slate-100 text-slate-900',
+              !msg.toolName && msg.role === 'system' && 'bg-amber-50 text-amber-800 text-xs',
             )}
           >
+            {msg.role === 'system' && msg.toolName && (
+              <svg
+                viewBox="0 0 24 24"
+                className="mt-0.5 h-3 w-3 shrink-0 text-brand-400"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z" />
+              </svg>
+            )}
             {msg.text && <div className="whitespace-pre-wrap">{msg.text}</div>}
             {msg.attachments && msg.attachments.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">

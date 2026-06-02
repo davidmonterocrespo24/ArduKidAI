@@ -41,8 +41,7 @@ export function applyToolResult(name: string, result: ToolResult): void {
     store.appendChatMessage({
       id: crypto.randomUUID(),
       role: 'system',
-      text: `Tool ${name} failed: ${result.error ?? 'unknown error'}`,
-      toolName: name,
+      text: `That step did not work (${result.error ?? 'unknown error'}). Let me try another way.`,
     })
     return
   }
@@ -94,6 +93,142 @@ export function applyToolResult(name: string, result: ToolResult): void {
   }
 }
 
+// Kid-friendly names for each part, so the chat says "Adding a button" instead
+// of "Adding pushbutton".
+const PART_LABEL: Record<string, string> = {
+  led: 'LED', resistor: 'resistor', pushbutton: 'button', pushbutton6mm: 'button',
+  buzzer: 'buzzer', servo: 'servo motor', potentiometer: 'knob',
+  slidePotentiometer: 'slider', slideSwitch: 'switch', lcd1602: 'LCD screen',
+  lcd2004: 'LCD screen', ssd1306: 'OLED screen', seg7: '7-segment display',
+  dipSwitch8: 'DIP switch', analogJoystick: 'joystick', soundSensor: 'sound sensor',
+  smallSoundSensor: 'sound sensor', flameSensor: 'flame sensor', gasSensor: 'gas sensor',
+  heartBeatSensor: 'heartbeat sensor', rotaryEncoder: 'rotary encoder',
+  dht22: 'temperature sensor', hcSr04: 'distance sensor', photoresistor: 'light sensor',
+  ntcTemperature: 'temperature sensor', tiltSwitch: 'tilt sensor', pirMotion: 'motion sensor',
+  rgbLed: 'RGB LED', ledBarGraph: 'LED bar',
+}
+
+// Friendly names for the things the agent reads (load_skill).
+const SKILL_LABEL: Record<string, string> = {
+  'blockly-programming': 'how to write the code',
+  'project-patterns': 'common projects',
+  'arduino-uno': 'the Arduino board',
+  'arduino-nano': 'the Arduino board',
+  'arduino-mega': 'the Arduino board',
+}
+
+function partLabel(type: string): string {
+  return PART_LABEL[type] ?? type
+}
+
+function skillLabel(name: unknown): string {
+  if (typeof name !== 'string') return 'a part'
+  return SKILL_LABEL[name] ?? PART_LABEL[name] ?? name
+}
+
+function withArticle(word: string): string {
+  return `${/^[aeiou]/i.test(word) ? 'an' : 'a'} ${word}`
+}
+
+function countLabel(word: string, n: number): string {
+  return n === 1 ? withArticle(word) : `${n} ${word}s`
+}
+
+function summarizeParts(components: unknown): string {
+  if (!Array.isArray(components) || components.length === 0) return 'some parts'
+  const counts = new Map<string, number>()
+  for (const c of components) {
+    const type =
+      c && typeof c === 'object' && typeof (c as { type?: unknown }).type === 'string'
+        ? (c as { type: string }).type
+        : 'part'
+    const label = partLabel(type)
+    counts.set(label, (counts.get(label) ?? 0) + 1)
+  }
+  const items = [...counts.entries()].map(([label, n]) => countLabel(label, n))
+  if (items.length === 1) return items[0]
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
+}
+
+// Turn a raw tool call into a friendly, child-readable step. Returns null for
+// internal calls (listing skills/parts) that are noise to a kid.
+function describeToolCall(name: string, args: Record<string, unknown>): string | null {
+  switch (name) {
+    case 'add_component':
+      return `Adding ${withArticle(partLabel(String(args.type ?? 'part')))}.`
+    case 'add_components':
+      return `Adding ${summarizeParts(args.components)}.`
+    case 'remove_component':
+      return `Removing ${typeof args.id === 'string' ? args.id : 'a part'}.`
+    case 'wire':
+      return 'Connecting a wire.'
+    case 'wire_many': {
+      const n = Array.isArray(args.wires) ? args.wires.length : 0
+      return n > 1 ? `Connecting ${n} wires.` : 'Connecting the wires.'
+    }
+    case 'set_blocks':
+      return 'Writing the program.'
+    case 'compile_and_run':
+      return 'Compiling the code and starting the simulation.'
+    case 'validate_circuit':
+      return 'Checking the circuit for mistakes.'
+    case 'save_project':
+      return `Saving your project${typeof args.name === 'string' ? ` as "${args.name}"` : ''}.`
+    case 'find_similar_example':
+      return 'Looking for a similar project for ideas.'
+    case 'search_docs':
+      return 'Looking it up in my notes.'
+    case 'search_web':
+      return 'Searching the web.'
+    case 'read_web_page':
+      return 'Reading that web page.'
+    case 'watch_youtube':
+      return 'Watching the video.'
+    case 'load_memory':
+      return 'Remembering what we did before.'
+    case 'list_saved_projects':
+    case 'list_projects':
+      return 'Looking at your saved projects.'
+    case 'load_project':
+      return 'Opening your saved project.'
+    default:
+      // list_skills, list_available_components and any other internal call:
+      // not worth showing a child.
+      return null
+  }
+}
+
+// Append a friendly step line for a tool call. Consecutive load_skill calls are
+// merged into one line ("Reading my notes about: LED, button, ...") instead of
+// one cryptic line per skill.
+function appendToolStep(name: string, args: Record<string, unknown>): void {
+  const store = useAppStore.getState()
+  if (name === 'load_skill') {
+    const label = skillLabel(args.skill_name)
+    const msgs = store.chatMessages
+    const last = msgs[msgs.length - 1]
+    if (last && last.toolName === 'load_skill') {
+      store.setChatMessages(
+        msgs.map((m, i) =>
+          i === msgs.length - 1 ? { ...m, text: `${m.text}, ${label}` } : m,
+        ),
+      )
+    } else {
+      store.appendChatMessage({
+        id: crypto.randomUUID(),
+        role: 'system',
+        text: `Reading my notes about: ${label}`,
+        toolName: 'load_skill',
+      })
+    }
+    return
+  }
+  const text = describeToolCall(name, args)
+  if (text) {
+    store.appendChatMessage({ id: crypto.randomUUID(), role: 'system', text, toolName: name })
+  }
+}
+
 export function handleAgentEvent(event: string, raw: string): void {
   const store = useAppStore.getState()
   let payload: unknown
@@ -119,12 +254,7 @@ export function handleAgentEvent(event: string, raw: string): void {
       const name = typeof data.name === 'string' ? data.name : ''
       const args = (data.args as Record<string, unknown> | undefined) ?? {}
       if (name) {
-        store.appendChatMessage({
-          id: crypto.randomUUID(),
-          role: 'system',
-          text: `Calling ${name}(${Object.keys(args).join(', ')})`,
-          toolName: name,
-        })
+        appendToolStep(name, args)
         applyToolCall(name, args)
       }
       break
