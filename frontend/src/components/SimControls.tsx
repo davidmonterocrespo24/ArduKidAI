@@ -213,7 +213,7 @@ export function SimControls() {
   useEffect(() => {
     if (runRequest > 0 && runRequest !== lastRunRef.current) {
       lastRunRef.current = runRequest
-      void compileAndRun()
+      void compile(true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runRequest])
@@ -236,7 +236,7 @@ export function SimControls() {
     setSimStatus('running')
   }
 
-  async function compileAndRun() {
+  async function compile(run: boolean) {
     appendCompileLog('info', `POST /api/compile (${getBoard(board).fqbn})`)
     setBottomTab('compile')
     try {
@@ -252,20 +252,24 @@ export function SimControls() {
         setHexCode(resp.hex)
         setCompileError(null)
         stopSim()
-        simRef.current = startSim(
-          { kind: 'hex', hex: resp.hex },
-          {
-            onPinChange: (snapshot) => setPinSnapshot(snapshot.levels, snapshot.activity),
-            onSerialLine: (line) => appendSerial(line + '\n'),
-            getAdcChannel: getAdcChannelFromStore,
-            onLcdText: pushLcdText,
-            onOledPixels: pushOledPixels,
-            onPwmChange: (snap) => setPwmSnapshot(snap),
-            dhtSensors: buildDhtSensorsFromStore(),
-          },
-          board,
-        )
-        setSimStatus('running')
+        if (run) {
+          simRef.current = startSim(
+            { kind: 'hex', hex: resp.hex },
+            {
+              onPinChange: (snapshot) => setPinSnapshot(snapshot.levels, snapshot.activity),
+              onSerialLine: (line) => appendSerial(line + '\n'),
+              getAdcChannel: getAdcChannelFromStore,
+              onLcdText: pushLcdText,
+              onOledPixels: pushOledPixels,
+              onPwmChange: (snap) => setPwmSnapshot(snap),
+              dhtSensors: buildDhtSensorsFromStore(),
+            },
+            board,
+          )
+          setSimStatus('running')
+        } else {
+          setSimStatus('stopped')
+        }
       } else {
         const detail = resp.stderr || resp.error || 'unknown compile error'
         appendCompileLog('error', detail)
@@ -274,10 +278,12 @@ export function SimControls() {
         appendChatMessage({
           id: crypto.randomUUID(),
           role: 'system',
-          text: 'Compile failed. See the Compile output tab for the details. Running the fallback blink.',
+          text: run
+            ? 'Compile failed. See the Compile output tab for the details. Running the fallback blink.'
+            : 'Compile failed. See the Compile output tab for the details.',
         })
         stopSim()
-        startWithCurrent()
+        if (run) startWithCurrent()
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -287,10 +293,12 @@ export function SimControls() {
       appendChatMessage({
         id: crypto.randomUUID(),
         role: 'system',
-        text: `compile request failed: ${msg}. Running fallback blink.`,
+        text: run
+          ? `compile request failed: ${msg}. Running fallback blink.`
+          : `compile request failed: ${msg}.`,
       })
       stopSim()
-      startWithCurrent()
+      if (run) startWithCurrent()
     }
   }
 
@@ -327,27 +335,20 @@ export function SimControls() {
       />
       <button
         type="button"
-        onClick={() => (hexCode ? startWithCurrent() : compileAndRun())}
-        disabled={isRunning}
-        title="Run the loaded program (or compile first if needed)"
-        className={cn(
-          'inline-flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm',
-          isRunning
-            ? 'cursor-not-allowed bg-brand-500/50'
-            : 'bg-brand-500 hover:bg-brand-600',
-        )}
+        onClick={() => void compile(false)}
+        title="Compile the current program to check it builds (does not run it)"
+        className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
       >
-        <IconPlay />
-        Run
+        <IconBolt />
+        Compile
       </button>
       <button
         type="button"
-        onClick={() => void compileAndRun()}
-        disabled={isRunning}
-        title="POST current C++ to /api/compile and load the returned HEX"
-        className="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50 disabled:opacity-50"
+        onClick={() => void compile(true)}
+        title="Compile the current program and run it in the simulator"
+        className="inline-flex items-center gap-2 rounded-md bg-brand-500 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-600"
       >
-        <IconBolt />
+        <IconPlay />
         Compile &amp; run
       </button>
       <button
