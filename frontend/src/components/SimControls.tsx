@@ -319,20 +319,27 @@ export function SimControls() {
   }
 
   const isRunning = simStatus === 'running'
-  const statusDot =
-    simStatus === 'running'
-      ? 'bg-brand-500'
-      : simStatus === 'error'
-      ? 'bg-rose-500'
-      : 'bg-slate-300'
 
   return (
     <div className="flex items-center gap-1.5">
-      <span
-        aria-hidden="true"
-        className={cn('h-2.5 w-2.5 rounded-full', statusDot)}
-        title={`sim ${simStatus}`}
-      />
+      {isRunning ? (
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700"
+          title="The simulation is running"
+        >
+          <span className="h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
+          Running
+        </span>
+      ) : (
+        <span
+          aria-hidden="true"
+          className={cn(
+            'h-2.5 w-2.5 rounded-full',
+            simStatus === 'error' ? 'bg-rose-500' : 'bg-slate-300',
+          )}
+          title={`sim ${simStatus}`}
+        />
+      )}
       <button
         type="button"
         onClick={() => void compile(false)}
@@ -345,8 +352,11 @@ export function SimControls() {
       <button
         type="button"
         onClick={() => void compile(true)}
-        title="Compile the current program and run it in the simulator"
-        className="inline-flex items-center gap-2 rounded-md bg-brand-500 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-600"
+        title={isRunning ? 'Re-compile and restart the simulation' : 'Compile the current program and run it in the simulator'}
+        className={cn(
+          'inline-flex items-center gap-2 rounded-md bg-brand-500 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-600',
+          isRunning && 'opacity-60',
+        )}
       >
         <IconPlay />
         Compile &amp; run
