@@ -9,7 +9,7 @@ required.
 Built for the [Google Cloud Rapid Agent Hackathon](https://rapid-agent.devpost.com/),
 MongoDB partner track.
 
-**Live demo:** https://ardukid-626067361949.us-central1.run.app
+
 
 ![ArduKid building and simulating a traffic light](doc/screenshots/01-ide-traffic-light-running.png)
 
