@@ -12,9 +12,10 @@ def session():
 async def test_list_components_returns_catalog(session):
     result = await dispatch("list_available_components", session, {})
     assert result["ok"] is True
-    assert len(result["components"]) == 10
+    assert len(result["components"]) == 30
     types = {c["type"] for c in result["components"]}
-    assert {"uno", "led", "pushbutton", "buzzer", "servo", "ssd1306"}.issubset(types)
+    assert {"uno", "led", "pushbutton", "buzzer", "servo", "ssd1306",
+            "dht22", "hcSr04", "rgbLed", "pirMotion", "lcd2004"}.issubset(types)
 
 
 async def test_add_component_assigns_sequential_ids(session):

@@ -57,9 +57,12 @@ async def add_component(
     adding several parts at once.
 
     Args:
-        type: component type from the catalog (led, resistor, pushbutton, buzzer,
-            servo, potentiometer, lcd1602, ssd1306, seg7). ssd1306 is an I2C OLED
-            graphics screen. The UNO is already on the canvas; do not add it.
+        type: a component type from the catalog. Call list_available_components
+            to see all of them (LEDs, resistor, buttons, buzzer, servo, pots,
+            switches, LCD 16x2/20x4, ssd1306 OLED, 7-segment, RGB LED, LED bar,
+            joystick, rotary encoder, and sensors: light/LDR, NTC, sound, flame,
+            gas, PIR, tilt, heartbeat, DHT22, HC-SR04 ultrasonic). The UNO board
+            is already on the canvas; do not add it.
         props: optional component-specific properties, e.g. {"color": "red"}.
     """
     return await _run("add_component", tool_context, type=type, props=props)

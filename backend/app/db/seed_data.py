@@ -1,7 +1,7 @@
 """Static seed data for the `components_catalog` and `examples` collections.
 
 Authoring decisions:
-- 10 components, one per supported part. The agent reads pin lists and props
+- 30 components, one per supported part. The agent reads pin lists and props
   schemas to know what is wireable.
 - 30 example projects covering blink, button, traffic light, servo,
   potentiometer, LCD, buzzer, 7-segment, and a few combination toys. Each has
@@ -88,6 +88,149 @@ COMPONENTS_CATALOG: list[dict[str, Any]] = [
         "label": "7-segment display",
         "pins": ["A", "B", "C", "D", "E", "F", "G", "DP", "COM"],
         "default_props": {"color": "red"},
+    },
+    {
+        "type": "pushbutton6mm",
+        "label": "Pushbutton 6mm (tactile)",
+        "pins": ["1a", "1b", "2a", "2b"],
+        "props_schema": {"color": ["red", "green", "blue", "yellow", "black"]},
+        "default_props": {"color": "red"},
+        "wiring_hint": "small tactile button; use INPUT_PULLUP and read LOW when pressed.",
+    },
+    {
+        "type": "slidePotentiometer",
+        "label": "Slide potentiometer (fader)",
+        "pins": ["VCC", "SIG", "GND"],
+        "default_props": {"value": 0},
+        "wiring_hint": "SIG to an analog pin (A0..A5); VCC to 5V, GND to GND. Read with analog_read.",
+    },
+    {
+        "type": "slideSwitch",
+        "label": "Slide switch",
+        "pins": ["1", "2", "3"],
+        "default_props": {"value": 1},
+        "wiring_hint": "middle pin (2) to a digital pin with INPUT_PULLUP; an outer pin to GND. digital_read.",
+    },
+    {
+        "type": "lcd2004",
+        "label": "LCD 20x4 (I2C)",
+        "pins": ["GND", "VCC", "SDA", "SCL"],
+        "default_props": {},
+        "wiring_hint": "20x4 I2C text screen. SDA -> A4, SCL -> A5. Use the LCD blocks (4 rows, 20 cols).",
+    },
+    {
+        "type": "dipSwitch8",
+        "label": "DIP switch (8)",
+        "pins": ["1a", "2a", "3a", "4a", "5a", "6a", "7a", "8a",
+                 "1b", "2b", "3b", "4b", "5b", "6b", "7b", "8b"],
+        "default_props": {"values": [0, 0, 0, 0, 0, 0, 0, 0]},
+        "wiring_hint": "each <n>a to a digital pin (INPUT_PULLUP), each <n>b to GND. digital_read.",
+    },
+    {
+        "type": "analogJoystick",
+        "label": "Analog joystick",
+        "pins": ["VCC", "VERT", "HORZ", "SEL", "GND"],
+        "default_props": {"xValue": 512, "yValue": 512, "pressed": False},
+        "wiring_hint": "VERT and HORZ to two analog pins (e.g. A0, A1); SEL to a digital pin (INPUT_PULLUP); VCC to 5V, GND to GND.",
+    },
+    {
+        "type": "soundSensor",
+        "label": "Sound sensor (big)",
+        "pins": ["AOUT", "GND", "VCC", "DOUT"],
+        "default_props": {"level": 400, "threshold": 600},
+        "wiring_hint": "AOUT to an analog pin (analog_read); DOUT to a digital pin (HIGH when loud); VCC to 5V, GND to GND.",
+    },
+    {
+        "type": "smallSoundSensor",
+        "label": "Sound sensor (small)",
+        "pins": ["AOUT", "GND", "VCC", "DOUT"],
+        "default_props": {"level": 400, "threshold": 600},
+        "wiring_hint": "AOUT to an analog pin (analog_read); DOUT to a digital pin (HIGH when loud); VCC to 5V, GND to GND.",
+    },
+    {
+        "type": "flameSensor",
+        "label": "Flame sensor",
+        "pins": ["VCC", "GND", "DOUT", "AOUT"],
+        "default_props": {"flame": 200, "threshold": 600},
+        "wiring_hint": "AOUT to an analog pin (analog_read); DOUT to a digital pin (HIGH when flame); VCC to 5V, GND to GND.",
+    },
+    {
+        "type": "gasSensor",
+        "label": "Gas sensor (MQ-2)",
+        "pins": ["AOUT", "DOUT", "GND", "VCC"],
+        "default_props": {"gas": 200, "threshold": 600},
+        "wiring_hint": "AOUT to an analog pin (analog_read); DOUT to a digital pin; VCC to 5V, GND to GND.",
+    },
+    {
+        "type": "heartBeatSensor",
+        "label": "Heart-beat sensor",
+        "pins": ["GND", "VCC", "OUT"],
+        "default_props": {"bpm": 60},
+        "wiring_hint": "OUT to an analog pin (analog_read); VCC to 5V, GND to GND.",
+    },
+    {
+        "type": "rotaryEncoder",
+        "label": "Rotary encoder (KY-040)",
+        "pins": ["CLK", "DT", "SW", "VCC", "GND"],
+        "default_props": {"angle": 0},
+        "wiring_hint": "CLK and DT to two digital pins (digital_read); SW to a digital pin (INPUT_PULLUP); VCC to 5V, GND to GND.",
+    },
+    {
+        "type": "dht22",
+        "label": "DHT22 temperature + humidity",
+        "pins": ["VCC", "SDA", "NC", "GND"],
+        "default_props": {"celsius": 22, "humidity": 50},
+        "wiring_hint": "SDA (data) to a digital pin; VCC to 5V, GND to GND. Read with the DHT blocks (field PIN = the data pin).",
+    },
+    {
+        "type": "hcSr04",
+        "label": "HC-SR04 ultrasonic distance",
+        "pins": ["VCC", "TRIG", "ECHO", "GND"],
+        "default_props": {"distanceCm": 25},
+        "wiring_hint": "TRIG and ECHO to two digital pins; VCC to 5V, GND to GND. Read with the ultrasonic block (fields TRIG, ECHO).",
+    },
+    {
+        "type": "photoresistor",
+        "label": "Light sensor (LDR)",
+        "pins": ["VCC", "GND", "DO", "AO"],
+        "default_props": {"lux": 500},
+        "wiring_hint": "AO to an analog pin (analog_read; brighter = higher); DO is a digital threshold output; VCC to 5V, GND to GND.",
+    },
+    {
+        "type": "ntcTemperature",
+        "label": "NTC temperature",
+        "pins": ["GND", "VCC", "OUT"],
+        "default_props": {"celsius": 22},
+        "wiring_hint": "OUT to an analog pin (analog_read); VCC to 5V, GND to GND.",
+    },
+    {
+        "type": "tiltSwitch",
+        "label": "Tilt switch",
+        "pins": ["GND", "VCC", "OUT"],
+        "default_props": {"tilted": False},
+        "wiring_hint": "OUT to a digital pin (digital_read); VCC to 5V, GND to GND.",
+    },
+    {
+        "type": "pirMotion",
+        "label": "PIR motion sensor",
+        "pins": ["VCC", "OUT", "GND"],
+        "default_props": {"triggered": False},
+        "wiring_hint": "OUT to a digital pin (HIGH when motion); VCC to 5V, GND to GND.",
+    },
+    {
+        "type": "rgbLed",
+        "label": "RGB LED (common cathode)",
+        "pins": ["R", "COM", "G", "B"],
+        "default_props": {},
+        "wiring_hint": "R, G and B each through a 220 ohm resistor to a PWM pin (analog_write); COM to GND.",
+    },
+    {
+        "type": "ledBarGraph",
+        "label": "LED bar graph (10)",
+        "pins": ["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10",
+                 "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"],
+        "default_props": {"color": "red"},
+        "wiring_hint": "each A<n> through a resistor to a digital pin; each C<n> to GND. Light with digital_write.",
     },
 ]
 
