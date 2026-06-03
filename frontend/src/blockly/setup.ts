@@ -52,11 +52,12 @@ export function initBlockly(container: HTMLElement): Blockly.WorkspaceSvg {
   return Blockly.inject(container, {
     toolbox: TOOLBOX,
     grid: { spacing: 20, length: 3, colour: '#e2e8f0', snap: true },
-    zoom: { controls: true, wheel: true, startScale: 0.9 },
+    // Zoom lives on the +/- controls so the mouse wheel is free to scroll.
+    zoom: { controls: true, wheel: false, startScale: 0.9 },
     trashcan: true,
     renderer: 'zelos',
-    // Kids pan by dragging an empty area; the always-on scrollbars looked
-    // like an extra widget that "did not work" and just stole pixels.
-    move: { scrollbars: false, drag: true, wheel: true },
+    // Navigate freely: visible scrollbars on both axes, drag an empty area to
+    // pan, and the mouse wheel scrolls (Shift+wheel scrolls horizontally).
+    move: { scrollbars: true, drag: true, wheel: true },
   })
 }

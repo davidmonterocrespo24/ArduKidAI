@@ -19,6 +19,7 @@ from ..config import get_settings
 class CompileResult:
     ok: bool
     hex_text: str | None = None
+    stdout: str | None = None
     stderr: str | None = None
     error: str | None = None
 
@@ -66,18 +67,24 @@ async def compile_cpp(cpp: str, fqbn: str | None = None) -> CompileResult:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        _stdout_bytes, stderr_bytes = await proc.communicate()
+        stdout_bytes, stderr_bytes = await proc.communicate()
+        stdout = stdout_bytes.decode("utf-8", errors="replace")
         stderr = stderr_bytes.decode("utf-8", errors="replace")
         if proc.returncode != 0:
-            return CompileResult(ok=False, stderr=stderr, error="arduino-cli returned non-zero")
+            return CompileResult(
+                ok=False, stdout=stdout, stderr=stderr, error="arduino-cli returned non-zero"
+            )
 
         hex_path = next(out_dir.glob("*.hex"), None)
         if hex_path is None:
-            return CompileResult(ok=False, stderr=stderr, error="no .hex produced")
+            return CompileResult(
+                ok=False, stdout=stdout, stderr=stderr, error="no .hex produced"
+            )
 
         return CompileResult(
             ok=True,
             hex_text=hex_path.read_text(encoding="utf-8"),
+            stdout=stdout,
             stderr=stderr,
         )
     except FileNotFoundError:

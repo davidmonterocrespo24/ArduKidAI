@@ -22,6 +22,7 @@ async def compile_source(request: Request, payload: CompileSource) -> CompileRes
     return CompileResponse(
         ok=result.ok,
         hex=result.hex_text,
+        stdout=result.stdout,
         stderr=result.stderr,
         error=result.error,
     )

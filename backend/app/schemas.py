@@ -84,6 +84,7 @@ class CompileSource(BaseModel):
 class CompileResponse(BaseModel):
     ok: bool
     hex: str | None = None
+    stdout: str | None = None
     stderr: str | None = None
     error: str | None = None
 

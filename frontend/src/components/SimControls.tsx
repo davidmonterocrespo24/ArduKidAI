@@ -164,6 +164,7 @@ function pushOledPixels(pixels: Uint8Array): void {
 interface CompileResponse {
   ok: boolean
   hex?: string
+  stdout?: string
   stderr?: string
   error?: string
 }
@@ -248,7 +249,8 @@ export function SimControls() {
       if (resp.ok && resp.hex) {
         const bytes = Math.round(resp.hex.length / 2)
         appendCompileLog('success', `OK: HEX ready (~${bytes} bytes of program memory)`)
-        if (resp.stderr) appendCompileLog('info', resp.stderr.trim())
+        if (resp.stdout && resp.stdout.trim()) appendCompileLog('info', resp.stdout.trim())
+        if (resp.stderr && resp.stderr.trim()) appendCompileLog('warn', resp.stderr.trim())
         setHexCode(resp.hex)
         setCompileError(null)
         stopSim()
@@ -273,6 +275,7 @@ export function SimControls() {
       } else {
         const detail = resp.stderr || resp.error || 'unknown compile error'
         appendCompileLog('error', detail)
+        if (resp.stdout && resp.stdout.trim()) appendCompileLog('info', resp.stdout.trim())
         setCompileError(detail)
         setRightTab('code')
         appendChatMessage({
