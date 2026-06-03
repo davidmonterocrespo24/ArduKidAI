@@ -10,9 +10,9 @@ import { IconPlus } from './Icons'
 
 // Stage size big enough to spread out the catalog. The container is
 // scrollable so smaller screens can pan.
-const STAGE_WIDTH = 1400
+const STAGE_WIDTH = 1100
 const STAGE_HEIGHT = 1000
-const UNO_LEFT = 560
+const UNO_LEFT = 400
 const UNO_TOP = 60
 
 // Render the selected board's wokwi element with its built-in LED indicators

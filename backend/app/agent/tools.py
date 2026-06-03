@@ -157,14 +157,14 @@ def _resolve_pin(session: SessionState, pin: str) -> tuple[str | None, str | Non
 # --- Component placement: the backend lays parts out in non-overlapping columns
 # to the left of the pinned UNO so the agent never has to pick coordinates and
 # parts never stack on top of each other. ---
-_LAYOUT_ORIGIN_X = 30
-_LAYOUT_ORIGIN_Y = 30
-# Steps are sized for the WIDEST common parts (an I2C LCD / OLED is ~200 px) so
-# adjacent parts never overlap, and the pinned board sits well to the right
-# (see UNO_LEFT in CanvasPanel) so wide parts in the left columns clear it.
-_LAYOUT_STEP_X = 210
-_LAYOUT_STEP_Y = 140
-_LAYOUT_ROWS = 4
+_LAYOUT_ORIGIN_X = 20
+_LAYOUT_ORIGIN_Y = 20
+# Parts stack in a tall column on the far left (8 before a second column starts)
+# with generous spacing, so a typical circuit's wide parts (LCD/OLED ~300 px)
+# stay clear of the pinned board on the right (see UNO_LEFT in CanvasPanel).
+_LAYOUT_STEP_X = 200
+_LAYOUT_STEP_Y = 130
+_LAYOUT_ROWS = 8
 
 
 def _peripheral_count(session: SessionState) -> int:
