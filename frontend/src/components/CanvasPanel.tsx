@@ -12,7 +12,7 @@ import { IconPlus } from './Icons'
 // scrollable so smaller screens can pan.
 const STAGE_WIDTH = 1400
 const STAGE_HEIGHT = 1000
-const UNO_LEFT = 240
+const UNO_LEFT = 560
 const UNO_TOP = 60
 
 // Render the selected board's wokwi element with its built-in LED indicators

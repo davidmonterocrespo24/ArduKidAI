@@ -159,9 +159,12 @@ def _resolve_pin(session: SessionState, pin: str) -> tuple[str | None, str | Non
 # parts never stack on top of each other. ---
 _LAYOUT_ORIGIN_X = 30
 _LAYOUT_ORIGIN_Y = 30
-_LAYOUT_STEP_X = 130
-_LAYOUT_STEP_Y = 120
-_LAYOUT_ROWS = 5
+# Steps are sized for the WIDEST common parts (an I2C LCD / OLED is ~200 px) so
+# adjacent parts never overlap, and the pinned board sits well to the right
+# (see UNO_LEFT in CanvasPanel) so wide parts in the left columns clear it.
+_LAYOUT_STEP_X = 210
+_LAYOUT_STEP_Y = 140
+_LAYOUT_ROWS = 4
 
 
 def _peripheral_count(session: SessionState) -> int:
