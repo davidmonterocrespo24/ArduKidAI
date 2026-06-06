@@ -181,6 +181,7 @@ export function SimControls() {
   const cppCode = useAppStore((s) => s.cppCode)
   const board = useAppStore((s) => s.board)
   const appendChatMessage = useAppStore((s) => s.appendChatMessage)
+  const setChatMessages = useAppStore((s) => s.setChatMessages)
   const resetCircuit = useAppStore((s) => s.resetCircuit)
   const setCompileError = useAppStore((s) => s.setCompileError)
   const setLastCompile = useAppStore((s) => s.setLastCompile)
@@ -354,9 +355,10 @@ export function SimControls() {
     stopSim()
     setSimStatus('idle')
     resetCircuit()
-    // Start a fresh agent conversation so it does not try to remove parts that
-    // the reset just cleared.
+    // Start a completely fresh agent session: a new session id (so the agent
+    // keeps no memory of the cleared circuit) AND an empty chat transcript.
     newSession()
+    setChatMessages([])
   }
 
   const isRunning = simStatus === 'running'
@@ -420,7 +422,7 @@ export function SimControls() {
         type="button"
         onClick={reset}
         title="Clear circuit, blocks, code, sim state"
-        className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100"
+        className="inline-flex items-center gap-2 rounded-md border border-brand-300 bg-white px-2.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
       >
         <IconReset />
         Reset
