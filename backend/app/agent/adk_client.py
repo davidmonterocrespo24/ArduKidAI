@@ -211,6 +211,8 @@ async def find_similar_example(
 ) -> dict[str, Any]:
     """Semantic search over the seeded example circuits (MongoDB Atlas Vector
     Search). Use it for inspiration or a reference for an unfamiliar project.
+    Results are INSPIRATION ONLY - their ids (like "ex-013") are not saved
+    projects, so never pass them to load_project; build the circuit yourself.
 
     Args:
         query: natural-language description of what the kid wants.

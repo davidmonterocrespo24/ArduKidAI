@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { sendChatMessage, type ChatAttachment } from '../agent/chat'
 import { useAppStore } from '../store/useAppStore'
 import { cn } from '../lib/cn'
@@ -38,6 +38,66 @@ const TUTOR_ACTIONS: { label: string; prompt: string }[] = [
       'Teach me the main idea behind how my current project works, in a simple way, and end with a question to check I understood.',
   },
 ]
+
+// The agent often replies with light markdown (**bold**, `code`, and numbered or
+// bulleted lists). Render it as React nodes (no raw HTML, so no XSS) instead of
+// showing the asterisks and backticks literally.
+function renderInline(text: string, keyBase: string): ReactNode[] {
+  const nodes: ReactNode[] = []
+  const re = /(\*\*([^*]+)\*\*|`([^`]+)`|\*([^*\n]+)\*)/g
+  let last = 0
+  let m: RegExpExecArray | null
+  let i = 0
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) nodes.push(text.slice(last, m.index))
+    if (m[2] !== undefined) nodes.push(<strong key={`${keyBase}-b${i}`}>{m[2]}</strong>)
+    else if (m[3] !== undefined)
+      nodes.push(
+        <code key={`${keyBase}-c${i}`} className="rounded bg-slate-200 px-1 font-mono text-[0.85em]">
+          {m[3]}
+        </code>,
+      )
+    else if (m[4] !== undefined) nodes.push(<em key={`${keyBase}-i${i}`}>{m[4]}</em>)
+    last = m.index + m[0].length
+    i += 1
+  }
+  if (last < text.length) nodes.push(text.slice(last))
+  return nodes
+}
+
+function AgentMarkdown({ text }: { text: string }) {
+  const blocks: ReactNode[] = []
+  let list: { ordered: boolean; items: string[] } | null = null
+  const flush = (key: string) => {
+    if (!list) return
+    const items = list.items.map((it, j) => <li key={`${key}-li${j}`}>{renderInline(it, `${key}-${j}`)}</li>)
+    blocks.push(
+      list.ordered ? (
+        <ol key={key} className="ml-4 list-decimal space-y-0.5">{items}</ol>
+      ) : (
+        <ul key={key} className="ml-4 list-disc space-y-0.5">{items}</ul>
+      ),
+    )
+    list = null
+  }
+  const lines = text.split('\n')
+  lines.forEach((line, idx) => {
+    const ol = /^\s*\d+\.\s+(.*)/.exec(line)
+    const ul = /^\s*[-*]\s+(.*)/.exec(line)
+    if (ol) {
+      if (!list || !list.ordered) flush(`l${idx}`)
+      ;(list ??= { ordered: true, items: [] }).items.push(ol[1])
+    } else if (ul) {
+      if (!list || list.ordered) flush(`l${idx}`)
+      ;(list ??= { ordered: false, items: [] }).items.push(ul[1])
+    } else {
+      flush(`l${idx}`)
+      if (line.trim() !== '') blocks.push(<p key={`p${idx}`}>{renderInline(line, `p${idx}`)}</p>)
+    }
+  })
+  flush('end')
+  return <div className="space-y-1.5">{blocks}</div>
+}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -239,7 +299,12 @@ export function ChatPanel() {
                 <path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z" />
               </svg>
             )}
-            {msg.text && <div className="whitespace-pre-wrap">{msg.text}</div>}
+            {msg.text &&
+              (msg.role === 'agent' && !msg.toolName ? (
+                <AgentMarkdown text={msg.text} />
+              ) : (
+                <div className="whitespace-pre-wrap">{msg.text}</div>
+              ))}
             {msg.attachments && msg.attachments.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {msg.attachments.map((a, i) =>

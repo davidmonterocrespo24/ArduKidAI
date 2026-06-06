@@ -750,8 +750,10 @@ TOOLS: dict[str, ToolSpec] = {
         description=(
             "Semantic search over the seeded example circuits. Use this when the kid asks "
             "for inspiration ('find me something with a motor') or when you need a "
-            "reference for an unfamiliar project. Backed by MongoDB Atlas Vector Search "
-            "through the MongoDB MCP server."
+            "reference for an unfamiliar project. Results are INSPIRATION ONLY: their ids "
+            "(like 'ex-013') are NOT saved projects - never pass them to load_project; build "
+            "the circuit yourself with add_components/wire_many/set_program. Backed by "
+            "MongoDB Atlas Vector Search through the MongoDB MCP server."
         ),
         parameters_schema={
             "type": "object",
