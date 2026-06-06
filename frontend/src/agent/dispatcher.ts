@@ -14,6 +14,8 @@ type ToolResult = {
   stderr?: string
   project?: unknown
   length?: number
+  blockly_xml?: string
+  errors?: Array<{ error?: string }>
 }
 
 export function applyToolCall(name: string, args: Record<string, unknown>): void {
@@ -38,10 +40,18 @@ export function applyToolResult(name: string, result: ToolResult): void {
   // Only our canvas/data tools return {ok: false} on failure. ADK skill tools
   // (list_skills, load_skill, ...) return other shapes and must not be flagged.
   if (result && typeof result === 'object' && result.ok === false) {
+    // Batch tools (add_components / wire_many) report per-item failures in
+    // `errors[]`; fall back to those so a partial failure never shows a blank
+    // "unknown error".
+    const detail =
+      result.error ??
+      (Array.isArray(result.errors) && result.errors.length > 0
+        ? result.errors.map((e) => e?.error ?? 'failed').join('; ')
+        : 'unknown error')
     store.appendChatMessage({
       id: crypto.randomUUID(),
       role: 'system',
-      text: `That step did not work (${result.error ?? 'unknown error'}). Let me try another way.`,
+      text: `That step did not work (${detail}). Let me try another way.`,
     })
     return
   }
@@ -81,6 +91,14 @@ export function applyToolResult(name: string, result: ToolResult): void {
     case 'wire_many':
       if (Array.isArray(result.wires)) {
         for (const w of result.wires) store.addWire(w)
+      }
+      break
+    case 'set_program':
+    case 'edit_program':
+      // Neither has XML in its call args (unlike set_blocks); the backend builds
+      // the XML and returns it here. Load that into the editor.
+      if (typeof result.blockly_xml === 'string' && result.blockly_xml) {
+        store.setBlocklyXml(result.blockly_xml)
       }
       break
     case 'compile_and_run':
@@ -166,8 +184,11 @@ function describeToolCall(name: string, args: Record<string, unknown>): string |
       const n = Array.isArray(args.wires) ? args.wires.length : 0
       return n > 1 ? `Connecting ${n} wires.` : 'Connecting the wires.'
     }
+    case 'set_program':
     case 'set_blocks':
       return 'Writing the program.'
+    case 'edit_program':
+      return 'Updating the program.'
     case 'compile_and_run':
       return 'Compiling the code and starting the simulation.'
     case 'validate_circuit':

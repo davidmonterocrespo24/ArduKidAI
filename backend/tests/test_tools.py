@@ -67,6 +67,33 @@ async def test_add_components_batch_assigns_non_overlapping_positions(session):
     assert len(positions) == 3  # no two parts share a spot
 
 
+async def test_add_components_partial_failure_has_top_level_message(session):
+    # The exact case that surfaced as "unknown error" in chat: a bad type id
+    # among good ones must still yield a readable top-level `error`.
+    res = await dispatch(
+        "add_components",
+        session,
+        {"components": [{"type": "led"}, {"type": "resistor"}, {"type": "seven-segment"}]},
+    )
+    assert res["ok"] is False
+    assert len(res["components"]) == 2  # the two valid parts were added
+    assert res.get("error")  # not blank -> frontend no longer shows "unknown error"
+    assert "seven-segment" in res["error"]
+    assert "#2" in res["error"]  # names the offending index
+
+
+async def test_wire_many_partial_failure_has_top_level_message(session):
+    await dispatch("add_component", session, {"type": "led"})
+    res = await dispatch(
+        "wire_many",
+        session,
+        {"wires": [{"from_pin": "L1.anode", "to_pin": "UNO.D13"}, {"from_pin": "L9.anode", "to_pin": "UNO.GND"}]},
+    )
+    assert res["ok"] is False
+    assert len(res["wires"]) == 1
+    assert res.get("error") and "L9.anode" in res["error"]
+
+
 async def test_add_components_reports_uno_per_item(session):
     res = await dispatch(
         "add_components", session, {"components": [{"type": "uno"}, {"type": "led"}]}
@@ -130,6 +157,122 @@ async def test_save_project_persists_state(session):
     assert len(saved["project"]["circuit"]["components"]) == 1
 
 
+async def test_set_program_builds_and_stores_xml(session):
+    res = await dispatch(
+        "set_program",
+        session,
+        {
+            "setup": [{"op": "pin_mode", "pin": "13", "mode": "OUTPUT"}],
+            "loop": [
+                {"op": "digital_write", "pin": "13", "value": "HIGH"},
+                {"op": "delay", "ms": 500},
+                {"op": "digital_write", "pin": "13", "value": "LOW"},
+                {"op": "delay", "ms": 500},
+            ],
+        },
+    )
+    assert res["ok"] is True
+    # The built XML is returned so the frontend can load it, and persisted.
+    assert res["blockly_xml"] == session.blockly_xml
+    assert "ardukid_setup" in session.blockly_xml
+    assert "ardukid_loop" in session.blockly_xml
+
+
+async def test_set_program_reports_bad_step(session):
+    res = await dispatch(
+        "set_program",
+        session,
+        {"setup": [], "loop": [{"op": "digital_write", "value": "HIGH"}]},  # missing pin
+    )
+    assert res["ok"] is False
+    assert "loop[0]" in res["error"]
+    assert "pin" in res["error"]
+
+
+async def _blink(session):
+    return await dispatch(
+        "set_program",
+        session,
+        {
+            "setup": [{"op": "pin_mode", "pin": "13", "mode": "OUTPUT"}],
+            "loop": [
+                {"op": "digital_write", "pin": "13", "value": "HIGH"},
+                {"op": "delay", "ms": 500},
+                {"op": "digital_write", "pin": "13", "value": "LOW"},
+                {"op": "delay", "ms": 500},
+            ],
+        },
+    )
+
+
+async def test_edit_program_patches_one_step(session):
+    await _blink(session)
+    res = await dispatch(
+        "edit_program",
+        session,
+        {
+            "edits": [
+                {
+                    "list": "loop",
+                    "action": "replace",
+                    "anchor": [
+                        {"op": "digital_write", "pin": "13", "value": "HIGH"},
+                        {"op": "delay"},
+                    ],
+                    "steps": [
+                        {"op": "digital_write", "pin": "13", "value": "HIGH"},
+                        {"op": "delay", "ms": 2000},
+                    ],
+                }
+            ]
+        },
+    )
+    assert res["ok"] is True
+    # Only the first delay changed; the rest of the program is untouched.
+    assert session.program["loop"][1] == {"op": "delay", "ms": 2000}
+    assert session.program["loop"][3] == {"op": "delay", "ms": 500}
+    assert res["blockly_xml"] == session.blockly_xml
+
+
+async def test_edit_program_append_and_ambiguous_anchor(session):
+    await _blink(session)
+    appended = await dispatch(
+        "edit_program",
+        session,
+        {"edits": [{"list": "loop", "action": "append", "steps": [{"op": "no_tone", "pin": "8"}]}]},
+    )
+    assert appended["ok"] is True
+    assert session.program["loop"][-1] == {"op": "no_tone", "pin": "8"}
+
+    # A bare delay anchor is ambiguous (two delays) -> actionable error, no change.
+    ambiguous = await dispatch(
+        "edit_program",
+        session,
+        {"edits": [{"list": "loop", "action": "delete", "anchor": [{"op": "delay"}]}]},
+    )
+    assert ambiguous["ok"] is False
+    assert "unique" in ambiguous["error"]
+
+
+async def test_edit_program_without_set_program_first(session):
+    res = await dispatch(
+        "edit_program",
+        session,
+        {"edits": [{"list": "loop", "action": "append", "steps": [{"op": "delay", "ms": 1}]}]},
+    )
+    assert res["ok"] is False
+    assert "set_program" in res["error"]
+
+
+async def test_set_blocks_clears_editable_program(session):
+    await _blink(session)
+    assert session.program is not None
+    xml = '<xml xmlns="https://developers.google.com/blockly/xml">' \
+          '<block type="ardukid_setup"></block><block type="ardukid_loop"></block></xml>'
+    await dispatch("set_blocks", session, {"blockly_xml": xml})
+    assert session.program is None
+
+
 async def test_unknown_tool_is_rejected(session):
     result = await dispatch("does_not_exist", session, {})
     assert result["ok"] is False
@@ -144,6 +287,8 @@ def test_canvas_and_mcp_tools_registered():
         "remove_component",
         "wire",
         "wire_many",
+        "set_program",
+        "edit_program",
         "set_blocks",
         "compile_and_run",
         "save_project",

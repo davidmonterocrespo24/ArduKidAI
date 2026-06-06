@@ -25,6 +25,11 @@ from typing import Any
 from ..boards import board_ids, get_board
 from ..schemas import ComponentInstance, Wire
 from ..services import catalog, projects_store
+from ..services.blockly_build import (
+    BlocklyBuildError,
+    apply_program_edits,
+    program_to_blockly_xml,
+)
 from ..services.compiler import compile_cpp
 from ..services.examples import search_similar
 from ..services.knowledge import search_docs
@@ -62,7 +67,11 @@ async def _create_component(
         )
     component = await catalog.get_component(component_type)
     if component is None:
-        return None, f"unknown component type: {component_type}"
+        return None, (
+            f"unknown component type '{component_type}'. Use the exact type id from the "
+            "component's skill or from list_available_components (e.g. led, resistor, buzzer, "
+            "servo, seg7, lcd1602, ssd1306, rgbLed) - not a free-text name."
+        )
     cid = session.next_component_id(component_type)
     px, py = _layout_position(_peripheral_count(session))
     merged_props = {**component.get("default_props", {}), **(props or {})}
@@ -80,6 +89,22 @@ async def add_component_handler(
     if instance is None:
         return {"ok": False, "error": err or "could not add component"}
     return {"ok": True, "component": instance.model_dump()}
+
+
+def _summarize_item_errors(errors: list[dict[str, Any]], total: int, noun: str) -> str:
+    """A one-line summary of a batch tool's per-item failures, so a partial
+    failure never surfaces as a blank/`ok:false`-with-no-message to the agent or
+    the chat. Names the offending index plus its type / endpoints."""
+    parts: list[str] = []
+    for e in errors:
+        label = f"#{e['index']}"
+        if e.get("type"):
+            label += f" ({e['type']})"
+        elif e.get("from_pin") or e.get("to_pin"):
+            label += f" ({e.get('from_pin')} -> {e.get('to_pin')})"
+        parts.append(f"{label}: {e.get('error')}")
+    plural = "" if total == 1 else "s"
+    return f"{len(errors)} of {total} {noun}{plural} could not be added: " + "; ".join(parts)
 
 
 async def add_components_handler(
@@ -100,7 +125,10 @@ async def add_components_handler(
             errors.append({"index": idx, "type": ctype, "error": err})
             continue
         created.append(instance.model_dump())
-    return {"ok": len(errors) == 0, "components": created, "errors": errors}
+    result: dict[str, Any] = {"ok": len(errors) == 0, "components": created, "errors": errors}
+    if errors:
+        result["error"] = _summarize_item_errors(errors, len(components or []), "part")
+    return result
 
 
 async def remove_component_handler(session: SessionState, id: str) -> dict[str, Any]:
@@ -214,7 +242,10 @@ async def wire_many_handler(
         wire = Wire(from_pin=resolved_from or "", to_pin=resolved_to or "")
         session.wires.append(wire)
         created.append(wire.model_dump())
-    return {"ok": len(errors) == 0, "wires": created, "errors": errors}
+    result: dict[str, Any] = {"ok": len(errors) == 0, "wires": created, "errors": errors}
+    if errors:
+        result["error"] = _summarize_item_errors(errors, len(wires or []), "wire")
+    return result
 
 
 def _validate_blockly_xml(xml: str) -> str | None:
@@ -251,7 +282,72 @@ async def set_blocks_handler(session: SessionState, blockly_xml: str) -> dict[st
     if error:
         return {"ok": False, "error": error}
     session.blockly_xml = blockly_xml
+    # Raw XML has no structured step list, so edit_program cannot patch it.
+    session.program = None
     return {"ok": True, "length": len(blockly_xml)}
+
+
+def _store_program(
+    session: SessionState, setup: list[Any], loop: list[Any]
+) -> dict[str, Any]:
+    """Build + validate the XML for a structured program, persist both, and shape
+    the tool result. Shared by set_program and edit_program."""
+    try:
+        blockly_xml = program_to_blockly_xml(setup, loop)
+    except BlocklyBuildError as exc:
+        return {"ok": False, "error": str(exc)}
+    # The builder is trusted, but validate anyway so any future op bug surfaces
+    # as an actionable error rather than an empty editor.
+    error = _validate_blockly_xml(blockly_xml)
+    if error:
+        return {"ok": False, "error": error}
+    session.blockly_xml = blockly_xml
+    session.program = {"setup": setup, "loop": loop}
+    return {
+        "ok": True,
+        "length": len(blockly_xml),
+        "blockly_xml": blockly_xml,
+        "program": session.program,
+    }
+
+
+async def set_program_handler(
+    session: SessionState,
+    setup: list[Any] | None = None,
+    loop: list[Any] | None = None,
+) -> dict[str, Any]:
+    """Build the Blockly program from a flat list of steps instead of raw XML.
+
+    The deterministic builder always emits well-formed, perfectly nested XML, so
+    the agent never has to balance `<next>`/`</block>` tags by hand. The built
+    XML is returned in `blockly_xml` so the frontend can load it into the editor
+    (set_program has no XML in its call args, unlike set_blocks)."""
+    return _store_program(session, list(setup or []), list(loop or []))
+
+
+async def edit_program_handler(
+    session: SessionState, edits: list[dict[str, Any]] | None = None
+) -> dict[str, Any]:
+    """Change PART of the current program instead of rewriting all of it.
+
+    Targets the structured step list from the last set_program. Each edit finds a
+    unique run of steps (its `anchor`) and replaces / inserts around / deletes it.
+    Rebuilds and returns the XML the same way set_program does."""
+    if session.program is None:
+        return {
+            "ok": False,
+            "error": (
+                "no editable program yet. Write it once with set_program first; "
+                "edit_program can only patch a program made with set_program."
+            ),
+        }
+    try:
+        new_setup, new_loop = apply_program_edits(
+            session.program.get("setup", []), session.program.get("loop", []), edits
+        )
+    except BlocklyBuildError as exc:
+        return {"ok": False, "error": str(exc)}
+    return _store_program(session, new_setup, new_loop)
 
 
 async def compile_and_run_handler(session: SessionState) -> dict[str, Any]:
@@ -504,9 +600,85 @@ TOOLS: dict[str, ToolSpec] = {
         },
         handler=wire_many_handler,
     ),
+    "set_program": ToolSpec(
+        name="set_program",
+        description=(
+            "Write the kid's program from a flat list of simple steps. PREFER THIS over "
+            "set_blocks - the backend builds the Blockly XML for you, so the program always "
+            "loads on the first try (no hand-written nested XML to get wrong). Pass `setup` "
+            "(steps that run once) and `loop` (steps that repeat). Each step is an object "
+            "with an `op`, e.g. {\"op\":\"digital_write\",\"pin\":\"13\",\"value\":\"HIGH\"} "
+            "or {\"op\":\"delay\",\"ms\":1000}. Control steps (repeat/if/while) carry a "
+            "nested `body` list."
+        ),
+        parameters_schema={
+            "type": "object",
+            "properties": {
+                "setup": {
+                    "type": "array",
+                    "description": "Steps that run once at start (e.g. pin_mode for each pin).",
+                    "items": {"type": "object"},
+                },
+                "loop": {
+                    "type": "array",
+                    "description": "Steps that repeat forever.",
+                    "items": {"type": "object"},
+                },
+            },
+            "required": ["setup", "loop"],
+        },
+        handler=set_program_handler,
+    ),
+    "edit_program": ToolSpec(
+        name="edit_program",
+        description=(
+            "Change PART of the existing program instead of rewriting it with set_program. "
+            "Use this for a small tweak the child asks for (a different delay, one more step, "
+            "removing a step). Pass `edits`: a list where each edit has `list` (\"setup\" or "
+            "\"loop\"), `action` (replace | insert_before | insert_after | delete | append | "
+            "prepend), an `anchor` (a short run of steps that occurs exactly once, identifying "
+            "WHERE to edit - add more steps to it if it is not unique), and `steps` (the new "
+            "steps, for every action except delete). append/prepend need no anchor. Steps use "
+            "the same op format as set_program."
+        ),
+        parameters_schema={
+            "type": "object",
+            "properties": {
+                "edits": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "list": {"type": "string", "enum": ["setup", "loop"]},
+                            "action": {
+                                "type": "string",
+                                "enum": [
+                                    "replace",
+                                    "insert_before",
+                                    "insert_after",
+                                    "delete",
+                                    "append",
+                                    "prepend",
+                                ],
+                            },
+                            "anchor": {"type": "array", "items": {"type": "object"}},
+                            "steps": {"type": "array", "items": {"type": "object"}},
+                        },
+                        "required": ["list", "action"],
+                    },
+                },
+            },
+            "required": ["edits"],
+        },
+        handler=edit_program_handler,
+    ),
     "set_blocks": ToolSpec(
         name="set_blocks",
-        description="Replace the program in the Blockly editor with the given XML.",
+        description=(
+            "Replace the program with raw Blockly XML. Use set_program instead for normal "
+            "programs; reach for set_blocks only when you need a block set_program does not "
+            "support."
+        ),
         parameters_schema={
             "type": "object",
             "properties": {"blockly_xml": {"type": "string"}},

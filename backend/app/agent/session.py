@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from ..boards import DEFAULT_BOARD
 from ..schemas import CircuitState, ComponentInstance, Wire
@@ -59,6 +59,11 @@ class SessionState:
     wires: list[Wire] = field(default_factory=list)
     blockly_xml: str = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>'
     cpp_code: str = ""
+    # The structured program (flat step lists) when it was last written with
+    # set_program. Kept so edit_program can change parts of it without the agent
+    # re-sending the whole thing. None means the program was set as raw XML (or
+    # loaded from a project), so there is no structured form to patch.
+    program: dict[str, list[Any]] | None = None
     _counters: dict[str, int] = field(default_factory=lambda: defaultdict(int))
 
     _PREFIX: ClassVar[dict[str, str]] = _PREFIX
@@ -73,6 +78,9 @@ class SessionState:
         self.wires = list(state.wires)
         self.blockly_xml = state.blockly_xml
         self.cpp_code = state.cpp_code
+        # A loaded project carries XML, not the structured step list, so there is
+        # nothing for edit_program to patch until set_program runs again.
+        self.program = None
         # Reset counters so we do not reuse IDs already in the frontend. We
         # require IDs to match the canonical "PREFIX + NUMBER" form (e.g. L1,
         # BZ3) so an exotic id like "LED12V2" cannot poison the counter.

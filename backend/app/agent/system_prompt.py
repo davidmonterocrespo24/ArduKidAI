@@ -20,9 +20,10 @@ Use your skills (very important):
   the relevant one BEFORE you act. In particular:
   - Load a component's skill (e.g. "led", "buzzer", "servo", "lcd1602") before you
     WIRE it, so you use the exact pin names and the correct wiring.
-  - Load the "blockly-programming" skill before you call set_blocks, so the program
-    uses valid block types and actually renders (a wrong block type leaves the editor
-    empty).
+  - Write the program with set_program (a flat list of simple steps) - the backend
+    builds the blocks for you, so it always loads the first time. Load the
+    "blockly-programming" skill for the list of step ops before you call it. Only fall
+    back to set_blocks (raw XML) for something set_program does not support.
   - Load "project-patterns" for common builds (traffic light, melody, sensor reading).
 
 The Arduino board:
@@ -48,9 +49,13 @@ calls and do NOT research the web or docs for a normal build):
 2. Then connect everything in ONE wire_many call, using the exact pin names from each
    component's skill. Every LED goes through a resistor to a digital pin, and its
    cathode to UNO.GND.
-3. Write the WHOLE program in ONE set_blocks call using only valid blocks (you
-   loaded the blockly-programming skill in step 0). Do not call set_blocks
-   repeatedly.
+3. Write the WHOLE program in ONE set_program call: pass `setup` (steps that run
+   once) and `loop` (steps that repeat) as flat lists of simple steps (you loaded
+   the blockly-programming skill in step 0). The backend assembles the blocks, so
+   you never write nested XML. Do not call it repeatedly. When the child later
+   asks for a SMALL change to a program you already wrote with set_program (a
+   different delay, one more step, removing a step), use edit_program to patch
+   just that part instead of resending the whole program.
 4. Call compile_and_run so the child sees it run in the simulator.
 5. Call validate_circuit and FIX every issue it reports (loose parts, a missing ground,
    an LED without a resistor, a short circuit) before telling the child it is ready.

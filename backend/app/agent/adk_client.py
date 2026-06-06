@@ -27,6 +27,7 @@ from google.adk.agents.run_config import RunConfig
 from google.adk.tools.tool_context import ToolContext
 
 from ..config import get_settings
+from ..services.catalog import CATALOG_TYPES
 from .runner import SSEEvent
 from .session import SessionState, get_or_create_session
 from .system_prompt import SYSTEM_PROMPT
@@ -80,6 +81,19 @@ async def add_components(
     return await _run("add_components", tool_context, components=components)
 
 
+# Tell the model the EXACT component type ids (e.g. "seg7", not "seven-segment").
+# Built from the catalog so the list never drifts. ADK puts the docstring in the
+# function declaration Gemini sees, where a list[dict] param cannot carry an enum,
+# so a wrong-type guess is what caused an add_components partial failure before.
+_VALID_TYPE_IDS = ", ".join(CATALOG_TYPES)
+add_component.__doc__ = (add_component.__doc__ or "") + (
+    f"\n\n    The type must be one of these EXACT ids: {_VALID_TYPE_IDS}."
+)
+add_components.__doc__ = (add_components.__doc__ or "") + (
+    f"\n\n    Each item's type must be one of these EXACT ids: {_VALID_TYPE_IDS}."
+)
+
+
 async def remove_component(id: str, *, tool_context: ToolContext) -> dict[str, Any]:
     """Remove a component by id. Wires connected to it are removed too.
 
@@ -111,8 +125,66 @@ async def wire_many(
     return await _run("wire_many", tool_context, wires=wires)
 
 
+async def set_program(
+    setup: list[dict[str, Any]],
+    loop: list[dict[str, Any]],
+    *,
+    tool_context: ToolContext,
+) -> dict[str, Any]:
+    """Write the kid's program from a flat list of simple steps. PREFER THIS over
+    set_blocks: the backend builds the Blockly XML for you, so the program always
+    loads on the first try (no nested XML to balance by hand).
+
+    Each step is an object with an "op". Statement ops:
+      {"op": "pin_mode", "pin": "13", "mode": "OUTPUT"}
+      {"op": "digital_write", "pin": "13", "value": "HIGH"}   (value: HIGH|LOW)
+      {"op": "analog_write", "pin": "9", "value": 128}
+      {"op": "delay", "ms": 1000}
+      {"op": "tone", "pin": "8", "freq": 440, "duration": 200}
+      {"op": "no_tone", "pin": "8"}
+      {"op": "servo_attach", "pin": "9"} / {"op": "servo_write", "pin": "9", "angle": 90}
+      {"op": "serial_begin", "baud": 9600}
+      {"op": "serial_println", "text": "hello"}
+      {"op": "repeat", "times": 3, "body": [ ...steps... ]}
+      {"op": "if", "cond": <expr>, "body": [ ... ]}
+      {"op": "while", "mode": "WHILE", "cond": <expr>, "body": [ ... ]}
+    An <expr> for cond/value is itself an op, e.g.
+      {"op": "compare", "cmp": "EQ", "a": {"op": "analog_read", "pin": "A0"}, "b": 500}
+      {"op": "digital_read", "pin": "2"}  (true while the pin reads HIGH)
+
+    Args:
+        setup: steps that run once at start (usually a pin_mode per output pin).
+        loop: steps that repeat forever.
+    """
+    return await _run("set_program", tool_context, setup=setup, loop=loop)
+
+
+async def edit_program(
+    edits: list[dict[str, Any]], *, tool_context: ToolContext
+) -> dict[str, Any]:
+    """Change PART of the existing program instead of rewriting it with set_program.
+    Use this for a small change the child asks for (a different delay, one extra
+    step, removing a step) so you do not resend the whole program.
+
+    Each edit finds a unique run of steps and changes it:
+      {"list": "loop", "action": "replace",
+       "anchor": [{"op": "delay", "ms": 3000}],
+       "steps":  [{"op": "delay", "ms": 5000}]}
+    action is replace | insert_before | insert_after | delete | append | prepend.
+    The `anchor` is a short run of steps (same op format as set_program) that must
+    occur EXACTLY ONCE - add more steps to it if it is not unique. `steps` is the
+    new content for every action except delete; append/prepend need no anchor.
+
+    Args:
+        edits: the list of edits to apply, in order.
+    """
+    return await _run("edit_program", tool_context, edits=edits)
+
+
 async def set_blocks(blockly_xml: str, *, tool_context: ToolContext) -> dict[str, Any]:
-    """Replace the program in the Blockly editor with the given XML.
+    """Replace the program with raw Blockly XML. Use set_program instead for normal
+    programs; reach for set_blocks only when you need a block set_program does not
+    support.
 
     Args:
         blockly_xml: the full Blockly workspace XML.
@@ -187,6 +259,8 @@ _TOOLS = [
     remove_component,
     wire,
     wire_many,
+    set_program,
+    edit_program,
     set_blocks,
     compile_and_run,
     save_project,

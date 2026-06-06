@@ -7,6 +7,9 @@ description: Use whenever the circuit shows a digit on a 7-segment display. Cove
 
 Shows a digit using seven segments `A`-`G` plus a decimal point `DP`.
 
+Add it with `add_component(type="seg7")` (the exact type id is `seg7`, not
+"seven-segment").
+
 ## Pins (use these exact names in wire())
 
 - `A`, `B`, `C`, `D`, `E`, `F`, `G` - each segment; wire each to its own digital pin
