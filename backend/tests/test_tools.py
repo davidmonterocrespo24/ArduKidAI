@@ -273,6 +273,18 @@ async def test_set_blocks_clears_editable_program(session):
     assert session.program is None
 
 
+async def test_describe_circuit_snapshots_canvas(session):
+    await dispatch("add_components", session, {"components": [{"type": "led"}, {"type": "resistor"}]})
+    await dispatch("wire", session, {"from_pin": "L1.anode", "to_pin": "UNO.D13"})
+    res = await dispatch("describe_circuit", session, {})
+    assert res["ok"] is True
+    assert res["board"] == "UNO"
+    types = {c["type"] for c in res["components"]}
+    assert {"led", "resistor"}.issubset(types)
+    assert any(w["from_pin"] == "L1.anode" for w in res["wires"])
+    assert res["has_program"] is False
+
+
 async def test_unknown_tool_is_rejected(session):
     result = await dispatch("does_not_exist", session, {})
     assert result["ok"] is False
@@ -293,6 +305,7 @@ def test_canvas_and_mcp_tools_registered():
         "compile_and_run",
         "save_project",
         "validate_circuit",
+        "describe_circuit",
     }
     mcp_shaped_tools = {
         "find_similar_example",

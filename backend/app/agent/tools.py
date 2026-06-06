@@ -444,6 +444,28 @@ async def validate_circuit_handler(session: SessionState) -> dict[str, Any]:
     return {"ok": True, "is_valid": len(issues) == 0, "issues": issues}
 
 
+async def describe_circuit_handler(session: SessionState) -> dict[str, Any]:
+    """Read-only snapshot of what is currently on the canvas, so the agent can
+    explain it, quiz the child about it, or review it. The frontend sends the
+    live circuit_state with every turn, so this reflects whatever the child sees
+    (whether the agent or the child built it)."""
+    board = get_board(session.board)
+    components = [
+        {"id": c.id, "type": c.type, "props": c.props}
+        for c in session.components.values()
+    ]
+    wires = [{"from_pin": w.from_pin, "to_pin": w.to_pin} for w in session.wires]
+    has_program = bool(session.cpp_code.strip()) or "ardukid_" in session.blockly_xml
+    return {
+        "ok": True,
+        "board": board.canvas_id,
+        "components": components,
+        "wires": wires,
+        "has_program": has_program,
+        "cpp_code": session.cpp_code or "",
+    }
+
+
 # ---------- MongoDB-MCP-shaped tool handlers ----------
 
 
@@ -712,6 +734,16 @@ TOOLS: dict[str, ToolSpec] = {
         ),
         parameters_schema={"type": "object", "properties": {}},
         handler=validate_circuit_handler,
+    ),
+    "describe_circuit": ToolSpec(
+        name="describe_circuit",
+        description=(
+            "Read-only snapshot of the current canvas (board, components, wires, and whether a "
+            "program exists). Call this before you explain the circuit to the child, quiz them "
+            "about it, or review what they built, so you talk about the real parts and pins."
+        ),
+        parameters_schema={"type": "object", "properties": {}},
+        handler=describe_circuit_handler,
     ),
     "find_similar_example": ToolSpec(
         name="find_similar_example",

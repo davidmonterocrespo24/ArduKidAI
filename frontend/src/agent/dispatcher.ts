@@ -193,6 +193,8 @@ function describeToolCall(name: string, args: Record<string, unknown>): string |
       return 'Compiling the code and starting the simulation.'
     case 'validate_circuit':
       return 'Checking the circuit for mistakes.'
+    case 'describe_circuit':
+      return 'Looking at your circuit.'
     case 'save_project':
       return `Saving your project${typeof args.name === 'string' ? ` as "${args.name}"` : ''}.`
     case 'find_similar_example':

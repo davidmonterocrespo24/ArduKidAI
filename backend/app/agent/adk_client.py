@@ -252,6 +252,14 @@ async def validate_circuit(tool_context: ToolContext) -> dict[str, Any]:
     return await _run("validate_circuit", tool_context)
 
 
+async def describe_circuit(tool_context: ToolContext) -> dict[str, Any]:
+    """Read-only snapshot of what is on the canvas right now (board, components,
+    wires, and whether a program exists). Call this before you explain the circuit
+    to the child, quiz them about it, or review it, so you describe the real parts.
+    """
+    return await _run("describe_circuit", tool_context)
+
+
 _TOOLS = [
     list_available_components,
     add_component,
@@ -265,6 +273,7 @@ _TOOLS = [
     compile_and_run,
     save_project,
     validate_circuit,
+    describe_circuit,
     find_similar_example,
     list_saved_projects,
     load_project,

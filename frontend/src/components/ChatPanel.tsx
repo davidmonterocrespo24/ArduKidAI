@@ -19,6 +19,26 @@ const SUGGESTIONS = [
   'Play a melody with the buzzer',
 ]
 
+// Tutor quick-actions: always available, so the child can learn from what is on
+// the canvas, not just build. The agent reads the circuit (describe_circuit) and
+// teaches with grounded, cited facts (see the system prompt's teaching policy).
+const TUTOR_ACTIONS: { label: string; prompt: string }[] = [
+  {
+    label: 'Explain my circuit',
+    prompt: 'Explain my current circuit simply: what each part does and how it works together.',
+  },
+  {
+    label: 'Quiz me',
+    prompt:
+      'Ask me one short, friendly quiz question about my current circuit or how it works, then wait for my answer.',
+  },
+  {
+    label: 'Why does it work?',
+    prompt:
+      'Teach me the main idea behind how my current project works, in a simple way, and end with a question to check I understood.',
+  },
+]
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -273,6 +293,21 @@ export function ChatPanel() {
           ))}
         </div>
       )}
+
+      <div className="flex shrink-0 flex-wrap gap-1.5 border-t border-slate-200 px-2 pt-2">
+        {TUTOR_ACTIONS.map((a) => (
+          <button
+            key={a.label}
+            type="button"
+            onClick={() => void submit(a.prompt)}
+            disabled={isStreaming}
+            title="Ask the tutor"
+            className="rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-[11px] font-medium text-brand-700 transition hover:bg-brand-100 disabled:opacity-50"
+          >
+            {a.label}
+          </button>
+        ))}
+      </div>
 
       <form
         className="flex shrink-0 items-end gap-2 border-t border-slate-200 p-2"
