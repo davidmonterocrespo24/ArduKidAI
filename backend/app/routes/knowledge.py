@@ -78,6 +78,29 @@ async def ingest_pdf(
     return IngestResult(ok=count > 0, source=label, chunks=count)
 
 
+@router.post("/document", response_model=IngestResult)
+async def ingest_document(
+    file: Annotated[UploadFile, File()],
+    source: Annotated[str | None, Form()] = None,
+) -> IngestResult:
+    """Ingest a Word/PowerPoint/Excel/HTML/EPUB/CSV document (converted to
+    Markdown via markitdown). Use /pdf for PDFs and /image for images."""
+    from ..services.doc_extract import is_supported
+
+    data = await file.read()
+    if len(data) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(413, "file too large")
+    name = file.filename or "document"
+    if not is_supported(name):
+        raise HTTPException(400, f"unsupported document type: {name}. Use /pdf or /image for those.")
+    label = source or name
+    try:
+        count = await kb.index_document_bytes(data, filename=name, source=label)
+    except Exception as exc:
+        raise HTTPException(400, f"could not read document: {exc}") from exc
+    return IngestResult(ok=count > 0, source=label, chunks=count)
+
+
 @router.post("/image", response_model=IngestResult)
 async def ingest_image(
     file: Annotated[UploadFile, File()],

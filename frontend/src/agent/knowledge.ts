@@ -51,6 +51,15 @@ export async function ingestImage(file: File, source?: string): Promise<IngestRe
   return postForm<IngestResult>('/api/knowledge/image', form)
 }
 
+// Word / PowerPoint / Excel / HTML / EPUB / CSV, converted to Markdown on the
+// backend (markitdown) and embedded with Gemini like any other source.
+export async function ingestDocument(file: File, source?: string): Promise<IngestResult> {
+  const form = new FormData()
+  form.append('file', file)
+  if (source) form.append('source', source)
+  return postForm<IngestResult>('/api/knowledge/document', form)
+}
+
 export async function deleteSource(source: string): Promise<void> {
   const res = await fetch(apiUrl(`/api/knowledge/${encodeURIComponent(source)}`), {
     method: 'DELETE',

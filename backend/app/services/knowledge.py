@@ -121,6 +121,18 @@ async def index_plain_text(text: str, source: str) -> int:
     return await _index_chunks(source, chunks)
 
 
+async def index_document_bytes(data: bytes, filename: str, source: str) -> int:
+    """Index a Word/PowerPoint/Excel/HTML/EPUB/... document by converting it to
+    Markdown with markitdown, then chunking like any other text. PDFs and images
+    have their own (page-aware / vision) paths."""
+    from .doc_extract import extract_markdown
+
+    text = extract_markdown(data, filename)
+    if not text.strip():
+        return 0
+    return await _index_chunks(source, chunk_plain_text(text))
+
+
 async def index_url(url: str, source: str | None = None) -> int:
     """Fetch a web page, extract its readable text, and index it.
 

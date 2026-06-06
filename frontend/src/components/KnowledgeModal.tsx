@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   deleteSource,
+  ingestDocument,
   ingestImage,
   ingestPdf,
   ingestText,
@@ -44,6 +45,7 @@ export function KnowledgeModal({ open, onClose }: Props) {
 
   const pdfInput = useRef<HTMLInputElement>(null)
   const imageInput = useRef<HTMLInputElement>(null)
+  const docInput = useRef<HTMLInputElement>(null)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -115,6 +117,12 @@ export function KnowledgeModal({ open, onClose }: Props) {
     if (file) await run(file.name, () => ingestImage(file))
   }
 
+  async function onPickDoc(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (file) await run(file.name, () => ingestDocument(file))
+  }
+
   async function onDelete(source: string) {
     setBusy(true)
     setError(null)
@@ -147,7 +155,7 @@ export function KnowledgeModal({ open, onClose }: Props) {
           <div>
             <h2 className="text-sm font-semibold text-brand-900">Knowledge base</h2>
             <p className="text-xs text-slate-500">
-              Add Arduino references the agent can search. PDFs, web links, notes, and images.
+              Add Arduino references the agent can search. PDFs, documents, web links, notes, and images.
             </p>
           </div>
           <button
@@ -211,6 +219,16 @@ export function KnowledgeModal({ open, onClose }: Props) {
               </button>
               <button
                 type="button"
+                onClick={() => docInput.current?.click()}
+                disabled={busy}
+                title="Word, PowerPoint, Excel, HTML, EPUB, CSV"
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                <IconFileText />
+                Upload doc
+              </button>
+              <button
+                type="button"
                 onClick={() => imageInput.current?.click()}
                 disabled={busy}
                 className="inline-flex flex-1 items-center justify-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
@@ -224,6 +242,13 @@ export function KnowledgeModal({ open, onClose }: Props) {
                 accept="application/pdf,.pdf"
                 className="hidden"
                 onChange={onPickPdf}
+              />
+              <input
+                ref={docInput}
+                type="file"
+                accept=".docx,.pptx,.xlsx,.xls,.html,.htm,.epub,.csv,.json,.xml,.md"
+                className="hidden"
+                onChange={onPickDoc}
               />
               <input
                 ref={imageInput}
