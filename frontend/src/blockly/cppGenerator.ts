@@ -173,6 +173,11 @@ function expressionToCpp(block: Blockly.Block): string {
       }
       return `(${a} ${opMap[op] ?? '+'} ${b})`
     }
+    case 'math_modulo': {
+      const dividend = valueOf(block, 'DIVIDEND', '0')
+      const divisor = valueOf(block, 'DIVISOR', '1')
+      return `(${dividend} % ${divisor})`
+    }
     case 'logic_compare': {
       const a = valueOf(block, 'A', '0')
       const b = valueOf(block, 'B', '0')

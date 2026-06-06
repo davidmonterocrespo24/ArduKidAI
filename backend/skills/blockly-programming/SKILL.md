@@ -38,6 +38,8 @@ Expression ops (use only in a `cond`, or in a numeric `value`/`a`/`b`):
 - `{"op": "analog_read", "pin": "A0"}` - 0..1023
 - `{"op": "compare", "cmp": "EQ", "a": <expr>, "b": 500}` - cmp: EQ NEQ LT LTE GT GTE
 - `{"op": "and", "a": <expr>, "b": <expr>}` / `{"op": "or", ...}`
+- `{"op": "modulo", "a": <expr>, "b": 60}` - remainder a % b (use for clocks: seconds, minutes)
+- `{"op": "add"|"subtract"|"multiply"|"divide", "a": <expr>, "b": <expr>}` - arithmetic
 - `{"op": "number", "value": 5}` / `{"op": "millis"}`
 
 A plain number where a value is expected is fine (e.g. `"b": 500`); you only

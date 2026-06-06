@@ -147,6 +147,30 @@ def test_while_with_compare_condition():
     assert cmp_block.find(f"{NS}value[@name='A']/{NS}block[@type='ardukid_analog_read']") is not None
 
 
+def test_modulo_expression_builds_math_modulo():
+    # The clock case that failed before: seconds = millis()/1000 % 60.
+    xml = program_to_blockly_xml(
+        [{"op": "serial_begin", "baud": 9600}],
+        [
+            {
+                "op": "serial_println",
+                "value": {
+                    "op": "modulo",
+                    "a": {"op": "divide", "a": {"op": "millis"}, "b": 1000},
+                    "b": 60,
+                },
+            }
+        ],
+    )
+    assert _validate_blockly_xml(xml) is None  # math_modulo is now a valid type
+    root = ET.fromstring(xml)
+    mod = root.find(f".//{NS}block[@type='math_modulo']")
+    assert mod is not None
+    assert mod.find(f"{NS}value[@name='DIVIDEND']") is not None
+    assert mod.find(f"{NS}value[@name='DIVISOR']") is not None
+    assert root.find(f".//{NS}block[@type='math_arithmetic']") is not None  # the divide
+
+
 def test_serial_println_text_is_escaped():
     xml = program_to_blockly_xml([], [{"op": "serial_println", "text": "a < b & c"}])
     # Escaped entities keep it well-formed.

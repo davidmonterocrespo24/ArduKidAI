@@ -300,12 +300,22 @@ def _expr(node: dict[str, Any], path: str) -> str:
         a = _value("A", node.get("a"), f"{path}.a", 0)
         b = _value("B", node.get("b"), f"{path}.b", 0)
         return f'<block type="logic_compare">{_field("OP", cmp)}{a}{b}</block>'
+    if op in ("add", "subtract", "multiply", "divide"):
+        ops = {"add": "ADD", "subtract": "MINUS", "multiply": "MULTIPLY", "divide": "DIVIDE"}
+        a = _value("A", node.get("a"), f"{path}.a", 0)
+        b = _value("B", node.get("b"), f"{path}.b", 0)
+        return f'<block type="math_arithmetic">{_field("OP", ops[op])}{a}{b}</block>'
+    if op == "modulo":
+        a = _value("DIVIDEND", node.get("a"), f"{path}.a", 0)
+        b = _value("DIVISOR", node.get("b"), f"{path}.b", 1)
+        return f'<block type="math_modulo">{a}{b}</block>'
     if op in ("and", "or"):
         a = _value("A", node.get("a"), f"{path}.a", node.get("a"))
         b = _value("B", node.get("b"), f"{path}.b", node.get("b"))
         return f'<block type="logic_operation">{_field("OP", op.upper())}{a}{b}</block>'
     raise BlocklyBuildError(
-        f"{path}: unknown expression op '{op}'. Valid: digital_read, analog_read, compare, and, or, number, millis"
+        f"{path}: unknown expression op '{op}'. Valid: digital_read, analog_read, compare, "
+        "and, or, number, millis, add, subtract, multiply, divide, modulo"
     )
 
 

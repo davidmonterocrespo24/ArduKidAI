@@ -136,6 +136,7 @@ VALID_BLOCK_TYPES: set[str] = {
     "logic_boolean",
     "math_number",
     "math_arithmetic",
+    "math_modulo",
     "math_change",
     "variables_set",
     "variables_get",
