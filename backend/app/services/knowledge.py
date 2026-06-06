@@ -7,6 +7,7 @@ admin operation (see `scripts/index_pdf.py`)."""
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 from ..config import get_settings
@@ -221,9 +222,22 @@ def _to_hit(doc: dict) -> KnowledgeHit:
 
 
 async def search_docs(query: str, limit: int = 4) -> list[KnowledgeHit]:
+    """Hybrid retrieval: semantic (Atlas Vector Search) + keyword, fused with
+    reciprocal rank fusion. Vector search alone misses exact tokens a child
+    types (pin "D13", "HC-SR04", "tone"); keyword search alone misses synonyms
+    and concepts. Fusing both ranks higher-quality results to the top. This runs
+    free on an Atlas M0 - it needs no extra full-text search index (so it never
+    hits the M0 search-index cap) and no $rankFusion preview feature."""
     if not query.strip():
         return []
     query_vector = await embed_text(query, task_type="RETRIEVAL_QUERY")
+    pool = max(limit * 3, 10)
+    vector_hits = await _vector_hits(query_vector, pool)
+    keyword_hits = await _keyword_hits(query, pool)
+    return _rrf_fuse(vector_hits, keyword_hits, limit)
+
+
+async def _vector_hits(query_vector: list[float], limit: int) -> list[KnowledgeHit]:
     if mcp_client.mcp_enabled():
         try:
             docs = await mcp_client.aggregate(COLLECTION_KNOWLEDGE, _pipeline(query_vector, limit))
@@ -235,6 +249,94 @@ async def search_docs(query: str, limit: int = 4) -> list[KnowledgeHit]:
     if db is None:
         return _memory_search(query_vector, limit)
     return await _atlas_search(db, query_vector, limit)
+
+
+# Drop noise words and tiny tokens so the keyword arm matches on meaningful
+# terms (component names, pins, function names) rather than "how"/"the".
+_STOPWORDS = frozenset(
+    ["a", "an", "and", "are", "as", "at", "be", "by", "do", "does", "for", "from", "how", "i", "in", "is", "it", "my", "of", "on", "or", "that", "the", "this", "to", "use", "using", "want", "what", "when", "where", "which", "why", "with", "you", "your", "make", "build"]
+)
+
+
+def _terms(query: str) -> list[str]:
+    out: list[str] = []
+    for tok in re.findall(r"[a-z0-9]+", query.lower()):
+        if (len(tok) >= 3 and tok not in _STOPWORDS) or any(ch.isdigit() for ch in tok):
+            out.append(tok)
+    # De-duplicate, keep order, cap so the regex stays small.
+    seen: set[str] = set()
+    uniq = [t for t in out if not (t in seen or seen.add(t))]
+    return uniq[:8]
+
+
+def _score_keyword(docs: list[dict], terms: list[str], limit: int) -> list[KnowledgeHit]:
+    scored: list[tuple[int, KnowledgeHit]] = []
+    for doc in docs:
+        text = str(doc.get("text", "")).lower()
+        score = sum(1 for t in terms if t in text)
+        if score:
+            scored.append((score, _to_hit(doc)))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [hit for _, hit in scored[:limit]]
+
+
+def _keyword_pipeline(regex: str, limit: int) -> list[dict]:
+    return [
+        {"$match": {"text": {"$regex": regex, "$options": "i"}}},
+        {"$limit": limit},
+        {"$project": {"_id": 1, "source": 1, "page": 1, "text": 1}},
+    ]
+
+
+async def _keyword_hits(query: str, limit: int) -> list[KnowledgeHit]:
+    terms = _terms(query)
+    if not terms:
+        return []
+    regex = "|".join(re.escape(t) for t in terms)
+    # Pull a wider candidate pool, then rank by how many distinct terms matched.
+    candidate_limit = limit * 4
+    if mcp_client.mcp_enabled():
+        try:
+            docs = await mcp_client.aggregate(
+                COLLECTION_KNOWLEDGE, _keyword_pipeline(regex, candidate_limit)
+            )
+            return _score_keyword(docs, terms, limit)
+        except Exception:
+            pass
+    db = get_db()
+    if db is None:
+        return _memory_keyword(terms, limit)
+    docs = [doc async for doc in db[COLLECTION_KNOWLEDGE].aggregate(_keyword_pipeline(regex, candidate_limit))]
+    return _score_keyword(docs, terms, limit)
+
+
+def _memory_keyword(terms: list[str], limit: int) -> list[KnowledgeHit]:
+    docs = [
+        {"_id": e.id, "source": e.source, "page": e.page, "text": e.text}
+        for e in _MEMORY_STORE.entries
+    ]
+    return _score_keyword(docs, terms, limit)
+
+
+def _rrf_fuse(
+    vector_hits: list[KnowledgeHit], keyword_hits: list[KnowledgeHit], limit: int, k: int = 60
+) -> list[KnowledgeHit]:
+    """Reciprocal rank fusion: a doc's score is the sum of 1/(k + rank) across
+    the lists it appears in, so items ranked highly by either arm - and
+    especially by both - rise to the top."""
+    scores: dict[str, float] = {}
+    hits: dict[str, KnowledgeHit] = {}
+    for ranked in (vector_hits, keyword_hits):
+        for rank, hit in enumerate(ranked):
+            scores[hit.id] = scores.get(hit.id, 0.0) + 1.0 / (k + rank + 1)
+            hits.setdefault(hit.id, hit)
+    order = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)[:limit]
+    out: list[KnowledgeHit] = []
+    for doc_id, score in order:
+        hit = hits[doc_id]
+        hit.score = float(score)
+        out.append(hit)
+    return out
 
 
 async def _atlas_search(db, query_vector, limit: int) -> list[KnowledgeHit]:

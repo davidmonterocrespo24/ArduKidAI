@@ -35,6 +35,34 @@ async def test_index_and_search_round_trip():
     assert hits[0].source in {"servo-guide", "buzzer-guide"}
 
 
+def test_terms_drops_stopwords_keeps_pins_and_parts():
+    terms = knowledge._terms("How do I wire the HC-SR04 to pin D13?")
+    assert "d13" in terms  # token with a digit is kept even though short
+    assert "sr04" in terms
+    assert "wire" in terms
+    assert "the" not in terms and "how" not in terms  # stopwords dropped
+
+
+def test_rrf_fuse_prefers_docs_ranked_by_both_arms():
+    a = knowledge.KnowledgeHit(id="a", source="", page=0, text="")
+    b = knowledge.KnowledgeHit(id="b", source="", page=0, text="")
+    c = knowledge.KnowledgeHit(id="c", source="", page=0, text="")
+    fused = knowledge._rrf_fuse([a, b], [b, c], limit=3)
+    assert fused[0].id == "b"  # appears in both lists -> highest fused score
+    assert {h.id for h in fused} == {"a", "b", "c"}
+
+
+async def test_hybrid_search_surfaces_exact_token_via_keyword_arm():
+    await knowledge.index_plain_text(
+        "The HC-SR04 ultrasonic sensor measures distance with echo pulses.", source="ultrasonic"
+    )
+    await knowledge.index_plain_text(
+        "A potentiometer is a knob that changes resistance.", source="pot"
+    )
+    hits = await knowledge.search_docs("HC-SR04", limit=2)
+    assert any(h.source == "ultrasonic" for h in hits)
+
+
 async def test_search_with_empty_query_returns_empty():
     await knowledge.index_plain_text("anything", source="x")
     hits = await knowledge.search_docs("", limit=3)
