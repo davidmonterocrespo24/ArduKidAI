@@ -9,10 +9,13 @@ import { WireOverlay } from './WireOverlay'
 import { IconPlus } from './Icons'
 
 // Stage size big enough to spread out the catalog. The container is
-// scrollable so smaller screens can pan.
-const STAGE_WIDTH = 1100
+// scrollable so smaller screens can pan. The board sits just to the right
+// of the single-column parts gutter (~x=20..220) and close enough to the
+// left that it stays visible in a narrow canvas, instead of hiding off the
+// right edge next to the chat panel.
+const STAGE_WIDTH = 1000
 const STAGE_HEIGHT = 1000
-const UNO_LEFT = 400
+const UNO_LEFT = 300
 const UNO_TOP = 60
 
 // Render the selected board's wokwi element with its built-in LED indicators
@@ -68,6 +71,17 @@ export function CanvasPanel() {
     }
     prevCountRef.current = components.length
   }, [components.length])
+
+  // On first mount, center the pinned board in the viewport so it is
+  // immediately visible instead of being hidden off the right edge on a
+  // narrow canvas. Runs once; the add-part effect above takes over the
+  // scroll position as soon as the first component appears.
+  useEffect(() => {
+    const el = canvasRef.current
+    if (!el) return
+    const boardCenterX = UNO_LEFT + 150 // ~half the UNO element width
+    el.scrollLeft = Math.max(0, boardCenterX - el.clientWidth / 2)
+  }, [])
 
   const periphs = components.filter((c) => c.type !== 'uno')
 

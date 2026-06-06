@@ -49,6 +49,27 @@ function componentIdOf(reference: string): string | null {
   return reference.slice(0, dot)
 }
 
+// Resistor ids are the prefix "R" plus a counter (R1, R2, ...). Match them
+// exactly so component prefixes that merely start with R (RGB, ...) are not
+// mistaken for a current-limiting resistor.
+const RESISTOR_ID_RE = /^R\d+$/
+
+// Resolve a wire's far end to a board digital pin, following at most one
+// resistor in between. Covers the same two stereotyped wiring patterns the
+// kid's circuits use (direct, or through a series resistor) so any pin can
+// be traced regardless of which leg carries the resistor.
+function boardPinVia(reference: string, wires: Wire[]): DigitalPinLabel | null {
+  const direct = boardPin(reference)
+  if (direct) return direct
+  const neighbourId = componentIdOf(reference)
+  if (!neighbourId || !RESISTOR_ID_RE.test(neighbourId)) return null
+  for (const ref2 of neighboursOfPrefix(neighbourId, wires)) {
+    const pin = boardPin(ref2)
+    if (pin) return pin
+  }
+  return null
+}
+
 const ANALOG_PIN_RE = new RegExp(`^(?:${_BOARD_PREFIX})\\.A(\\d+)$`)
 
 /** Return the analog input channel the component is wired into, or null if it
@@ -67,7 +88,11 @@ export function resolveAnalogChannel(componentId: string, wires: Wire[]): number
 /**
  * Return a map of pin-name -> UNO digital pin for every wire that
  * leaves `componentId`. Used for multi-pin parts such as the 7-segment
- * display where each segment connects to its own digital pin.
+ * display where each segment connects to its own digital pin. Each leg is
+ * traced through an optional series resistor, the same way single-pin
+ * parts are, so a segment wired `SEG.A -> R.a` and `R.b -> UNO.D2` still
+ * resolves to D2 (without this the display stayed dark whenever the kid
+ * added a current-limiting resistor per segment).
  */
 export function resolveAllDrivePins(
   componentId: string,
@@ -80,7 +105,7 @@ export function resolveAllDrivePins(
         : null
     if (!selfRef) continue
     const other = selfRef === w.from_pin ? w.to_pin : w.from_pin
-    const pin = boardPin(other)
+    const pin = boardPinVia(other, wires)
     if (!pin) continue
     const pinName = selfRef.slice(componentId.length + 1)
     out[pinName] = pin
@@ -92,19 +117,10 @@ export function resolveDrivePin(
   componentId: string,
   wires: Wire[],
 ): DigitalPinLabel | null {
-  // 1. Direct connection.
+  // Direct connection, or through one series resistor.
   for (const ref of neighboursOfPrefix(componentId, wires)) {
-    const pin = boardPin(ref)
+    const pin = boardPinVia(ref, wires)
     if (pin) return pin
-  }
-  // 2. Through one resistor (any neighbour whose id begins with `R`).
-  for (const ref of neighboursOfPrefix(componentId, wires)) {
-    const neighbourId = componentIdOf(ref)
-    if (!neighbourId || !neighbourId.startsWith('R')) continue
-    for (const ref2 of neighboursOfPrefix(neighbourId, wires)) {
-      const pin = boardPin(ref2)
-      if (pin) return pin
-    }
   }
   return null
 }
