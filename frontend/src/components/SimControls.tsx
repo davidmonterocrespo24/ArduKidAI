@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
+import { sendChatMessage } from '../agent/chat'
 import { newSession } from '../lib/sessionId'
 import { startSim, type SimHandle } from '../sim/runner'
 import { resolveAllDrivePins, resolveAnalogChannel } from '../sim/wireTrace'
@@ -182,6 +183,9 @@ export function SimControls() {
   const appendChatMessage = useAppStore((s) => s.appendChatMessage)
   const resetCircuit = useAppStore((s) => s.resetCircuit)
   const setCompileError = useAppStore((s) => s.setCompileError)
+  const setLastCompile = useAppStore((s) => s.setLastCompile)
+  const bumpAutoFix = useAppStore((s) => s.bumpAutoFix)
+  const resetAutoFix = useAppStore((s) => s.resetAutoFix)
   const setRightTab = useAppStore((s) => s.setRightTab)
   const appendCompileLog = useAppStore((s) => s.appendCompileLog)
   const appendSerial = useAppStore((s) => s.appendSerial)
@@ -214,10 +218,16 @@ export function SimControls() {
   useEffect(() => {
     if (runRequest > 0 && runRequest !== lastRunRef.current) {
       lastRunRef.current = runRequest
-      void compile(true)
+      // Agent-triggered run: enable auto-fix so a compile error feeds back to
+      // the agent for self-correction.
+      void compile(true, true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runRequest])
+
+  // How many times the agent may auto-retry a failed compile before asking the
+  // child for help (prevents an unfixable program from looping forever).
+  const MAX_AUTO_FIX = 2
 
   function startWithCurrent() {
     if (simRef.current) return
@@ -237,7 +247,7 @@ export function SimControls() {
     setSimStatus('running')
   }
 
-  async function compile(run: boolean) {
+  async function compile(run: boolean, autoFix = false) {
     appendCompileLog('info', `POST /api/compile (${getBoard(board).fqbn})`)
     setBottomTab('compile')
     try {
@@ -253,6 +263,8 @@ export function SimControls() {
         if (resp.stderr && resp.stderr.trim()) appendCompileLog('warn', resp.stderr.trim())
         setHexCode(resp.hex)
         setCompileError(null)
+        setLastCompile({ ok: true, error: '' })
+        resetAutoFix()
         stopSim()
         if (run) {
           simRef.current = startSim(
@@ -277,16 +289,31 @@ export function SimControls() {
         appendCompileLog('error', detail)
         if (resp.stdout && resp.stdout.trim()) appendCompileLog('info', resp.stdout.trim())
         setCompileError(detail)
+        setLastCompile({ ok: false, error: detail })
         setRightTab('code')
-        appendChatMessage({
-          id: crypto.randomUUID(),
-          role: 'system',
-          text: run
-            ? 'Compile failed. See the Compile output tab for the details. Running the fallback blink.'
-            : 'Compile failed. See the Compile output tab for the details.',
-        })
         stopSim()
-        if (run) startWithCurrent()
+        const attempts = useAppStore.getState().autoFixAttempts
+        if (autoFix && attempts < MAX_AUTO_FIX) {
+          // Self-correct: feed the compiler error back to the agent so it fixes
+          // the program and runs again, without the child having to ask. The
+          // compile can finish while the agent is still streaming its turn, so
+          // wait until it is idle before starting the fix turn (bounded).
+          bumpAutoFix()
+          sendWhenIdle(
+            `The program did not compile. The Arduino compiler reported this error:\n\n${detail}\n\n` +
+              'Please fix the program so it compiles, then run it again.',
+            'The code had an error. Let me fix it and try again.',
+          )
+        } else {
+          appendChatMessage({
+            id: crypto.randomUUID(),
+            role: 'system',
+            text: autoFix
+              ? 'I could not fix the code automatically. Tell me what it should do and I will try again.'
+              : 'Compile failed. See the Compile output tab for the details.',
+          })
+          if (run) startWithCurrent()
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -302,6 +329,17 @@ export function SimControls() {
       })
       stopSim()
       if (run) startWithCurrent()
+    }
+  }
+
+  // Send the auto-fix turn once the agent's current turn has finished streaming,
+  // so we never run two turns on the same session at once. Bounded so it gives
+  // up if the agent never goes idle.
+  function sendWhenIdle(message: string, note: string, tries = 0) {
+    if (useAppStore.getState().agentStatus !== 'streaming') {
+      void sendChatMessage(message, undefined, { note })
+    } else if (tries < 30) {
+      window.setTimeout(() => sendWhenIdle(message, note, tries + 1), 300)
     }
   }
 

@@ -59,6 +59,10 @@ calls and do NOT research the web or docs for a normal build):
 4. Call compile_and_run so the child sees it run in the simulator.
 5. Call validate_circuit and FIX every issue it reports (loose parts, a missing ground,
    an LED without a resistor, a short circuit) before telling the child it is ready.
+6. If a turn tells you the program failed to compile and includes the compiler error,
+   read it, fix the program with edit_program (or set_program), and call compile_and_run
+   again. Briefly tell the child what you fixed. If it still fails after a couple of tries,
+   stop and ask the child for help instead of looping.
 - Always add components BEFORE wiring them - you can only wire ids that already exist.
 - If a tool returns ok:false (or a per-item error), read the message, fix it, and retry.
 

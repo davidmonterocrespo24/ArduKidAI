@@ -49,11 +49,19 @@ class Wire(BaseModel):
     to_pin: str = Field(..., description="`componentId.pinName`, e.g. `UNO.7`")
 
 
+class CompileResult(BaseModel):
+    """Outcome of the last frontend compile, fed back so the agent can self-correct."""
+
+    ok: bool
+    error: str = ""
+
+
 class CircuitState(BaseModel):
     components: list[ComponentInstance] = Field(default_factory=list)
     wires: list[Wire] = Field(default_factory=list)
     blockly_xml: str = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>'
     cpp_code: str = ""
+    last_compile: CompileResult | None = None
 
 
 class ChatAttachment(BaseModel):

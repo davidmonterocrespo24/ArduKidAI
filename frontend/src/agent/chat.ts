@@ -15,25 +15,34 @@ export interface ChatAttachment {
 export async function sendChatMessage(
   message: string,
   attachments?: ChatAttachment[],
+  opts?: { note?: string },
 ): Promise<void> {
   const trimmed = message.trim()
   const hasAttachments = !!attachments && attachments.length > 0
   if (!trimmed && !hasAttachments) return
 
   const store = useAppStore.getState()
-  store.appendChatMessage({
-    id: crypto.randomUUID(),
-    role: 'user',
-    text: trimmed,
-    attachments: hasAttachments
-      ? attachments!.map((a) => ({
-          name: a.name ?? 'file',
-          previewUrl: a.mime_type.startsWith('image/')
-            ? `data:${a.mime_type};base64,${a.data}`
-            : undefined,
-        }))
-      : undefined,
-  })
+  if (opts?.note) {
+    // Internal/auto-fix turn: show a friendly system line, not a fake user
+    // bubble. The real message (with the compiler error) still goes to the agent.
+    store.appendChatMessage({ id: crypto.randomUUID(), role: 'system', text: opts.note })
+  } else {
+    store.appendChatMessage({
+      id: crypto.randomUUID(),
+      role: 'user',
+      text: trimmed,
+      attachments: hasAttachments
+        ? attachments!.map((a) => ({
+            name: a.name ?? 'file',
+            previewUrl: a.mime_type.startsWith('image/')
+              ? `data:${a.mime_type};base64,${a.data}`
+              : undefined,
+          }))
+        : undefined,
+    })
+    // A fresh message from the child ends any in-progress auto-fix loop.
+    store.resetAutoFix()
+  }
   store.setAgentStatus('streaming')
 
   try {
@@ -50,6 +59,7 @@ export async function sendChatMessage(
           wires: store.wires,
           blockly_xml: store.blocklyXml,
           cpp_code: store.cppCode,
+          last_compile: store.lastCompile ?? undefined,
         },
         attachments: hasAttachments ? attachments : undefined,
       }),

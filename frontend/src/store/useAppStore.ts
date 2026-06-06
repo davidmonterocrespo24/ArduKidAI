@@ -98,6 +98,15 @@ export interface AppState {
   compileError: string | null
   setCompileError: (msg: string | null) => void
 
+  // The last compile result, surfaced to the agent so it can self-correct.
+  lastCompile: { ok: boolean; error: string } | null
+  setLastCompile: (v: { ok: boolean; error: string } | null) => void
+  // How many times the agent has auto-retried a failed compile this build,
+  // capped so a program it cannot fix does not loop forever.
+  autoFixAttempts: number
+  bumpAutoFix: () => void
+  resetAutoFix: () => void
+
   chatMessages: ChatMessage[]
   appendChatMessage: (m: ChatMessage) => void
   appendAgentText: (text: string) => void
@@ -236,6 +245,12 @@ export const useAppStore = create<AppState>((set) => ({
   compileError: null,
   setCompileError: (msg) => set({ compileError: msg }),
 
+  lastCompile: null,
+  setLastCompile: (v) => set({ lastCompile: v }),
+  autoFixAttempts: 0,
+  bumpAutoFix: () => set((s) => ({ autoFixAttempts: s.autoFixAttempts + 1 })),
+  resetAutoFix: () => set({ autoFixAttempts: 0 }),
+
   chatMessages: [],
   appendChatMessage: (m) => set((state) => ({ chatMessages: [...state.chatMessages, m] })),
   setChatMessages: (m) => set({ chatMessages: m }),
@@ -303,6 +318,8 @@ export const useAppStore = create<AppState>((set) => ({
       cppCode: PLACEHOLDER_SKETCH,
       hexCode: null,
       compileError: null,
+      lastCompile: null,
+      autoFixAttempts: 0,
       compileLog: [],
       serialOutput: '',
       ledOn: false,
