@@ -28,6 +28,14 @@ async def test_store_serve_and_classify_original_file():
     assert await knowledge_files.get_file("diagram.png") is None
 
 
+async def test_get_source_text_reassembles_a_note():
+    await knowledge.index_plain_text(
+        "Pull-up resistors hold an input pin HIGH so a button reads cleanly.", source="Note: pull-ups"
+    )
+    text = await knowledge.get_source_text("Note: pull-ups")
+    assert "Pull-up resistors" in text
+
+
 async def test_list_sources_marks_links_clickable():
     await knowledge.index_plain_text(
         "LEDs light up.", source="SparkFun: LEDs (https://learn.sparkfun.com/tutorials/leds/all)"

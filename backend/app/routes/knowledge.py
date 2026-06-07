@@ -35,6 +35,11 @@ class IngestResult(BaseModel):
     chunks: int
 
 
+class SourceContent(BaseModel):
+    source: str
+    text: str
+
+
 class UrlIngestRequest(BaseModel):
     url: str
     source: str | None = None
@@ -118,6 +123,12 @@ async def ingest_image(
     mime = file.content_type or "image/png"
     count = await kb.index_image(data, mime_type=mime, source=label)
     return IngestResult(ok=count > 0, source=label, chunks=count)
+
+
+@router.get("/content/{source:path}", response_model=SourceContent)
+async def get_content(source: str) -> SourceContent:
+    """The indexed plain text of a source, so the UI can preview a note."""
+    return SourceContent(source=source, text=await kb.get_source_text(source))
 
 
 @router.get("/file/{source:path}")

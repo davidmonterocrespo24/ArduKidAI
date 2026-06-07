@@ -26,6 +26,13 @@ export async function listSources(): Promise<SourceRow[]> {
   return getJson<SourceRow[]>('/api/knowledge')
 }
 
+// The indexed plain text of a source (for previewing a note that has no file).
+export async function getSourceContent(source: string): Promise<{ source: string; text: string }> {
+  return getJson<{ source: string; text: string }>(
+    `/api/knowledge/content/${encodeURIComponent(source)}`,
+  )
+}
+
 export async function ingestUrl(url: string, source?: string): Promise<IngestResult> {
   return postJson<IngestResult>('/api/knowledge/url', { url, source: source ?? null })
 }

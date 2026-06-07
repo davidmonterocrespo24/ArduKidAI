@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   deleteSource,
+  getSourceContent,
   ingestDocument,
   ingestImage,
   ingestPdf,
@@ -51,6 +52,22 @@ export function KnowledgeModal({ open, onClose }: Props) {
   const [text, setText] = useState('')
   const [textName, setTextName] = useState('')
   const [preview, setPreview] = useState<SourceRow | null>(null)
+  const [previewText, setPreviewText] = useState<string | null>(null)
+
+  function openPreview(s: SourceRow) {
+    setPreview(s)
+    setPreviewText(null)
+    if (s.kind === 'text' || !s.kind) {
+      void getSourceContent(s.source)
+        .then((r) => setPreviewText(r.text || '(empty)'))
+        .catch(() => setPreviewText('(could not load this note)'))
+    }
+  }
+
+  function closePreview() {
+    setPreview(null)
+    setPreviewText(null)
+  }
 
   const pdfInput = useRef<HTMLInputElement>(null)
   const imageInput = useRef<HTMLInputElement>(null)
@@ -335,19 +352,15 @@ export function KnowledgeModal({ open, onClose }: Props) {
                           >
                             {s.source}
                           </a>
-                        ) : s.kind === 'image' || s.kind === 'pdf' || s.kind === 'document' ? (
+                        ) : (
                           <button
                             type="button"
-                            onClick={() => setPreview(s)}
+                            onClick={() => openPreview(s)}
                             className="block max-w-full truncate text-left font-medium text-brand-700 hover:underline"
                             title="Preview"
                           >
                             {s.source}
                           </button>
-                        ) : (
-                          <div className="truncate font-medium" title={s.source}>
-                            {s.source}
-                          </div>
                         )}
                         <div className="text-xs text-slate-500">{s.chunks} chunks</div>
                       </div>
@@ -374,7 +387,7 @@ export function KnowledgeModal({ open, onClose }: Props) {
           className="fixed inset-0 z-[60] flex flex-col bg-slate-900/70 p-3"
           onClick={(e) => {
             e.stopPropagation()
-            setPreview(null)
+            closePreview()
           }}
         >
           <div
@@ -386,17 +399,21 @@ export function KnowledgeModal({ open, onClose }: Props) {
                 {preview.source}
               </span>
               <div className="flex shrink-0 items-center gap-2">
-                <a
-                  href={knowledgeFileUrl(preview.source)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
-                >
-                  Open file
-                </a>
+                {(preview.kind === 'image' ||
+                  preview.kind === 'pdf' ||
+                  preview.kind === 'document') && (
+                  <a
+                    href={knowledgeFileUrl(preview.source)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                  >
+                    Open file
+                  </a>
+                )}
                 <button
                   type="button"
-                  onClick={() => setPreview(null)}
+                  onClick={closePreview}
                   className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
                 >
                   Close
@@ -410,12 +427,16 @@ export function KnowledgeModal({ open, onClose }: Props) {
                   alt={preview.source}
                   className="mx-auto max-h-full max-w-full object-contain"
                 />
-              ) : (
+              ) : preview.kind === 'pdf' || preview.kind === 'document' ? (
                 <iframe
                   title={preview.source}
                   src={googleViewerUrl(knowledgeFileUrl(preview.source))}
                   className="h-full w-full border-0"
                 />
+              ) : (
+                <div className="h-full overflow-auto whitespace-pre-wrap bg-white p-4 text-sm text-slate-700">
+                  {previewText ?? 'Loading...'}
+                </div>
               )}
             </div>
           </div>

@@ -415,6 +415,21 @@ async def list_sources() -> list[dict]:
     return rows
 
 
+async def get_source_text(source: str) -> str:
+    """Reassemble a source's indexed text from its chunks (in order), so the UI
+    can preview a plain-text note (which has no original file to render)."""
+    db = get_db()
+    if db is None:
+        entries = sorted((e for e in _MEMORY_STORE.entries if e.source == source), key=lambda e: e.id)
+        return "\n\n".join(e.text for e in entries)
+    cursor = (
+        db[COLLECTION_KNOWLEDGE]
+        .find({"source": source}, {"text": 1, "chunk_index": 1})
+        .sort("chunk_index", 1)
+    )
+    return "\n\n".join([doc.get("text", "") async for doc in cursor])
+
+
 async def delete_source(source: str) -> int:
     """Remove every chunk for a source. Returns the number deleted."""
     await knowledge_files.delete_file(source)
