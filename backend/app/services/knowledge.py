@@ -121,6 +121,9 @@ async def index_pdf_bytes(data: bytes, source: str) -> int:
 
 
 async def index_plain_text(text: str, source: str) -> int:
+    # Keep the original (with its Markdown line structure) so the preview can
+    # render it; the chunks are whitespace-normalised, which is fine for search.
+    await knowledge_files.store_file(source, "text/markdown", text.encode("utf-8"))
     chunks = chunk_plain_text(text)
     return await _index_chunks(source, chunks)
 
@@ -379,13 +382,13 @@ def _classify(source: str, file_content_types: dict[str, str]) -> dict:
     document), open a link, or just text."""
     content_type = file_content_types.get(source)
     if content_type:
+        if content_type.startswith("text/"):
+            return {"kind": "text"}  # an authored note/lesson - preview as rendered text
         if content_type.startswith("image/"):
-            kind = "image"
-        elif content_type == "application/pdf":
-            kind = "pdf"
-        else:
-            kind = "document"
-        return {"kind": kind, "content_type": content_type}
+            return {"kind": "image", "content_type": content_type}
+        if content_type == "application/pdf":
+            return {"kind": "pdf", "content_type": content_type}
+        return {"kind": "document", "content_type": content_type}
     match = _URL_RE.search(source)
     if match:
         return {"kind": "link", "url": match.group(0).rstrip(").,")}
@@ -416,8 +419,12 @@ async def list_sources() -> list[dict]:
 
 
 async def get_source_text(source: str) -> str:
-    """Reassemble a source's indexed text from its chunks (in order), so the UI
-    can preview a plain-text note (which has no original file to render)."""
+    """A source's full text for preview. Prefer the stored original (which keeps
+    its Markdown line structure); otherwise reassemble the whitespace-normalised
+    chunks in order."""
+    stored = await knowledge_files.get_file(source)
+    if stored is not None and stored[0].startswith("text/"):
+        return stored[1].decode("utf-8", errors="replace")
     db = get_db()
     if db is None:
         entries = sorted((e for e in _MEMORY_STORE.entries if e.source == source), key=lambda e: e.id)

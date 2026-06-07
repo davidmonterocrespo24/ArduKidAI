@@ -36,13 +36,23 @@ async def test_get_source_text_reassembles_a_note():
     assert "Pull-up resistors" in text
 
 
-async def test_list_sources_marks_links_clickable():
-    await knowledge.index_plain_text(
-        "LEDs light up.", source="SparkFun: LEDs (https://learn.sparkfun.com/tutorials/leds/all)"
-    )
-    row = next(s for s in await knowledge.list_sources() if "SparkFun" in s["source"])
+def test_classify_marks_links_clickable():
+    # A source whose label carries a URL (and has no stored file) is a clickable link.
+    row = knowledge._classify("SparkFun: LEDs (https://learn.sparkfun.com/tutorials/leds/all)", {})
     assert row["kind"] == "link"
     assert row["url"] == "https://learn.sparkfun.com/tutorials/leds/all"
+
+
+def test_classify_text_file_stays_text_not_document():
+    row = knowledge._classify("My note", {"My note": "text/markdown"})
+    assert row["kind"] == "text"
+
+
+async def test_plain_text_preview_keeps_markdown_structure():
+    md = "## Title\n\nA paragraph.\n\n- item one\n- item two"
+    await knowledge.index_plain_text(md, source="Lesson X")
+    # The preview returns the original (with newlines), not the normalised chunks.
+    assert await knowledge.get_source_text("Lesson X") == md
 
 
 def test_chunk_plain_text_respects_size_and_overlap():
