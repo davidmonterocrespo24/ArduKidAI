@@ -1,14 +1,40 @@
 import pytest
 
-from app.services import knowledge
+from app.services import knowledge, knowledge_files
 from app.services.pdf_chunker import chunk_plain_text
 
 
 @pytest.fixture(autouse=True)
 def _clean_memory_store():
     knowledge.memory_reset()
+    knowledge_files.memory_reset()
     yield
     knowledge.memory_reset()
+    knowledge_files.memory_reset()
+
+
+async def test_store_serve_and_classify_original_file():
+    # An uploaded image keeps its original bytes (for preview) and is classified.
+    await knowledge.index_image(b"\x89PNG-not-real", mime_type="image/png", source="diagram.png")
+    stored = await knowledge_files.get_file("diagram.png")
+    assert stored is not None and stored[0] == "image/png"
+
+    row = next(s for s in await knowledge.list_sources() if s["source"] == "diagram.png")
+    assert row["kind"] == "image"
+    assert row["content_type"] == "image/png"
+
+    # Deleting the source removes the stored original too.
+    await knowledge.delete_source("diagram.png")
+    assert await knowledge_files.get_file("diagram.png") is None
+
+
+async def test_list_sources_marks_links_clickable():
+    await knowledge.index_plain_text(
+        "LEDs light up.", source="SparkFun: LEDs (https://learn.sparkfun.com/tutorials/leds/all)"
+    )
+    row = next(s for s in await knowledge.list_sources() if "SparkFun" in s["source"])
+    assert row["kind"] == "link"
+    assert row["url"] == "https://learn.sparkfun.com/tutorials/leds/all"
 
 
 def test_chunk_plain_text_respects_size_and_overlap():

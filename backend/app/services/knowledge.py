@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 
 from ..config import get_settings
 from ..db.client import COLLECTION_KNOWLEDGE, get_db
-from . import mcp_client
+from . import knowledge_files, mcp_client
 from .embeddings import cosine, embed_text
 from .pdf_chunker import TextChunk, chunk_pdf_bytes, chunk_pdf_path, chunk_plain_text
 from .web_extract import fetch_url_text
@@ -108,11 +108,14 @@ async def _index_chunks(source: str, chunks: list[TextChunk]) -> int:
 
 
 async def index_pdf_path(path: str, source: str) -> int:
+    with open(path, "rb") as fh:
+        await knowledge_files.store_file(source, "application/pdf", fh.read())
     chunks = chunk_pdf_path(path)
     return await _index_chunks(source, chunks)
 
 
 async def index_pdf_bytes(data: bytes, source: str) -> int:
+    await knowledge_files.store_file(source, "application/pdf", data)
     chunks = chunk_pdf_bytes(data)
     return await _index_chunks(source, chunks)
 
@@ -126,11 +129,15 @@ async def index_document_bytes(data: bytes, filename: str, source: str) -> int:
     """Index a Word/PowerPoint/Excel/HTML/EPUB/... document by converting it to
     Markdown with markitdown, then chunking like any other text. PDFs and images
     have their own (page-aware / vision) paths."""
+    import mimetypes
+
     from .doc_extract import extract_markdown
 
     text = extract_markdown(data, filename)
     if not text.strip():
         return 0
+    content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    await knowledge_files.store_file(source, content_type, data)
     return await _index_chunks(source, chunk_plain_text(text))
 
 
@@ -154,6 +161,7 @@ async def index_image(data: bytes, mime_type: str, source: str) -> int:
     Lets a child upload a photo of a wiring diagram or a schematic and have it
     become searchable text. Falls back to indexing just the source label when
     no GCP credentials are present."""
+    await knowledge_files.store_file(source, mime_type, data)
     caption = await _caption_image(data, mime_type)
     body = f"Image: {source}\n\n{caption}".strip()
     chunks = chunk_plain_text(body)
@@ -363,26 +371,53 @@ def _memory_search(query_vector: list[float], limit: int) -> list[KnowledgeHit]:
     ]
 
 
+_URL_RE = re.compile(r"https?://[^\s)]+")
+
+
+def _classify(source: str, file_content_types: dict[str, str]) -> dict:
+    """Tell the UI how to handle a source: preview a stored file (image/pdf/
+    document), open a link, or just text."""
+    content_type = file_content_types.get(source)
+    if content_type:
+        if content_type.startswith("image/"):
+            kind = "image"
+        elif content_type == "application/pdf":
+            kind = "pdf"
+        else:
+            kind = "document"
+        return {"kind": kind, "content_type": content_type}
+    match = _URL_RE.search(source)
+    if match:
+        return {"kind": "link", "url": match.group(0).rstrip(").,")}
+    return {"kind": "text"}
+
+
 async def list_sources() -> list[dict]:
-    """Return one row per indexed source with its chunk count."""
+    """Return one row per indexed source with its chunk count and how to view it
+    (kind: image | pdf | document | link | text, plus content_type or url)."""
+    file_content_types = await knowledge_files.file_content_types()
     db = get_db()
     if db is None:
         counts: dict[str, int] = {}
         for entry in _MEMORY_STORE.entries:
             counts[entry.source] = counts.get(entry.source, 0) + 1
-        return [{"source": s, "chunks": n} for s, n in sorted(counts.items())]
-    pipeline = [
-        {"$group": {"_id": "$source", "chunks": {"$sum": 1}}},
-        {"$sort": {"_id": 1}},
-    ]
-    out: list[dict] = []
-    async for row in db[COLLECTION_KNOWLEDGE].aggregate(pipeline):
-        out.append({"source": row["_id"], "chunks": int(row["chunks"])})
-    return out
+        rows = [{"source": s, "chunks": n} for s, n in sorted(counts.items())]
+    else:
+        pipeline = [
+            {"$group": {"_id": "$source", "chunks": {"$sum": 1}}},
+            {"$sort": {"_id": 1}},
+        ]
+        rows = []
+        async for row in db[COLLECTION_KNOWLEDGE].aggregate(pipeline):
+            rows.append({"source": row["_id"], "chunks": int(row["chunks"])})
+    for row in rows:
+        row.update(_classify(row["source"], file_content_types))
+    return rows
 
 
 async def delete_source(source: str) -> int:
     """Remove every chunk for a source. Returns the number deleted."""
+    await knowledge_files.delete_file(source)
     db = get_db()
     if db is None:
         before = len(_MEMORY_STORE.entries)

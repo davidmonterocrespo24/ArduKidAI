@@ -9,10 +9,11 @@ from __future__ import annotations
 from typing import Annotated
 
 import httpx
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile
 from pydantic import BaseModel
 
 from ..services import knowledge as kb
+from ..services import knowledge_files as kbf
 
 router = APIRouter()
 
@@ -22,6 +23,10 @@ _MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 class SourceRow(BaseModel):
     source: str
     chunks: int
+    # How the UI should show it: image | pdf | document | link | text.
+    kind: str = "text"
+    content_type: str | None = None
+    url: str | None = None
 
 
 class IngestResult(BaseModel):
@@ -113,6 +118,17 @@ async def ingest_image(
     mime = file.content_type or "image/png"
     count = await kb.index_image(data, mime_type=mime, source=label)
     return IngestResult(ok=count > 0, source=label, chunks=count)
+
+
+@router.get("/file/{source:path}")
+async def get_file(source: str) -> Response:
+    """Stream the original file stored for a source (so the UI can preview a PDF,
+    image, or document). Public, so an embedded document viewer can fetch it."""
+    result = await kbf.get_file(source)
+    if result is None:
+        raise HTTPException(404, "no file stored for this source")
+    content_type, data = result
+    return Response(content=data, media_type=content_type)
 
 
 @router.delete("/{source:path}", response_model=dict)

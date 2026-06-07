@@ -6,11 +6,18 @@ import {
   ingestPdf,
   ingestText,
   ingestUrl,
+  knowledgeFileUrl,
   listSources,
   type IngestResult,
   type SourceRow,
 } from '../agent/knowledge'
 import { IconFileText, IconImage, IconLink, IconTrash } from './Icons'
+
+// Documents and PDFs preview through the Google Docs Viewer (aligns with the
+// Google stack); images render directly. The viewer fetches the public file URL.
+function googleViewerUrl(fileUrl: string): string {
+  return `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`
+}
 
 interface Props {
   open: boolean
@@ -25,10 +32,11 @@ function sourceKind(source: string): 'link' | 'pdf' | 'image' | 'text' {
   return 'text'
 }
 
-function KindIcon({ kind }: { kind: ReturnType<typeof sourceKind> }) {
+function KindIcon({ kind }: { kind: string }) {
   if (kind === 'link') return <IconLink className="text-sky-600" />
   if (kind === 'image') return <IconImage className="text-violet-600" />
   if (kind === 'pdf') return <IconFileText className="text-rose-600" />
+  if (kind === 'document') return <IconFileText className="text-emerald-600" />
   return <IconFileText className="text-slate-500" />
 }
 
@@ -42,6 +50,7 @@ export function KnowledgeModal({ open, onClose }: Props) {
   const [url, setUrl] = useState('')
   const [text, setText] = useState('')
   const [textName, setTextName] = useState('')
+  const [preview, setPreview] = useState<SourceRow | null>(null)
 
   const pdfInput = useRef<HTMLInputElement>(null)
   const imageInput = useRef<HTMLInputElement>(null)
@@ -314,11 +323,32 @@ export function KnowledgeModal({ open, onClose }: Props) {
                     className="flex items-center justify-between gap-3 rounded border border-slate-200 px-3 py-2 text-sm"
                   >
                     <div className="flex min-w-0 items-center gap-2">
-                      <KindIcon kind={sourceKind(s.source)} />
+                      <KindIcon kind={s.kind ?? sourceKind(s.source)} />
                       <div className="min-w-0">
-                        <div className="truncate font-medium" title={s.source}>
-                          {s.source}
-                        </div>
+                        {s.kind === 'link' && s.url ? (
+                          <a
+                            href={s.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block truncate font-medium text-sky-700 hover:underline"
+                            title={`Open ${s.url}`}
+                          >
+                            {s.source}
+                          </a>
+                        ) : s.kind === 'image' || s.kind === 'pdf' || s.kind === 'document' ? (
+                          <button
+                            type="button"
+                            onClick={() => setPreview(s)}
+                            className="block max-w-full truncate text-left font-medium text-brand-700 hover:underline"
+                            title="Preview"
+                          >
+                            {s.source}
+                          </button>
+                        ) : (
+                          <div className="truncate font-medium" title={s.source}>
+                            {s.source}
+                          </div>
+                        )}
                         <div className="text-xs text-slate-500">{s.chunks} chunks</div>
                       </div>
                     </div>
@@ -338,6 +368,59 @@ export function KnowledgeModal({ open, onClose }: Props) {
           </section>
         </div>
       </div>
+
+      {preview && (
+        <div
+          className="fixed inset-0 z-[60] flex flex-col bg-slate-900/70 p-3"
+          onClick={(e) => {
+            e.stopPropagation()
+            setPreview(null)
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+          >
+            <header className="flex items-center justify-between gap-2 border-b border-slate-200 px-3 py-2">
+              <span className="truncate text-sm font-medium text-slate-700" title={preview.source}>
+                {preview.source}
+              </span>
+              <div className="flex shrink-0 items-center gap-2">
+                <a
+                  href={knowledgeFileUrl(preview.source)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                >
+                  Open file
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreview(null)}
+                  className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                >
+                  Close
+                </button>
+              </div>
+            </header>
+            <div className="min-h-0 flex-1 bg-slate-100">
+              {preview.kind === 'image' ? (
+                <img
+                  src={knowledgeFileUrl(preview.source)}
+                  alt={preview.source}
+                  className="mx-auto max-h-full max-w-full object-contain"
+                />
+              ) : (
+                <iframe
+                  title={preview.source}
+                  src={googleViewerUrl(knowledgeFileUrl(preview.source))}
+                  className="h-full w-full border-0"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

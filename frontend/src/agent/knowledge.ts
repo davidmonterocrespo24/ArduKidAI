@@ -4,6 +4,16 @@ import { authHeader } from '../auth/token'
 export interface SourceRow {
   source: string
   chunks: number
+  kind?: 'image' | 'pdf' | 'document' | 'link' | 'text'
+  content_type?: string
+  url?: string
+}
+
+// Absolute, public URL of a source's stored original file. Absolute so an
+// embedded document viewer (Google Docs Viewer) can fetch it.
+export function knowledgeFileUrl(source: string): string {
+  const u = apiUrl(`/api/knowledge/file/${encodeURIComponent(source)}`)
+  return u.startsWith('http') ? u : `${window.location.origin}${u}`
 }
 
 export interface IngestResult {
