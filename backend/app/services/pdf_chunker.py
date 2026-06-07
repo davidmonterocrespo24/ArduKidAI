@@ -13,8 +13,10 @@ from dataclasses import dataclass
 
 from pypdf import PdfReader
 
-_DEFAULT_CHUNK_WORDS = 220
-_DEFAULT_OVERLAP_WORDS = 30
+# Larger chunks keep more context together (better for teaching answers) while
+# staying well under text-embedding-005's input limit (~2048 tokens).
+_DEFAULT_CHUNK_WORDS = 500
+_DEFAULT_OVERLAP_WORDS = 80
 _WS_RE = re.compile(r"\s+")
 
 
