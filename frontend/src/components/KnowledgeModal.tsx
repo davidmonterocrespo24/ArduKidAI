@@ -13,6 +13,7 @@ import {
   type SourceRow,
 } from '../agent/knowledge'
 import { IconFileText, IconImage, IconLink, IconTrash } from './Icons'
+import { Markdown } from './Markdown'
 
 // Documents and PDFs preview through the Google Docs Viewer (aligns with the
 // Google stack); images render directly. The viewer fetches the public file URL.
@@ -434,8 +435,14 @@ export function KnowledgeModal({ open, onClose }: Props) {
                   className="h-full w-full border-0"
                 />
               ) : (
-                <div className="h-full overflow-auto whitespace-pre-wrap bg-white p-4 text-sm text-slate-700">
-                  {previewText ?? 'Loading...'}
+                <div className="h-full overflow-auto bg-white p-5">
+                  {previewText === null ? (
+                    <p className="text-sm text-slate-500">Loading...</p>
+                  ) : (
+                    <div className="mx-auto max-w-3xl">
+                      <Markdown text={previewText} />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
