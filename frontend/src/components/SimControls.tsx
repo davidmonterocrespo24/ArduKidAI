@@ -422,7 +422,7 @@ export function SimControls() {
         type="button"
         onClick={reset}
         title="Clear circuit, blocks, code, sim state"
-        className="inline-flex items-center gap-2 rounded-md border border-brand-300 bg-white px-2.5 py-1.5 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
+        className="inline-flex items-center gap-2 rounded-md bg-brand-500 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-600"
       >
         <IconReset />
         Reset
