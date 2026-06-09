@@ -8,16 +8,10 @@ const BlocklyPanel = lazy(() =>
 const CodePanel = lazy(() =>
   import('./CodePanel').then((mod) => ({ default: mod.CodePanel })),
 )
-// The A2UI renderer (and its catalog) is a sizeable chunk; load it only when the
-// child opens the Tutor tab or the agent sends a lesson.
-const TutorPanel = lazy(() =>
-  import('./TutorPanel').then((mod) => ({ default: mod.TutorPanel })),
-)
 
 const TABS: { id: RightTab; label: string }[] = [
   { id: 'blockly', label: 'Blocks' },
   { id: 'code', label: 'Arduino code' },
-  { id: 'tutor', label: 'Tutor' },
 ]
 
 function PanelFallback() {
@@ -53,7 +47,7 @@ export function RightTabs() {
       </header>
       <div className="min-h-0 flex-1 overflow-hidden">
         <Suspense fallback={<PanelFallback />}>
-          {tab === 'blockly' ? <BlocklyPanel /> : tab === 'code' ? <CodePanel /> : <TutorPanel />}
+          {tab === 'blockly' ? <BlocklyPanel /> : <CodePanel />}
         </Suspense>
       </div>
     </section>

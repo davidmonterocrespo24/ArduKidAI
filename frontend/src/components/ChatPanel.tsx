@@ -1,8 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { sendChatMessage, type ChatAttachment } from '../agent/chat'
 import { useAppStore } from '../store/useAppStore'
 import { cn } from '../lib/cn'
 import { Markdown } from './Markdown'
+
+// The A2UI renderer (and its catalog) is a sizeable chunk; load it only when a
+// lesson actually appears in the chat.
+const InlineTutor = lazy(() => import('./InlineTutor'))
 import { SavedProjectsList } from './SavedProjectsList'
 import { IconClock, IconImage, IconMinimize, IconPaperclip, IconPlus, IconTrash } from './Icons'
 import { newSession, setSessionId } from '../lib/sessionId'
@@ -77,12 +81,14 @@ export function ChatPanel() {
     newSession()
     setChatMessages([])
     setHistoryOpen(false)
+    void import('../a2ui/tutor').then(({ resetTutor }) => resetTutor())
   }
 
   async function loadSession(s: ChatSessionSummary) {
     try {
       const transcript = await getChatSession(s.id)
       setSessionId(s.id) // continue this conversation: the agent reloads its full context from Mongo
+      void import('../a2ui/tutor').then(({ resetTutor }) => resetTutor())
       setChatMessages(transcript.messages)
     } catch {
       /* ignore - the chat just will not load */
@@ -218,7 +224,16 @@ export function ChatPanel() {
           </div>
         )}
 
-        {messages.map((msg) => (
+        {messages.map((msg) =>
+          msg.a2uiSurface ? (
+            <div key={msg.id} className="rounded-lg border border-brand-100 bg-brand-50/40 p-2">
+              <Suspense
+                fallback={<div className="px-1 py-2 text-xs italic text-slate-400">Preparing your lesson...</div>}
+              >
+                <InlineTutor surfaceId={msg.a2uiSurface} />
+              </Suspense>
+            </div>
+          ) : (
           <div
             key={msg.id}
             className={cn(
@@ -269,7 +284,8 @@ export function ChatPanel() {
               </div>
             )}
           </div>
-        ))}
+          ),
+        )}
 
         {isStreaming && <div className="text-xs italic text-slate-500">agent is thinking...</div>}
       </div>

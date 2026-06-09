@@ -1,14 +1,14 @@
 /**
- * The single A2UI surface group that powers ArduKid's Tutor panel.
+ * The A2UI surfaces that power ArduKid's inline tutor lessons.
  *
- * The agent emits A2UI messages (createSurface / updateComponents) as the
- * `a2ui` field of a tool result; the SSE dispatcher hands them to
- * `pushTutorMessages`, which feeds the official `MessageProcessor` from the
- * a2ui-project. React reads the resulting surfaces through `useTutorSurfaces`.
+ * Each `show_tutor_panel` tool result becomes its OWN A2UI surface, rendered as
+ * a message inside the chat thread (see ChatPanel / InlineTutor) - the lesson is
+ * part of the conversation, not a side panel. All surfaces live in one official
+ * `MessageProcessor` from the a2ui-project so quiz interactions keep working and
+ * past lessons stay on screen as the chat scrolls.
  *
- * Actions flow the other way: when a child answers a quiz, the renderer raises
- * a client action that we forward back to the agent as a chat turn, so the
- * lesson stays conversational.
+ * Actions flow the other way: when a child answers a quiz, the renderer raises a
+ * client action that we forward back to the agent as a chat turn.
  */
 import { useSyncExternalStore } from 'react'
 import type { ReactComponentImplementation } from '@a2ui/react/v0_9'
@@ -37,42 +37,47 @@ const processor = new MessageProcessor<ReactComponentImplementation>(
   },
 )
 
-// useSyncExternalStore needs a stable snapshot reference between renders, so we
-// recompute the surface list only when a surface is added or removed.
-let snapshot: TutorSurface[] = []
 const listeners = new Set<() => void>()
-
-function refresh(): void {
-  snapshot = Array.from(processor.model.surfacesMap.values())
+function notify(): void {
   for (const l of listeners) l()
 }
+processor.onSurfaceCreated(() => notify())
+processor.onSurfaceDeleted(() => notify())
 
-processor.onSurfaceCreated(() => refresh())
-processor.onSurfaceDeleted(() => refresh())
+let panelCount = 0
 
-function clearSurfaces(): void {
+// Point every message in a panel at a fresh surface id so panels stack in the
+// chat instead of replacing one another. The agent emits a placeholder id.
+function retargetSurface(messages: A2uiMessage[], surfaceId: string): A2uiMessage[] {
+  return messages.map((msg) => {
+    const m = msg as unknown as Record<string, Record<string, unknown>>
+    for (const key of ['createSurface', 'updateComponents', 'updateDataModel', 'deleteSurface']) {
+      if (m[key] && typeof m[key] === 'object') {
+        m[key] = { ...m[key], surfaceId }
+      }
+    }
+    return msg
+  })
+}
+
+/** Render a new tutor panel as its own surface; returns the surface id so the
+ *  chat can place it inline. */
+export function addTutorPanel(messages: A2uiMessage[]): string | null {
+  if (!Array.isArray(messages) || messages.length === 0) return null
+  ensureStyles()
+  panelCount += 1
+  const surfaceId = `tutor-${panelCount}`
+  processor.processMessages(retargetSurface(messages, surfaceId))
+  notify()
+  return surfaceId
+}
+
+/** Clear every lesson (used when the child resets or starts a new chat). */
+export function resetTutor(): void {
   for (const id of Array.from(processor.model.surfacesMap.keys())) {
     processor.model.deleteSurface(id)
   }
-}
-
-/** Render a fresh tutor panel, replacing whatever was shown before. */
-export function pushTutorMessages(messages: A2uiMessage[]): void {
-  if (!Array.isArray(messages) || messages.length === 0) return
-  ensureStyles()
-  clearSurfaces()
-  processor.processMessages(messages)
-  refresh()
-}
-
-/** Clear the panel (used when the child resets the session). */
-export function resetTutor(): void {
-  clearSurfaces()
-  refresh()
-}
-
-export function hasTutorContent(): boolean {
-  return snapshot.length > 0
+  notify()
 }
 
 function subscribe(cb: () => void): () => void {
@@ -82,9 +87,12 @@ function subscribe(cb: () => void): () => void {
   }
 }
 
-/** Subscribe a React component to the live list of tutor surfaces. */
-export function useTutorSurfaces(): TutorSurface[] {
-  return useSyncExternalStore(subscribe, () => snapshot)
+/** Subscribe a chat message to its tutor surface (or undefined until it exists). */
+export function useTutorSurface(surfaceId: string): TutorSurface | undefined {
+  return useSyncExternalStore(
+    subscribe,
+    () => processor.model.surfacesMap.get(surfaceId) as TutorSurface | undefined,
+  )
 }
 
 interface ClientAction {

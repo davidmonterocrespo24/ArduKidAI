@@ -21,13 +21,21 @@ type ToolResult = {
   a2ui?: unknown[]
 }
 
-// Hand the agent's A2UI panel to the Tutor surface and bring that tab forward.
+// Render the agent's A2UI panel inline in the chat thread: register it as its
+// own surface and drop a chat message that renders it where the conversation is.
 // The renderer is a lazy chunk, so import it on demand rather than pulling it
 // into the main bundle through this dispatcher.
 function showTutorPanel(messages: unknown[]): void {
-  void import('../a2ui/tutor').then(({ pushTutorMessages }) => {
-    pushTutorMessages(messages as never)
-    useAppStore.getState().setRightTab('tutor')
+  void import('../a2ui/tutor').then(({ addTutorPanel }) => {
+    const surfaceId = addTutorPanel(messages as never)
+    if (surfaceId) {
+      useAppStore.getState().appendChatMessage({
+        id: crypto.randomUUID(),
+        role: 'agent',
+        text: '',
+        a2uiSurface: surfaceId,
+      })
+    }
   })
 }
 

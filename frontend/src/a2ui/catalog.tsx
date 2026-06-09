@@ -8,15 +8,16 @@
  *
  * We take the official basic catalog (Card / Column / Text / Image / Button ...)
  * from `@a2ui/react` and add two ArduKid-specific components a tutor needs:
- *   - `CircuitBoard` - an Arduino UNO drawn in SVG with the pins the lesson is
- *     about lit up, so the agent can literally point at "pin 13" while it talks.
+ *   - `CircuitBoard` - the SAME wokwi Arduino element the circuit canvas renders,
+ *     with the pins the lesson is about lit up, so the agent can literally point
+ *     at "pin 13" on the real board while it talks.
  *   - `QuizCard` - a self-contained multiple-choice question that grades the
  *     child's answer on the spot and reports it back to the agent.
  *
  * The agent emits A2UI v0.9 messages (createSurface / updateComponents) that
  * reference these by name; see backend `services/a2ui_build.py`.
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { basicCatalog, createComponentImplementation } from '@a2ui/react/v0_9'
 import { Catalog, CommonSchemas } from '@a2ui/web_core/v0_9'
 import { z } from 'zod'
@@ -26,46 +27,40 @@ import { z } from 'zod'
 export const TUTOR_CATALOG_ID = 'https://ardukid.app/catalogs/tutor/v1'
 
 // --- CircuitBoard ----------------------------------------------------------
+// Renders the same `@wokwi/elements` board the canvas uses (registered globally
+// in main.tsx) and overlays a glowing dot on each highlighted pin, read from the
+// element's own `pinInfo` coordinates - so the diagram is pixel-accurate to the
+// real part, not a redrawing of it.
 
-// Where each UNO pin sits on our schematic board, in SVG user units. The top
-// header is the digital side (D0-D13 + power-ish pins), the bottom header is
-// power + analog, matching the real board's two long headers.
-const BOARD_W = 540
-const BOARD_H = 300
-const PIN_R = 9
-
-interface PinSpot {
+interface PinInfo {
   name: string
   x: number
   y: number
-  /** label drawn above (top header) or below (bottom header) the dot */
-  below?: boolean
 }
 
-function topHeader(): PinSpot[] {
-  // D13 .. D0 left-to-right plus the AREF/GND that share that header.
-  const labels = ['GND', 'D13', 'D12', 'D11', 'D10', 'D9', 'D8', 'D7', 'D6', 'D5', 'D4', 'D3', 'D2', 'D1', 'D0']
-  const startX = 40
-  const gap = (BOARD_W - 2 * startX) / (labels.length - 1)
-  return labels.map((name, i) => ({ name, x: startX + i * gap, y: 64 }))
+const BOARD_TAGS: Record<string, string> = {
+  uno: 'wokwi-arduino-uno',
+  nano: 'wokwi-arduino-nano',
+  mega: 'wokwi-arduino-mega',
 }
 
-function bottomHeader(): PinSpot[] {
-  const labels = ['5V', '3V3', 'GND', 'VIN', 'A0', 'A1', 'A2', 'A3', 'A4', 'A5']
-  const startX = 70
-  const gap = (BOARD_W - 2 * startX) / (labels.length - 1)
-  return labels.map((name, i) => ({ name, x: startX + i * gap, y: BOARD_H - 60, below: true }))
-}
-
-/** Normalise a pin reference the agent might send ("13", "d13", "gnd", "A0",
- *  "UNO.D13") to the canonical label drawn on the board. */
-function canonicalPin(raw: string): string {
-  let p = raw.trim()
-  if (p.includes('.')) p = p.split('.').pop() as string
-  p = p.toUpperCase()
-  if (/^\d+$/.test(p)) return `D${p}`
-  if (p === '3.3V' || p === '3V' || p === '3.3') return '3V3'
-  return p
+/** Reduce any pin reference - a wokwi name ("13", "GND.2", "A4.2"), a request
+ *  ("D13", "gnd", "5v"), or a wired ref ("UNO.D13") - to one comparable token. */
+function pinToken(raw: string): string {
+  let p = String(raw).trim()
+  const dot = p.indexOf('.')
+  if (dot >= 0) {
+    const head = p.slice(0, dot)
+    const tail = p.slice(dot + 1)
+    if (/^gnd$/i.test(head)) return 'GND' // GND.1 / GND.2 / GND.3
+    if (/^[a-z]+$/i.test(head) && !/^\d/.test(tail)) p = tail // UNO.D13 / UNO.GND
+    else p = head // A4.2 -> A4
+  }
+  if (/^gnd/i.test(p)) return 'GND'
+  if (/^\d+$/.test(p)) return `D${p}` // wokwi digital pins are bare "13"
+  if (/^d\d+$/i.test(p)) return p.toUpperCase() // request "D13"
+  if (/^3\.?3v?$/i.test(p) || /^3v3$/i.test(p)) return '3V3'
+  return p.toUpperCase()
 }
 
 const CircuitBoardApi = {
@@ -77,90 +72,112 @@ const CircuitBoardApi = {
   }),
 }
 
-export const CircuitBoard = createComponentImplementation(
-  CircuitBoardApi,
-  ({ props }) => {
-    const highlight = useMemo(() => {
-      const list = Array.isArray(props.highlightPins) ? props.highlightPins : []
-      return new Set(list.map((p) => canonicalPin(String(p))))
-    }, [props.highlightPins])
-    const pins = useMemo(() => [...topHeader(), ...bottomHeader()], [])
+export const CircuitBoard = createComponentImplementation(CircuitBoardApi, ({ props }) => {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const boardRef = useRef<HTMLElement>(null)
+  const [pins, setPins] = useState<PinInfo[]>([])
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null)
+  const [scale, setScale] = useState(1)
 
-    return (
-      <figure className="m-0 w-full">
-        <svg
-          viewBox={`0 0 ${BOARD_W} ${BOARD_H}`}
-          className="w-full"
-          role="img"
-          aria-label={String(props.caption ?? 'Arduino UNO board')}
-        >
-          <defs>
-            <filter id="ak-glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="4" result="b" />
-              <feMerge>
-                <feMergeNode in="b" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
+  const tag = BOARD_TAGS[String(props.board ?? 'uno')] ?? BOARD_TAGS.uno
 
-          {/* board body */}
-          <rect x="14" y="22" width={BOARD_W - 28} height={BOARD_H - 44} rx="18" fill="#0b7a73" />
-          <rect
-            x="14"
-            y="22"
-            width={BOARD_W - 28}
-            height={BOARD_H - 44}
-            rx="18"
-            fill="none"
-            stroke="#0a5f59"
-            strokeWidth="3"
-          />
-          {/* the two pin-header strips */}
-          <rect x="28" y="50" width={BOARD_W - 56} height="28" rx="5" fill="#062f2c" />
-          <rect x="28" y={BOARD_H - 74} width={BOARD_W - 56} height="28" rx="5" fill="#062f2c" />
-          {/* a usb + power nub so it reads as an UNO */}
-          <rect x="6" y="92" width="26" height="44" rx="4" fill="#9aa3a1" />
-          <rect x="6" y="158" width="26" height="34" rx="4" fill="#1b1b1b" />
-          <text x={BOARD_W / 2} y={BOARD_H / 2 + 4} textAnchor="middle" fill="#bfe9e4" fontSize="22" fontWeight="700" letterSpacing="2">
-            ARDUINO UNO
-          </text>
+  const wanted = useMemo(() => {
+    const list = Array.isArray(props.highlightPins) ? props.highlightPins : []
+    return new Set(list.map((p) => pinToken(String(p))))
+  }, [props.highlightPins])
 
-          {pins.map((pin) => {
-            const on = highlight.has(pin.name)
-            const labelY = pin.below ? pin.y + PIN_R + 16 : pin.y - PIN_R - 8
-            return (
-              <g key={pin.name}>
+  // The wokwi element upgrades asynchronously; poll a few frames for its pin
+  // coordinates and intrinsic size.
+  useEffect(() => {
+    let tries = 0
+    let raf = 0
+    const read = () => {
+      const el = boardRef.current as unknown as { pinInfo?: PinInfo[] } | null
+      const rect = boardRef.current?.getBoundingClientRect()
+      if (el?.pinInfo && Array.isArray(el.pinInfo) && rect && rect.width > 0) {
+        setPins(el.pinInfo.map((p) => ({ name: p.name, x: p.x, y: p.y })))
+        setSize({ w: rect.width, h: rect.height })
+        return
+      }
+      if (tries++ < 30) raf = requestAnimationFrame(read)
+    }
+    read()
+    return () => cancelAnimationFrame(raf)
+  }, [tag])
+
+  // Scale the board (and its overlay together) down to fit the chat column.
+  useLayoutEffect(() => {
+    if (!size) return
+    const fit = () => {
+      const avail = wrapRef.current?.clientWidth ?? size.w
+      setScale(Math.min(1, avail / size.w))
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    if (wrapRef.current) ro.observe(wrapRef.current)
+    return () => ro.disconnect()
+  }, [size])
+
+  const highlights = useMemo(
+    () => pins.filter((p) => wanted.has(pinToken(p.name))),
+    [pins, wanted],
+  )
+
+  return (
+    <figure className="m-0 w-full">
+      <div
+        ref={wrapRef}
+        className="relative w-full overflow-hidden"
+        style={size ? { height: size.h * scale } : undefined}
+      >
+        <div className="absolute left-0 top-0" style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+          {tag === 'wokwi-arduino-nano' ? (
+            <wokwi-arduino-nano ref={boardRef} />
+          ) : tag === 'wokwi-arduino-mega' ? (
+            <wokwi-arduino-mega ref={boardRef} />
+          ) : (
+            <wokwi-arduino-uno ref={boardRef} />
+          )}
+          {size && highlights.length > 0 ? (
+            <svg
+              className="pointer-events-none absolute left-0 top-0"
+              width={size.w}
+              height={size.h}
+              aria-hidden="true"
+            >
+              <defs>
+                <filter id="ak-pin-glow" x="-80%" y="-80%" width="260%" height="260%">
+                  <feGaussianBlur stdDeviation="3.5" result="b" />
+                  <feMerge>
+                    <feMergeNode in="b" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              {highlights.map((p, i) => (
                 <circle
-                  cx={pin.x}
-                  cy={pin.y}
-                  r={PIN_R}
-                  fill={on ? '#ffd23f' : '#10302d'}
-                  stroke={on ? '#ff8a00' : '#0a5f59'}
-                  strokeWidth={on ? 3 : 2}
-                  filter={on ? 'url(#ak-glow)' : undefined}
-                />
-                <text
-                  x={pin.x}
-                  y={labelY}
-                  textAnchor="middle"
-                  fontSize="12"
-                  fontWeight={on ? 700 : 500}
-                  fill={on ? '#b45309' : '#cbd5e1'}
+                  key={`${p.name}-${i}`}
+                  cx={p.x}
+                  cy={p.y}
+                  r={8}
+                  fill="#ffd23f"
+                  stroke="#ff8a00"
+                  strokeWidth={3}
+                  filter="url(#ak-pin-glow)"
                 >
-                  {pin.name}
-                </text>
-              </g>
-            )
-          })}
-        </svg>
-        {props.caption ? (
-          <figcaption className="mt-1 text-center text-sm text-slate-600">{String(props.caption)}</figcaption>
-        ) : null}
-      </figure>
-    )
-  },
-)
+                  <animate attributeName="r" values="6.5;10;6.5" dur="1.4s" repeatCount="indefinite" />
+                </circle>
+              ))}
+            </svg>
+          ) : null}
+        </div>
+      </div>
+      {props.caption ? (
+        <figcaption className="mt-1 text-center text-sm text-slate-600">{String(props.caption)}</figcaption>
+      ) : null}
+    </figure>
+  )
+})
 
 // --- QuizCard --------------------------------------------------------------
 

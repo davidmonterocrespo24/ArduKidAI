@@ -69,4 +69,7 @@ export interface ChatMessage {
   text: string
   toolName?: string
   attachments?: ChatMessageAttachment[]
+  /** When set, this message renders an interactive A2UI tutor panel inline in
+   * the chat thread; the value is the id of the surface in the tutor processor. */
+  a2uiSurface?: string
 }
