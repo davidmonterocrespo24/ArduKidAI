@@ -10,7 +10,7 @@ export type SimStatus = 'idle' | 'running' | 'stopped' | 'error'
 
 export type AgentStatus = 'idle' | 'streaming' | 'error'
 
-export type RightTab = 'blockly' | 'code'
+export type RightTab = 'blockly' | 'code' | 'tutor'
 export type BottomTab = 'compile' | 'serial'
 
 export type CompileLogType = 'info' | 'success' | 'warn' | 'error'

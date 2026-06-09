@@ -16,6 +16,19 @@ type ToolResult = {
   length?: number
   blockly_xml?: string
   errors?: Array<{ error?: string }>
+  // A2UI v0.9 messages (createSurface / updateComponents) the agent emitted for
+  // the Tutor panel. Rendered by the official a2ui-project renderer.
+  a2ui?: unknown[]
+}
+
+// Hand the agent's A2UI panel to the Tutor surface and bring that tab forward.
+// The renderer is a lazy chunk, so import it on demand rather than pulling it
+// into the main bundle through this dispatcher.
+function showTutorPanel(messages: unknown[]): void {
+  void import('../a2ui/tutor').then(({ pushTutorMessages }) => {
+    pushTutorMessages(messages as never)
+    useAppStore.getState().setRightTab('tutor')
+  })
 }
 
 export function applyToolCall(name: string, args: Record<string, unknown>): void {
@@ -106,7 +119,16 @@ export function applyToolResult(name: string, result: ToolResult): void {
       // frontend to compile the freshly generated C++ and run it in the sim.
       store.requestRun()
       break
+    case 'show_tutor_panel':
+      if (Array.isArray(result.a2ui)) {
+        showTutorPanel(result.a2ui)
+      }
+      break
     default:
+      // Any tool may opt into an A2UI panel by returning `a2ui`.
+      if (Array.isArray(result.a2ui)) {
+        showTutorPanel(result.a2ui)
+      }
       break
   }
 }
@@ -195,6 +217,8 @@ function describeToolCall(name: string, args: Record<string, unknown>): string |
       return 'Checking the circuit for mistakes.'
     case 'describe_circuit':
       return 'Looking at your circuit.'
+    case 'show_tutor_panel':
+      return 'Putting together an interactive lesson for you.'
     case 'save_project':
       return `Saving your project${typeof args.name === 'string' ? ` as "${args.name}"` : ''}.`
     case 'find_similar_example':

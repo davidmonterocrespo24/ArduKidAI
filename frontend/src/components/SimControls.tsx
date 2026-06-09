@@ -359,6 +359,8 @@ export function SimControls() {
     // keeps no memory of the cleared circuit) AND an empty chat transcript.
     newSession()
     setChatMessages([])
+    // Clear any tutor lesson the agent had rendered, too.
+    void import('../a2ui/tutor').then(({ resetTutor }) => resetTutor())
   }
 
   const isRunning = simStatus === 'running'

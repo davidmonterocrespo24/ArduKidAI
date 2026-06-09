@@ -2,8 +2,9 @@ FROM node:24-alpine AS build
 
 WORKDIR /app
 
-# Install deps first so we cache them when only source changes.
-COPY package.json package-lock.json ./
+# Install deps first so we cache them when only source changes. .npmrc carries
+# legacy-peer-deps=true for the A2UI renderer's over-strict peer range.
+COPY package.json package-lock.json .npmrc ./
 RUN npm ci
 
 COPY . .

@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@a2ui/markdown-it": "^0.0.4",
+    "@a2ui/react": "^0.10.0",
+    "@a2ui/web_core": "^0.10.0",
     "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-query": "^5.100.14",
@@ -24,6 +27,7 @@
     "react-resizable-panels": "^2.1.9",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.0",
+    "zod": "^3.25.76",
     "zustand": "^5.0.13"
   },
   "devDependencies": {

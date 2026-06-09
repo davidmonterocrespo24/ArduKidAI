@@ -306,6 +306,7 @@ def test_canvas_and_mcp_tools_registered():
         "save_project",
         "validate_circuit",
         "describe_circuit",
+        "show_tutor_panel",
     }
     mcp_shaped_tools = {
         "find_similar_example",

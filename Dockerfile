@@ -7,7 +7,9 @@
 # Stage 1 - build the single-page app (same-origin API, no CORS).
 FROM node:24-slim AS frontend
 WORKDIR /fe
-COPY frontend/package.json frontend/package-lock.json ./
+# .npmrc carries legacy-peer-deps=true for the A2UI renderer's over-strict
+# peer range; copy it before `npm ci` so the lockfile resolves the same way.
+COPY frontend/package.json frontend/package-lock.json frontend/.npmrc ./
 RUN npm ci
 COPY frontend/ ./
 ENV VITE_API_BASE=""

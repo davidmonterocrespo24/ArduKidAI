@@ -25,6 +25,7 @@ from typing import Any
 from ..boards import board_ids, get_board
 from ..schemas import ComponentInstance, Wire
 from ..services import catalog, projects_store
+from ..services.a2ui_build import A2uiBuildError, SURFACE_ID, build_tutor_panel
 from ..services.blockly_build import (
     BlocklyBuildError,
     apply_program_edits,
@@ -466,6 +467,25 @@ async def describe_circuit_handler(session: SessionState) -> dict[str, Any]:
     }
 
 
+async def show_tutor_panel_handler(
+    session: SessionState,
+    title: str | None = None,
+    cards: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Render an interactive A2UI lesson in the Tutor panel.
+
+    The agent describes the panel as a flat list of typed cards; the backend
+    builds the A2UI v0.9 messages deterministically (always well-formed) and the
+    frontend renders them with the official a2ui-project renderer. Returns the
+    messages under `a2ui` for the frontend dispatcher."""
+    _ = session
+    try:
+        messages = build_tutor_panel(title, list(cards or []))
+    except A2uiBuildError as exc:
+        return {"ok": False, "error": str(exc)}
+    return {"ok": True, "a2ui": messages, "surface_id": SURFACE_ID, "cards": len(cards or [])}
+
+
 # ---------- MongoDB-MCP-shaped tool handlers ----------
 
 
@@ -744,6 +764,63 @@ TOOLS: dict[str, ToolSpec] = {
         ),
         parameters_schema={"type": "object", "properties": {}},
         handler=describe_circuit_handler,
+    ),
+    "show_tutor_panel": ToolSpec(
+        name="show_tutor_panel",
+        description=(
+            "Show an interactive lesson in the Tutor panel using A2UI (the agent draws "
+            "rich UI, not just chat text). Use it when the child wants to LEARN: explain "
+            "their circuit, answer 'why does it work?', or 'quiz me'. Pass an optional "
+            "`title` and a list of `cards`, each with a `kind`:\n"
+            "- lesson: {kind:'lesson', title?, body} - body is Markdown (headings, bold, "
+            "lists, `code` are fine).\n"
+            "- steps: {kind:'steps', title?, steps:[string,...]} - rendered as a numbered list.\n"
+            "- diagram: {kind:'diagram', caption?, highlight_pins:[..]} - draws an Arduino UNO "
+            "with those pins lit up. Use real pin names like 'D13', 'GND', '5V', 'A0'.\n"
+            "- quiz: {kind:'quiz', question, options:[..], answer_index, explanation?} - a "
+            "multiple-choice question graded in the browser; the child's result comes back to "
+            "you so you can react.\n"
+            "Call describe_circuit first when the lesson is about what the child built, so the "
+            "pins and parts you mention are real."
+        ),
+        parameters_schema={
+            "type": "object",
+            "properties": {
+                "title": {"type": "string", "description": "Optional panel heading."},
+                "cards": {
+                    "type": "array",
+                    "description": "The lesson, as a flat list of typed cards.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "kind": {
+                                "type": "string",
+                                "enum": ["lesson", "steps", "diagram", "quiz"],
+                            },
+                            "title": {"type": "string"},
+                            "body": {"type": "string", "description": "Markdown body for a lesson card."},
+                            "steps": {"type": "array", "items": {"type": "string"}},
+                            "caption": {"type": "string"},
+                            "highlight_pins": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Pin names to light up, e.g. ['D13','GND'].",
+                            },
+                            "question": {"type": "string"},
+                            "options": {"type": "array", "items": {"type": "string"}},
+                            "answer_index": {
+                                "type": "integer",
+                                "description": "0-based index of the correct option.",
+                            },
+                            "explanation": {"type": "string"},
+                        },
+                        "required": ["kind"],
+                    },
+                },
+            },
+            "required": ["cards"],
+        },
+        handler=show_tutor_panel_handler,
     ),
     "find_similar_example": ToolSpec(
         name="find_similar_example",
