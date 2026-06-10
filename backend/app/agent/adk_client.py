@@ -262,6 +262,35 @@ async def describe_circuit(tool_context: ToolContext) -> dict[str, Any]:
     return await _run("describe_circuit", tool_context)
 
 
+async def show_tutor_panel(
+    cards: list[dict[str, Any]],
+    title: str | None = None,
+    *,
+    tool_context: ToolContext,
+) -> dict[str, Any]:
+    """Show an interactive lesson INLINE in the chat using A2UI (draw rich UI, not
+    just a wall of text). Use it when the child wants to LEARN: to explain their
+    circuit, answer "why does it work?", or "quiz me". Call describe_circuit first
+    when the lesson is about what they built, so the pins and parts you mention are
+    real. Keep a short, friendly sentence in your text reply alongside the panel.
+
+    Args:
+        cards: a flat list of cards; each is an object with a "kind":
+          {"kind": "lesson", "title"?: str, "body": <Markdown: headings, bold,
+              lists and `code` are fine>}
+          {"kind": "steps", "title"?: str, "steps": [str, ...]}  (numbered list)
+          {"kind": "diagram", "caption"?: str, "highlight_pins": ["D13","GND",...]}
+              draws the real Arduino board with those pins lit up; use real pin
+              names like "D13", "GND", "5V", "A0".
+          {"kind": "quiz", "question": str, "options": [str, ...],
+              "answer_index": <0-based int of the correct option>,
+              "explanation"?: str}  graded in the browser; the child's result comes
+              back to you so you can react with one encouraging sentence.
+        title: optional heading shown above the cards.
+    """
+    return await _run("show_tutor_panel", tool_context, title=title, cards=cards)
+
+
 _TOOLS = [
     list_available_components,
     add_component,
@@ -276,6 +305,7 @@ _TOOLS = [
     save_project,
     validate_circuit,
     describe_circuit,
+    show_tutor_panel,
     find_similar_example,
     list_saved_projects,
     load_project,

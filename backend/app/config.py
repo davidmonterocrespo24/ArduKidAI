@@ -26,7 +26,15 @@ class Settings(BaseSettings):
     ardukid_fqbn: str = "arduino:avr:uno"
     ardukid_arduino_cli: str = "arduino-cli"
 
-    ardukid_cors_origins: str = "http://localhost:5173"
+    # Vite picks the next free port (5173, 5174, ...) when one is taken, so allow
+    # a small range in dev to avoid a confusing "Failed to fetch" (CORS) when the
+    # frontend lands on a different port. Production serves the SPA same-origin,
+    # where CORS does not apply.
+    ardukid_cors_origins: str = (
+        "http://localhost:5173,http://localhost:5174,http://localhost:5175,"
+        "http://localhost:5176,http://127.0.0.1:5173,http://127.0.0.1:5174,"
+        "http://127.0.0.1:5175,http://127.0.0.1:5176"
+    )
 
     mongodb_uri: str = ""
     mongodb_db: str = "ardukid"
