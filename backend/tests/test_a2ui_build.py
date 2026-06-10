@@ -127,6 +127,62 @@ def test_tryit_rejects_bad_range():
         build_tutor_panel(None, [{"kind": "tryit", "label": "x", "min": 10, "max": 5}])
 
 
+def test_predict_card_builds_predictcard():
+    messages = build_tutor_panel(
+        None,
+        [{"kind": "predict", "question": "What will the LED do?", "options": ["off", "blink"], "answer_index": 1}],
+    )
+    components = _components(messages)
+    pc = next(c for c in components if c["component"] == "PredictCard")
+    assert pc["options"] == ["off", "blink"] and pc["answerIndex"] == 1
+
+
+def test_flashcards_card_builds_deck_with_optional_part():
+    messages = build_tutor_panel(
+        None,
+        [
+            {
+                "kind": "flashcards",
+                "cards": [
+                    {"front": "Resistor", "back": "limits current", "part": "resistor"},
+                    {"front": "LED", "back": "makes light"},
+                ],
+            }
+        ],
+    )
+    components = _components(messages)
+    deck = next(c for c in components if c["component"] == "FlashcardDeck")
+    assert deck["cards"][0] == {"front": "Resistor", "back": "limits current", "part": "resistor"}
+    assert deck["cards"][1] == {"front": "LED", "back": "makes light"}
+
+
+def test_progress_card_normalizes_status_and_badges():
+    messages = build_tutor_panel(
+        None,
+        [
+            {
+                "kind": "progress",
+                "skills": [
+                    {"label": "Light an LED", "status": "done"},
+                    {"label": "Read a button", "status": "bogus"},
+                ],
+                "badges": [{"label": "First Blink", "earned": True}],
+            }
+        ],
+    )
+    components = _components(messages)
+    pt = next(c for c in components if c["component"] == "ProgressTracker")
+    assert pt["skills"][0] == {"label": "Light an LED", "status": "done"}
+    # unknown status falls back to "locked"
+    assert pt["skills"][1]["status"] == "locked"
+    assert pt["badges"] == [{"label": "First Blink", "earned": True}]
+
+
+def test_predict_rejects_bad_answer_index():
+    with pytest.raises(A2uiBuildError):
+        build_tutor_panel(None, [{"kind": "predict", "question": "q", "options": ["a", "b"], "answer_index": 9}])
+
+
 def test_steps_card_builds_a_numbered_markdown_list():
     messages = build_tutor_panel(None, [{"kind": "steps", "steps": ["Wire it", "Run it"]}])
     components = _components(messages)

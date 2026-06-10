@@ -297,10 +297,21 @@ async def show_tutor_panel(
               "answer_index": <0-based int of the correct option>,
               "explanation"?: str}  graded in the browser; the child's result comes
               back to you so you can react with one encouraging sentence.
+          {"kind": "predict", "question": str, "options": [str, ...],
+              "answer_index": <0-based int>, "explanation"?: str}  predict-then-run:
+              the child predicts, then a Run button runs the real simulation. Use
+              BEFORE running so they reason about the code first.
           {"kind": "tryit", "title"?|"prompt"?: str, "label": str, "min": num,
               "max": num, "step"?: num, "start"?: num, "unit"?: str}  a live slider
               the child drags; the readout updates instantly with no round-trip.
               Use for "what happens if I change the delay / the brightness?".
+          {"kind": "flashcards", "title"?: str, "cards": [{"front": str,
+              "back": str, "part"?: <catalog type id>}, ...]}  flip cards for review;
+              'part' optionally shows a real component on the front.
+          {"kind": "progress", "title"?: str, "skills": [{"label": str,
+              "status": "done"|"doing"|"locked"}, ...], "badges"?: [{"label": str,
+              "earned": bool}, ...]}  a skill map + badges to celebrate growth.
+              Ground it in what the child has done (call load_memory if helpful).
         title: optional heading shown above the cards.
     """
     return await _run("show_tutor_panel", tool_context, title=title, cards=cards)

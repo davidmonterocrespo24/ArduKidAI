@@ -28,7 +28,18 @@ TUTOR_CATALOG_ID = "https://ardukid.app/catalogs/tutor/v1"
 A2UI_VERSION = "v0.9"
 SURFACE_ID = "tutor"
 
-VALID_CARD_KINDS = ("lesson", "steps", "diagram", "parts", "checklist", "quiz", "tryit")
+VALID_CARD_KINDS = (
+    "lesson",
+    "steps",
+    "diagram",
+    "parts",
+    "checklist",
+    "quiz",
+    "predict",
+    "tryit",
+    "flashcards",
+    "progress",
+)
 
 
 class A2uiBuildError(ValueError):
@@ -248,6 +259,89 @@ def _tryit_card(b: _ComponentBuilder, card: dict[str, Any], data: dict[str, Any]
     return b.card(b.column(children))
 
 
+def _predict_card(b: _ComponentBuilder, card: dict[str, Any], data: dict[str, Any], idx: int) -> str:
+    """Predict-then-run: like a quiz, but framed as a prediction and followed by a
+    'Run it' button that drives the real simulation."""
+    del data, idx
+    question = _require_str(card, "question", "predict")
+    options = card.get("options")
+    if not isinstance(options, list) or len(options) < 2:
+        raise A2uiBuildError("predict card needs an 'options' list with at least 2 choices")
+    opts = [str(o) for o in options]
+    answer_index = card.get("answer_index")
+    if not isinstance(answer_index, int) or isinstance(answer_index, bool):
+        raise A2uiBuildError("predict card needs an integer 'answer_index'")
+    if not 0 <= answer_index < len(opts):
+        raise A2uiBuildError(
+            f"predict 'answer_index' {answer_index} is out of range for {len(opts)} options"
+        )
+    props: dict[str, Any] = {"question": question, "options": opts, "answerIndex": answer_index}
+    explanation = card.get("explanation")
+    if isinstance(explanation, str) and explanation.strip():
+        props["explanation"] = explanation.strip()
+    return b.add("PredictCard", **props)
+
+
+def _flashcards_card(b: _ComponentBuilder, card: dict[str, Any], data: dict[str, Any], idx: int) -> str:
+    """A deck of flip cards for spaced review; each card may show a real part."""
+    del data, idx
+    cards = card.get("cards")
+    if not isinstance(cards, list) or not cards:
+        raise A2uiBuildError("flashcards card needs a non-empty 'cards' list")
+    deck: list[dict[str, Any]] = []
+    for i, c in enumerate(cards):
+        if not isinstance(c, dict):
+            raise A2uiBuildError(f"flashcards item #{i} must be an object with 'front' and 'back'")
+        front, back = c.get("front"), c.get("back")
+        if not (isinstance(front, str) and front.strip()):
+            raise A2uiBuildError(f"flashcards item #{i} needs a non-empty 'front'")
+        if not (isinstance(back, str) and back.strip()):
+            raise A2uiBuildError(f"flashcards item #{i} needs a non-empty 'back'")
+        item: dict[str, Any] = {"front": front.strip(), "back": back.strip()}
+        part = c.get("part")
+        if isinstance(part, str) and part.strip():
+            item["part"] = part.strip()
+        deck.append(item)
+    props: dict[str, Any] = {"cards": deck}
+    title = card.get("title")
+    if isinstance(title, str) and title.strip():
+        props["title"] = title.strip()
+    return b.add("FlashcardDeck", **props)
+
+
+_PROGRESS_STATUS = {"done", "doing", "locked"}
+
+
+def _progress_card(b: _ComponentBuilder, card: dict[str, Any], data: dict[str, Any], idx: int) -> str:
+    """A skill map + badges so the child sees their growth."""
+    del data, idx
+    skills = card.get("skills")
+    if not isinstance(skills, list) or not skills:
+        raise A2uiBuildError("progress card needs a non-empty 'skills' list")
+    skill_rows: list[dict[str, Any]] = []
+    for i, s in enumerate(skills):
+        if not isinstance(s, dict) or not (isinstance(s.get("label"), str) and s["label"].strip()):
+            raise A2uiBuildError(f"progress skill #{i} needs a 'label'")
+        status = str(s.get("status", "locked")).strip().lower()
+        if status not in _PROGRESS_STATUS:
+            status = "locked"
+        skill_rows.append({"label": s["label"].strip(), "status": status})
+    props: dict[str, Any] = {"skills": skill_rows}
+    title = card.get("title")
+    if isinstance(title, str) and title.strip():
+        props["title"] = title.strip()
+    badges = card.get("badges")
+    if isinstance(badges, list) and badges:
+        badge_rows = [
+            {"label": x["label"].strip(), "earned": bool(x.get("earned", False))}
+            for x in badges
+            if isinstance(x, dict) and isinstance(x.get("label"), str) and x["label"].strip()
+        ]
+        if badge_rows:
+            props["badges"] = badge_rows
+    return b.add("ProgressTracker", **props)
+
+
 _CARD_BUILDERS = {
     "lesson": _lesson_card,
     "steps": _steps_card,
@@ -255,7 +349,10 @@ _CARD_BUILDERS = {
     "parts": _parts_card,
     "checklist": _checklist_card,
     "quiz": _quiz_card,
+    "predict": _predict_card,
     "tryit": _tryit_card,
+    "flashcards": _flashcards_card,
+    "progress": _progress_card,
 }
 
 

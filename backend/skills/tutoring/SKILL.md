@@ -66,9 +66,18 @@ Mix a few cards to make a real lesson. Card kinds:
 - **quiz** - `{kind:"quiz", question, options:[..], answer_index, explanation?}` - a
   multiple-choice question graded in the browser. The child's result is sent back
   to you so you can react with one encouraging sentence.
+- **predict** - `{kind:"predict", question, options:[..], answer_index, explanation?}`
+  - predict-then-run: the child predicts the outcome, then a "Run it" button runs
+  the real simulation. Use this BEFORE running, so they reason about the code first.
 - **tryit** - `{kind:"tryit", prompt?|title?, label, min, max, step?, start?, unit?}`
   - a live slider; the readout updates instantly with no round-trip. Use for
   "what happens if I change the delay / the brightness?".
+- **flashcards** - `{kind:"flashcards", title?, cards:[{front, back, part?}]}` - flip
+  cards for review; `part` optionally shows a real component on the front. Use to
+  revisit concepts/components the child met earlier.
+- **progress** - `{kind:"progress", title?, skills:[{label, status}], badges?:[{label, earned}]}`
+  - a skill map (status: done | doing | locked) + badges, to celebrate growth.
+  Ground it in what the child has actually done (call load_memory if helpful).
 
 ### When to use which card
 
@@ -84,6 +93,10 @@ Mix a few cards to make a real lesson. Card kinds:
   cause and effect themselves.
 - "Help me wire it" / building a circuit together -> a **checklist** with one item
   per connection so they tick off each wire as they go.
+- About to run the program -> a **predict** card first ("what will the LED do?"),
+  so the child reasons about the code before they see the result.
+- Revisiting earlier ideas -> **flashcards**. Celebrating progress / a milestone ->
+  a **progress** card with the skills they have mastered and a badge.
 
 ## Worked examples
 
@@ -109,6 +122,21 @@ show_tutor_panel(title="Meet your parts", cards=[
     {"type":"pushbutton","label":"Button","caption":"tells the Arduino when you press"}
   ]},
   {"kind":"lesson","body":"An **LED** always needs a **resistor** in front of it, or too much current flows and it burns out."}
+])
+```
+
+Predict before running, then celebrate progress:
+
+```
+show_tutor_panel(cards=[
+  {"kind":"predict","question":"When you press Run, what will the LED do?",
+   "options":["Stay off","Blink on and off","Stay on forever"],"answer_index":1,
+   "explanation":"Your loop turns pin 13 HIGH, waits, LOW, waits - so it blinks."},
+  {"kind":"progress","title":"Your skills","skills":[
+     {"label":"Light an LED","status":"done"},
+     {"label":"Use delay() for timing","status":"doing"},
+     {"label":"Read a button","status":"locked"}],
+   "badges":[{"label":"First Blink","earned":true}]}
 ])
 ```
 

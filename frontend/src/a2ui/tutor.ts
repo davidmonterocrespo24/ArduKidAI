@@ -119,6 +119,20 @@ async function handleTutorAction(action: ClientAction): Promise<void> {
     )
     return
   }
+  if (action.name === 'predict_result') {
+    const question = typeof ctx.question === 'string' ? ctx.question : 'the prediction'
+    const predicted = typeof ctx.predicted === 'string' ? ctx.predicted : ''
+    const isCorrect = ctx.isCorrect === true
+    const { sendChatMessage } = await import('../agent/chat')
+    await sendChatMessage(
+      `[tutor predict] The child predicted "${predicted}" for: "${question}". ` +
+        `That was ${isCorrect ? 'right' : 'not what happens'}. They will press Run to check. ` +
+        'Reply with one short, encouraging sentence. Do not change the circuit or the program.',
+      undefined,
+      { note: isCorrect ? 'Great prediction!' : 'Good guess - let us see.' },
+    )
+    return
+  }
   if (action.name === 'checklist_done') {
     const title = typeof ctx.title === 'string' ? ctx.title : 'the wiring'
     const { sendChatMessage } = await import('../agent/chat')
