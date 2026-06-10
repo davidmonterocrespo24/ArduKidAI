@@ -106,6 +106,22 @@ def test_tryit_card_emits_slider_bound_to_seeded_data_model():
     assert seeded[path.lstrip("/")] == 500
 
 
+def test_checklist_card_builds_wiring_checklist_with_items():
+    messages = build_tutor_panel(
+        None,
+        [{"kind": "checklist", "title": "Wire it", "items": ["pin 13 to resistor", "LED to GND"]}],
+    )
+    components = _components(messages)
+    cl = next(c for c in components if c["component"] == "WiringChecklist")
+    assert cl["items"] == ["pin 13 to resistor", "LED to GND"]
+    assert cl["title"] == "Wire it"
+
+
+def test_checklist_rejects_empty_items():
+    with pytest.raises(A2uiBuildError):
+        build_tutor_panel(None, [{"kind": "checklist", "items": []}])
+
+
 def test_tryit_rejects_bad_range():
     with pytest.raises(A2uiBuildError):
         build_tutor_panel(None, [{"kind": "tryit", "label": "x", "min": 10, "max": 5}])

@@ -288,6 +288,11 @@ async def show_tutor_panel(
               like "led","resistor","pushbutton","buzzer","servo","seg7","lcd1602",
               "ssd1306","rgbLed","potentiometer","hcSr04","dht22". Use for
               "meet the parts" of the circuit.
+          {"kind": "checklist", "title"?: str, "intro"?: str,
+              "items": [str, ...], "done_label"?: str}  a follow-along wiring
+              checklist; the child ticks each connection and the done button is
+              disabled until all are ticked. Use the real pins/parts. You get a
+              turn to congratulate them when they finish.
           {"kind": "quiz", "question": str, "options": [str, ...],
               "answer_index": <0-based int of the correct option>,
               "explanation"?: str}  graded in the browser; the child's result comes

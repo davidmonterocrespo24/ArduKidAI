@@ -351,13 +351,106 @@ export const QuizCard = createComponentImplementation(QuizCardApi, ({ props, con
   )
 })
 
+// --- WiringChecklist -------------------------------------------------------
+// A follow-along checklist: tick each connection; the "done" button stays
+// disabled until every item is ticked, then notifies the agent. We own the
+// gating in React (reliable + styled to match), rather than relying on the basic
+// catalog's checks system.
+
+const WiringChecklistApi = {
+  name: 'WiringChecklist',
+  schema: z.object({
+    items: CommonSchemas.DynamicStringList,
+    title: CommonSchemas.DynamicString.optional(),
+    intro: CommonSchemas.DynamicString.optional(),
+    doneLabel: CommonSchemas.DynamicString.optional(),
+  }),
+}
+
+export const WiringChecklist = createComponentImplementation(WiringChecklistApi, ({ props, context }) => {
+  const items = useMemo(
+    () => (Array.isArray(props.items) ? props.items.map(String) : []),
+    [props.items],
+  )
+  const [checked, setChecked] = useState<boolean[]>(() => items.map(() => false))
+  const [done, setDone] = useState(false)
+  const allChecked = items.length > 0 && checked.length === items.length && checked.every(Boolean)
+
+  function toggle(i: number) {
+    if (done) return
+    setChecked((prev) => {
+      const next = items.map((_, idx) => prev[idx] ?? false)
+      next[i] = !next[i]
+      return next
+    })
+  }
+
+  function finish() {
+    if (!allChecked || done) return
+    setDone(true)
+    void context.dispatchAction({
+      event: { name: 'checklist_done', context: { title: String(props.title ?? 'the wiring') } },
+    })
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      {props.title ? (
+        <p className="mb-1 text-base font-semibold text-slate-800">{String(props.title)}</p>
+      ) : null}
+      {props.intro ? <p className="mb-3 text-sm text-slate-600">{String(props.intro)}</p> : null}
+      <ul className="flex flex-col gap-2">
+        {items.map((item, i) => (
+          <li key={i}>
+            <button
+              type="button"
+              onClick={() => toggle(i)}
+              disabled={done}
+              className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+                checked[i]
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                  : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span
+                className={`grid h-5 w-5 shrink-0 place-items-center rounded border ${
+                  checked[i] ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 bg-white'
+                }`}
+              >
+                {checked[i] ? (
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : null}
+              </span>
+              <span className={checked[i] ? 'line-through' : ''}>{item}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        disabled={!allChecked || done}
+        onClick={finish}
+        className={`mt-3 w-full rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+          allChecked && !done
+            ? 'bg-brand-500 text-white hover:bg-brand-600'
+            : 'cursor-not-allowed bg-slate-200 text-slate-400'
+        }`}
+      >
+        {done ? 'Done!' : String(props.doneLabel ?? 'I connected everything!')}
+      </button>
+    </div>
+  )
+})
+
 // --- the assembled catalog -------------------------------------------------
 
 /** Basic catalog (Card/Column/Text/Image/Button/...) plus ArduKid's tutor
  *  components, under one catalog id the agent targets. */
 export const arduKidCatalog = new Catalog(
   TUTOR_CATALOG_ID,
-  [...basicCatalog.components.values(), CircuitBoard, CircuitPart, QuizCard],
+  [...basicCatalog.components.values(), CircuitBoard, CircuitPart, QuizCard, WiringChecklist],
   [...basicCatalog.functions.values()],
   basicCatalog.themeSchema,
 )

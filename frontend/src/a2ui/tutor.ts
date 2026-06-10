@@ -101,21 +101,34 @@ interface ClientAction {
 }
 
 async function handleTutorAction(action: ClientAction): Promise<void> {
-  if (action.name !== 'quiz_answer') return
   const ctx = action.context ?? {}
-  const question = typeof ctx.question === 'string' ? ctx.question : 'the quiz'
-  const selected = typeof ctx.selected === 'string' ? ctx.selected : ''
-  const isCorrect = ctx.isCorrect === true
-  // The card already showed the child whether they were right. We pass it to the
-  // agent as an internal turn so it can add a short, encouraging follow-up - not
-  // a fake user bubble. Lazy import keeps this module free of a chat <-> tutor
-  // import cycle.
-  const { sendChatMessage } = await import('../agent/chat')
-  await sendChatMessage(
-    `[tutor quiz] The child answered "${selected}" to: "${question}". ` +
-      `That answer was ${isCorrect ? 'correct' : 'incorrect'}. ` +
-      'Reply with one short, encouraging sentence. Do not change the circuit or the program.',
-    undefined,
-    { note: isCorrect ? 'You got it.' : 'Good try - let me explain.' },
-  )
+  // Lazy import keeps this module free of a chat <-> tutor import cycle.
+  if (action.name === 'quiz_answer') {
+    const question = typeof ctx.question === 'string' ? ctx.question : 'the quiz'
+    const selected = typeof ctx.selected === 'string' ? ctx.selected : ''
+    const isCorrect = ctx.isCorrect === true
+    // The card already showed the child whether they were right. We pass it to
+    // the agent as an internal turn so it can add a short, encouraging follow-up.
+    const { sendChatMessage } = await import('../agent/chat')
+    await sendChatMessage(
+      `[tutor quiz] The child answered "${selected}" to: "${question}". ` +
+        `That answer was ${isCorrect ? 'correct' : 'incorrect'}. ` +
+        'Reply with one short, encouraging sentence. Do not change the circuit or the program.',
+      undefined,
+      { note: isCorrect ? 'You got it.' : 'Good try - let me explain.' },
+    )
+    return
+  }
+  if (action.name === 'checklist_done') {
+    const title = typeof ctx.title === 'string' ? ctx.title : 'the wiring'
+    const { sendChatMessage } = await import('../agent/chat')
+    await sendChatMessage(
+      `[tutor] The child finished the checklist for "${title}". ` +
+        'Congratulate them in one short sentence and invite them to press Run to see it work. ' +
+        'Do not change the circuit or the program.',
+      undefined,
+      { note: 'All checked off!' },
+    )
+    return
+  }
 }

@@ -28,7 +28,7 @@ TUTOR_CATALOG_ID = "https://ardukid.app/catalogs/tutor/v1"
 A2UI_VERSION = "v0.9"
 SURFACE_ID = "tutor"
 
-VALID_CARD_KINDS = ("lesson", "steps", "diagram", "parts", "quiz", "tryit")
+VALID_CARD_KINDS = ("lesson", "steps", "diagram", "parts", "checklist", "quiz", "tryit")
 
 
 class A2uiBuildError(ValueError):
@@ -150,6 +150,31 @@ def _parts_card(b: _ComponentBuilder, card: dict[str, Any], data: dict[str, Any]
     return b.column(children)
 
 
+def _checklist_card(b: _ComponentBuilder, card: dict[str, Any], data: dict[str, Any], idx: int) -> str:
+    """A follow-along wiring checklist: the child ticks each connection, and the
+    'done' button stays disabled until every item is ticked, then notifies the
+    agent. Rendered by the custom WiringChecklist component (gating owned in React)."""
+    del data, idx
+    items = card.get("items")
+    if not isinstance(items, list) or not items:
+        raise A2uiBuildError("checklist card needs a non-empty 'items' list of strings")
+    labels = [str(s).strip() for s in items if str(s).strip()]
+    if not labels:
+        raise A2uiBuildError("checklist card needs at least one non-empty item")
+
+    props: dict[str, Any] = {"items": labels}
+    title = card.get("title")
+    if isinstance(title, str) and title.strip():
+        props["title"] = title.strip()
+    intro = card.get("intro")
+    if isinstance(intro, str) and intro.strip():
+        props["intro"] = intro.strip()
+    done_label = card.get("done_label")
+    if isinstance(done_label, str) and done_label.strip():
+        props["doneLabel"] = done_label.strip()
+    return b.card(b.add("WiringChecklist", **props))
+
+
 def _quiz_card(b: _ComponentBuilder, card: dict[str, Any], data: dict[str, Any], idx: int) -> str:
     del data, idx
     question = _require_str(card, "question", "quiz")
@@ -228,6 +253,7 @@ _CARD_BUILDERS = {
     "steps": _steps_card,
     "diagram": _diagram_card,
     "parts": _parts_card,
+    "checklist": _checklist_card,
     "quiz": _quiz_card,
     "tryit": _tryit_card,
 }

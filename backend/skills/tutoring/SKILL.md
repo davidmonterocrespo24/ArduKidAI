@@ -59,6 +59,10 @@ Mix a few cards to make a real lesson. Card kinds:
   lcd2004, ssd1306, seg7, rgbLed, ledBarGraph, photoresistor, ntcTemperature,
   dht22, hcSr04, pirMotion, tiltSwitch, flameSensor, gasSensor, soundSensor,
   rotaryEncoder, analogJoystick, slideSwitch, slidePotentiometer, dipSwitch8.
+- **checklist** - `{kind:"checklist", title?, intro?, items:[..], done_label?}` - a
+  follow-along wiring checklist. The child ticks each connection; the "done" button
+  stays disabled until every box is ticked. When they finish you get a turn to
+  congratulate them. Use the child's real pins/parts (call `describe_circuit`).
 - **quiz** - `{kind:"quiz", question, options:[..], answer_index, explanation?}` - a
   multiple-choice question graded in the browser. The child's result is sent back
   to you so you can react with one encouraging sentence.
@@ -78,6 +82,8 @@ Mix a few cards to make a real lesson. Card kinds:
   understanding. End your chat sentence with a question.
 - "What if I change the delay/brightness?" -> a **tryit** slider so they feel the
   cause and effect themselves.
+- "Help me wire it" / building a circuit together -> a **checklist** with one item
+  per connection so they tick off each wire as they go.
 
 ## Worked examples
 
@@ -103,6 +109,18 @@ show_tutor_panel(title="Meet your parts", cards=[
     {"type":"pushbutton","label":"Button","caption":"tells the Arduino when you press"}
   ]},
   {"kind":"lesson","body":"An **LED** always needs a **resistor** in front of it, or too much current flows and it burns out."}
+])
+```
+
+Wire it together with a checklist (use the child's real pins):
+
+```
+show_tutor_panel(title="Let's wire your LED", cards=[
+  {"kind":"checklist","intro":"Tick each wire as you connect it:","items":[
+    "Pin 13 to one leg of the resistor",
+    "Other leg of the resistor to the LED's long leg (+)",
+    "LED's short leg (-) to GND"
+  ],"done_label":"All wired up!"}
 ])
 ```
 
