@@ -20,6 +20,7 @@ The catalog id and component names here must match `frontend/src/a2ui/catalog.ts
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
 # Must match TUTOR_CATALOG_ID in frontend/src/a2ui/catalog.tsx.
@@ -27,7 +28,7 @@ TUTOR_CATALOG_ID = "https://ardukid.app/catalogs/tutor/v1"
 A2UI_VERSION = "v0.9"
 SURFACE_ID = "tutor"
 
-VALID_CARD_KINDS = ("lesson", "steps", "diagram", "quiz")
+VALID_CARD_KINDS = ("lesson", "steps", "diagram", "parts", "quiz", "tryit")
 
 
 class A2uiBuildError(ValueError):
@@ -59,6 +60,9 @@ class _ComponentBuilder:
     def column(self, child_ids: list[str]) -> str:
         return self.add("Column", children=child_ids)
 
+    def row(self, child_ids: list[str]) -> str:
+        return self.add("Row", children=child_ids)
+
     @property
     def components(self) -> list[dict[str, Any]]:
         return self._components
@@ -71,7 +75,14 @@ def _require_str(card: dict[str, Any], key: str, kind: str) -> str:
     return value
 
 
-def _lesson_card(b: _ComponentBuilder, card: dict[str, Any]) -> str:
+def _num(value: float) -> float | int:
+    """Keep whole numbers as ints so a readout shows "500", not "500.0"."""
+    f = float(value)
+    return int(f) if f.is_integer() else f
+
+
+def _lesson_card(b: _ComponentBuilder, card: dict[str, Any], data: dict[str, Any], idx: int) -> str:
+    del data, idx
     body = _require_str(card, "body", "lesson")
     title = card.get("title")
     children: list[str] = []
@@ -81,7 +92,8 @@ def _lesson_card(b: _ComponentBuilder, card: dict[str, Any]) -> str:
     return b.card(b.column(children))
 
 
-def _steps_card(b: _ComponentBuilder, card: dict[str, Any]) -> str:
+def _steps_card(b: _ComponentBuilder, card: dict[str, Any], data: dict[str, Any], idx: int) -> str:
+    del data, idx
     steps = card.get("steps")
     if not isinstance(steps, list) or not steps:
         raise A2uiBuildError("steps card needs a non-empty 'steps' list of strings")
@@ -97,7 +109,8 @@ def _steps_card(b: _ComponentBuilder, card: dict[str, Any]) -> str:
     return b.card(b.column(children))
 
 
-def _diagram_card(b: _ComponentBuilder, card: dict[str, Any]) -> str:
+def _diagram_card(b: _ComponentBuilder, card: dict[str, Any], data: dict[str, Any], idx: int) -> str:
+    del data, idx
     pins = card.get("highlight_pins", [])
     if pins is None:
         pins = []
@@ -115,7 +128,30 @@ def _diagram_card(b: _ComponentBuilder, card: dict[str, Any]) -> str:
     return b.card(inner)
 
 
-def _quiz_card(b: _ComponentBuilder, card: dict[str, Any]) -> str:
+def _parts_card(b: _ComponentBuilder, card: dict[str, Any], data: dict[str, Any], idx: int) -> str:
+    """A gallery of real components, each drawn with its genuine wokwi SVG."""
+    del data, idx
+    parts = card.get("parts")
+    if not isinstance(parts, list) or not parts:
+        raise A2uiBuildError("parts card needs a non-empty 'parts' list")
+    children: list[str] = []
+    title = card.get("title")
+    if isinstance(title, str) and title.strip():
+        children.append(b.text(f"### {title.strip()}"))
+    for i, part in enumerate(parts):
+        if not isinstance(part, dict) or not part.get("type"):
+            raise A2uiBuildError(f"parts card item #{i} needs a 'type' (e.g. 'led', 'resistor')")
+        part_props: dict[str, Any] = {"part": str(part["type"])}
+        for key in ("label", "caption", "color", "text"):
+            val = part.get(key)
+            if isinstance(val, str) and val.strip():
+                part_props[key] = val.strip()
+        children.append(b.card(b.add("CircuitPart", **part_props)))
+    return b.column(children)
+
+
+def _quiz_card(b: _ComponentBuilder, card: dict[str, Any], data: dict[str, Any], idx: int) -> str:
+    del data, idx
     question = _require_str(card, "question", "quiz")
     options = card.get("options")
     if not isinstance(options, list) or len(options) < 2:
@@ -139,11 +175,61 @@ def _quiz_card(b: _ComponentBuilder, card: dict[str, Any]) -> str:
     return b.add("QuizCard", **props)
 
 
+def _tryit_card(b: _ComponentBuilder, card: dict[str, Any], data: dict[str, Any], idx: int) -> str:
+    """A live 'what if I change this?' slider. The readout updates instantly via
+    A2UI two-way data binding - no round-trip to the agent."""
+    label = card.get("label")
+    if not isinstance(label, str) or not label.strip():
+        label = "Value"
+    try:
+        mn = float(card.get("min", 0))
+        mx = float(card.get("max", 100))
+    except (TypeError, ValueError) as exc:
+        raise A2uiBuildError("tryit card needs numeric 'min' and 'max'") from exc
+    if mx <= mn:
+        raise A2uiBuildError("tryit 'max' must be greater than 'min'")
+    try:
+        start = float(card.get("start", mn))
+    except (TypeError, ValueError):
+        start = mn
+    start = max(mn, min(mx, start))
+
+    path_key = f"tryit{idx}"
+    data[path_key] = _num(start)
+
+    children: list[str] = []
+    prompt = card.get("prompt") or card.get("title")
+    if isinstance(prompt, str) and prompt.strip():
+        children.append(b.text(prompt.strip()))
+
+    slider_props: dict[str, Any] = {
+        "label": label.strip(),
+        "min": _num(mn),
+        "max": _num(mx),
+        "value": {"path": f"/{path_key}"},
+    }
+    step = card.get("step")
+    if step is not None:
+        with contextlib.suppress(TypeError, ValueError):
+            slider_props["step"] = _num(float(step))
+    children.append(b.add("Slider", **slider_props))
+
+    readout = [b.text(f"{label.strip()}: "), b.add("Text", text={"path": f"/{path_key}"})]
+    unit = card.get("unit")
+    if isinstance(unit, str) and unit.strip():
+        readout.append(b.text(f" {unit.strip()}"))
+    children.append(b.row(readout))
+
+    return b.card(b.column(children))
+
+
 _CARD_BUILDERS = {
     "lesson": _lesson_card,
     "steps": _steps_card,
     "diagram": _diagram_card,
+    "parts": _parts_card,
     "quiz": _quiz_card,
+    "tryit": _tryit_card,
 }
 
 
@@ -158,6 +244,7 @@ def build_tutor_panel(title: str | None, cards: list[dict[str, Any]]) -> list[di
         raise A2uiBuildError("a tutor panel needs at least one card")
 
     b = _ComponentBuilder()
+    data: dict[str, Any] = {}
     root_children: list[str] = []
     if isinstance(title, str) and title.strip():
         root_children.append(b.text(f"## {title.strip()}"))
@@ -171,7 +258,7 @@ def build_tutor_panel(title: str | None, cards: list[dict[str, Any]]) -> list[di
             raise A2uiBuildError(
                 f"card #{idx} has unknown kind '{kind}'. Use one of {VALID_CARD_KINDS}."
             )
-        root_children.append(builder(b, card))
+        root_children.append(builder(b, card, data, idx))
 
     # The React renderer mounts the component whose id is exactly "root", so the
     # top-level container must use that id (other components resolve by id and
@@ -179,7 +266,7 @@ def build_tutor_panel(title: str | None, cards: list[dict[str, Any]]) -> list[di
     b.add_with_id("root", "Column", children=root_children)
     components = b.components
 
-    return [
+    messages: list[dict[str, Any]] = [
         {
             "version": A2UI_VERSION,
             "createSurface": {"surfaceId": SURFACE_ID, "catalogId": TUTOR_CATALOG_ID},
@@ -189,3 +276,13 @@ def build_tutor_panel(title: str | None, cards: list[dict[str, Any]]) -> list[di
             "updateComponents": {"surfaceId": SURFACE_ID, "components": components},
         },
     ]
+    # Seed the data model for any interactive cards (e.g. tryit sliders), so their
+    # bound readouts show a value immediately.
+    if data:
+        messages.append(
+            {
+                "version": A2UI_VERSION,
+                "updateDataModel": {"surfaceId": SURFACE_ID, "path": "/", "value": data},
+            }
+        )
+    return messages

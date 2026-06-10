@@ -70,6 +70,47 @@ def test_diagram_card_carries_highlight_pins():
     assert board["caption"] == "The LED pin"
 
 
+def test_parts_card_renders_each_component_as_circuitpart():
+    messages = build_tutor_panel(
+        None,
+        [
+            {
+                "kind": "parts",
+                "title": "Meet your parts",
+                "parts": [
+                    {"type": "led", "label": "LED", "color": "red"},
+                    {"type": "resistor", "label": "Resistor"},
+                ],
+            }
+        ],
+    )
+    components = _components(messages)
+    parts = [c for c in components if c["component"] == "CircuitPart"]
+    assert {p["part"] for p in parts} == {"led", "resistor"}
+    led = next(p for p in parts if p["part"] == "led")
+    assert led["label"] == "LED" and led["color"] == "red"
+
+
+def test_tryit_card_emits_slider_bound_to_seeded_data_model():
+    messages = build_tutor_panel(
+        None,
+        [{"kind": "tryit", "label": "Delay", "min": 100, "max": 2000, "step": 100, "start": 500, "unit": "ms"}],
+    )
+    components = _components(messages)
+    slider = next(c for c in components if c["component"] == "Slider")
+    assert slider["min"] == 100 and slider["max"] == 2000 and slider["step"] == 100
+    # The slider value is a path binding, and the data model seeds that path.
+    path = slider["value"]["path"]
+    data_msg = next(m for m in messages if "updateDataModel" in m)
+    seeded = data_msg["updateDataModel"]["value"]
+    assert seeded[path.lstrip("/")] == 500
+
+
+def test_tryit_rejects_bad_range():
+    with pytest.raises(A2uiBuildError):
+        build_tutor_panel(None, [{"kind": "tryit", "label": "x", "min": 10, "max": 5}])
+
+
 def test_steps_card_builds_a_numbered_markdown_list():
     messages = build_tutor_panel(None, [{"kind": "steps", "steps": ["Wire it", "Run it"]}])
     components = _components(messages)

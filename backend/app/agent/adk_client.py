@@ -282,10 +282,20 @@ async def show_tutor_panel(
           {"kind": "diagram", "caption"?: str, "highlight_pins": ["D13","GND",...]}
               draws the real Arduino board with those pins lit up; use real pin
               names like "D13", "GND", "5V", "A0".
+          {"kind": "parts", "title"?: str, "parts": [{"type": <catalog type id>,
+              "label"?: str, "caption"?: str, "color"?: str, "text"?: str}, ...]}
+              shows real components with their genuine wokwi drawings. Use type ids
+              like "led","resistor","pushbutton","buzzer","servo","seg7","lcd1602",
+              "ssd1306","rgbLed","potentiometer","hcSr04","dht22". Use for
+              "meet the parts" of the circuit.
           {"kind": "quiz", "question": str, "options": [str, ...],
               "answer_index": <0-based int of the correct option>,
               "explanation"?: str}  graded in the browser; the child's result comes
               back to you so you can react with one encouraging sentence.
+          {"kind": "tryit", "title"?|"prompt"?: str, "label": str, "min": num,
+              "max": num, "step"?: num, "start"?: num, "unit"?: str}  a live slider
+              the child drags; the readout updates instantly with no round-trip.
+              Use for "what happens if I change the delay / the brightness?".
         title: optional heading shown above the cards.
     """
     return await _run("show_tutor_panel", tool_context, title=title, cards=cards)

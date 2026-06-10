@@ -21,6 +21,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { basicCatalog, createComponentImplementation } from '@a2ui/react/v0_9'
 import { Catalog, CommonSchemas } from '@a2ui/web_core/v0_9'
 import { z } from 'zod'
+import { DynamicComponent } from '../components/DynamicComponent'
+import type { ComponentType } from '../types/circuit'
 
 /** The id the agent must put in `createSurface.catalogId`. Keep in sync with
  *  backend `a2ui_build.TUTOR_CATALOG_ID`. */
@@ -179,6 +181,99 @@ export const CircuitBoard = createComponentImplementation(CircuitBoardApi, ({ pr
   )
 })
 
+// --- CircuitPart -----------------------------------------------------------
+// Renders a single real component the same way the canvas does (the exact wokwi
+// SVG via DynamicComponent), scaled to fit, so the agent can show "this is a
+// resistor" / "this is a push button" with the genuine part, not a drawing.
+
+let partSeq = 0
+
+const CircuitPartApi = {
+  name: 'CircuitPart',
+  schema: z.object({
+    part: CommonSchemas.DynamicString,
+    label: CommonSchemas.DynamicString.optional(),
+    caption: CommonSchemas.DynamicString.optional(),
+    color: CommonSchemas.DynamicString.optional(),
+    text: CommonSchemas.DynamicString.optional(),
+  }),
+}
+
+export const CircuitPart = createComponentImplementation(CircuitPartApi, ({ props }) => {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const holderRef = useRef<HTMLDivElement>(null)
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null)
+  const [scale, setScale] = useState(1)
+  // A unique DOM id so a tutor part never collides with a real canvas component
+  // (wokwi elements register by id).
+  const domId = useMemo(() => {
+    partSeq += 1
+    return `tut-part-${partSeq}`
+  }, [])
+
+  const instance = useMemo(() => {
+    const partProps: Record<string, unknown> = {}
+    if (props.color) partProps.color = String(props.color)
+    if (props.text) partProps.text = String(props.text)
+    return { id: domId, type: String(props.part ?? '') as ComponentType, x: 0, y: 0, props: partProps }
+  }, [props.part, props.color, props.text, domId])
+
+  useEffect(() => {
+    let tries = 0
+    let raf = 0
+    const read = () => {
+      const el = holderRef.current?.firstElementChild as HTMLElement | null
+      const rect = el?.getBoundingClientRect()
+      if (rect && rect.width > 0) {
+        setSize({ w: rect.width, h: rect.height })
+        return
+      }
+      if (tries++ < 30) raf = requestAnimationFrame(read)
+    }
+    read()
+    return () => cancelAnimationFrame(raf)
+  }, [instance.type])
+
+  useLayoutEffect(() => {
+    if (!size) return
+    const fit = () => {
+      const avail = wrapRef.current?.clientWidth ?? size.w
+      // Fit wide parts (LCD) to the column but never blow up small ones (LED).
+      setScale(Math.min(1.6, avail / size.w))
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    if (wrapRef.current) ro.observe(wrapRef.current)
+    return () => ro.disconnect()
+  }, [size])
+
+  return (
+    <figure className="m-0 flex flex-col items-center">
+      <div
+        ref={wrapRef}
+        className="relative flex w-full justify-center overflow-hidden"
+        style={size ? { height: size.h * scale } : undefined}
+      >
+        <div
+          ref={holderRef}
+          className="absolute left-1/2 top-0"
+          style={{ transform: `translateX(-50%) scale(${scale})`, transformOrigin: 'top center' }}
+        >
+          <DynamicComponent instance={instance} />
+        </div>
+      </div>
+      {props.label ? (
+        <figcaption className="mt-1 text-center text-sm font-semibold text-slate-700">
+          {String(props.label)}
+        </figcaption>
+      ) : null}
+      {props.caption ? (
+        <p className="mt-0.5 text-center text-xs text-slate-500">{String(props.caption)}</p>
+      ) : null}
+    </figure>
+  )
+})
+
 // --- QuizCard --------------------------------------------------------------
 
 const QuizCardApi = {
@@ -262,7 +357,7 @@ export const QuizCard = createComponentImplementation(QuizCardApi, ({ props, con
  *  components, under one catalog id the agent targets. */
 export const arduKidCatalog = new Catalog(
   TUTOR_CATALOG_ID,
-  [...basicCatalog.components.values(), CircuitBoard, QuizCard],
+  [...basicCatalog.components.values(), CircuitBoard, CircuitPart, QuizCard],
   [...basicCatalog.functions.values()],
   basicCatalog.themeSchema,
 )

@@ -25,7 +25,7 @@ from typing import Any
 from ..boards import board_ids, get_board
 from ..schemas import ComponentInstance, Wire
 from ..services import catalog, projects_store
-from ..services.a2ui_build import A2uiBuildError, SURFACE_ID, build_tutor_panel
+from ..services.a2ui_build import SURFACE_ID, A2uiBuildError, build_tutor_panel
 from ..services.blockly_build import (
     BlocklyBuildError,
     apply_program_edits,
@@ -775,11 +775,18 @@ TOOLS: dict[str, ToolSpec] = {
             "- lesson: {kind:'lesson', title?, body} - body is Markdown (headings, bold, "
             "lists, `code` are fine).\n"
             "- steps: {kind:'steps', title?, steps:[string,...]} - rendered as a numbered list.\n"
-            "- diagram: {kind:'diagram', caption?, highlight_pins:[..]} - draws an Arduino UNO "
-            "with those pins lit up. Use real pin names like 'D13', 'GND', '5V', 'A0'.\n"
+            "- diagram: {kind:'diagram', caption?, highlight_pins:[..]} - draws the real Arduino "
+            "board with those pins lit up. Use real pin names like 'D13', 'GND', '5V', 'A0'.\n"
+            "- parts: {kind:'parts', title?, parts:[{type, label?, caption?, color?, text?}]} - "
+            "shows real components with their genuine wokwi drawings (use catalog type ids like "
+            "'led','resistor','pushbutton','buzzer','servo','seg7','lcd1602','ssd1306','rgbLed', "
+            "'potentiometer','hcSr04','dht22'). Great for 'meet the parts'.\n"
             "- quiz: {kind:'quiz', question, options:[..], answer_index, explanation?} - a "
             "multiple-choice question graded in the browser; the child's result comes back to "
             "you so you can react.\n"
+            "- tryit: {kind:'tryit', title?|prompt?, label, min, max, step?, start?, unit?} - a "
+            "live slider the child drags; the readout updates instantly (good for 'what happens "
+            "if I change the delay/brightness?'). Numeric min/max required.\n"
             "Call describe_circuit first when the lesson is about what the child built, so the "
             "pins and parts you mention are real."
         ),
