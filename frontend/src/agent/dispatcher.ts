@@ -169,9 +169,18 @@ function partLabel(type: string): string {
   return PART_LABEL[type] ?? type
 }
 
+// Skill names are kebab-case (e.g. "rgb-led"); PART_LABEL is keyed by the
+// camelCase component type id ("rgbLed"). Bridge the two so the chat still says
+// "RGB LED", not "rgb led".
+function kebabToCamel(s: string): string {
+  return s.replace(/-([a-z0-9])/g, (_, c: string) => c.toUpperCase())
+}
+
 function skillLabel(name: unknown): string {
   if (typeof name !== 'string') return 'a part'
-  return SKILL_LABEL[name] ?? PART_LABEL[name] ?? name
+  return (
+    SKILL_LABEL[name] ?? PART_LABEL[name] ?? PART_LABEL[kebabToCamel(name)] ?? name.replace(/-/g, ' ')
+  )
 }
 
 function withArticle(word: string): string {
